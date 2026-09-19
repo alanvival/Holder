@@ -35,6 +35,7 @@ import {
   situacaoClientes,
   clientesComRisco,
 } from '../data/inovaappsDatabase.js';
+import { METRICAS, criarIntentDeMetrica } from './metricas.js';
 
 function ultimoAcompanhamento(entidades) {
   const { pessoa } = entidades;
@@ -431,6 +432,11 @@ export const intentRegistry = [
     criadaEm: '2026-09-19',
     ativa: true,
   },
+
+  // --- Métricas agregadas: cada definição em METRICAS (metricas.js) vira
+  // uma intenção aqui via criarIntentDeMetrica — nenhum resolver bespoke,
+  // todas passam pelo mesmo resolverMetricaGenerico. ---
+  ...METRICAS.map(criarIntentDeMetrica),
 ];
 
 // ---------------------------------------------------------------------
@@ -448,16 +454,23 @@ function novoIdPersonalizado() {
   return `intent-admin-${proximoIdPersonalizado++}`;
 }
 
-export function registrarIntentPersonalizada({ rotulo, exemplos, respostaTexto }) {
+export function registrarIntentPersonalizada({ id, rotulo, exemplos, respostaTexto, ativa = true, criadaEm }) {
+  // `id` explícito é usado ao hidratar perguntas que já existem no backend
+  // (armazenamento.py) — evita duplicar a mesma pergunta ao registrar de
+  // novo em cada fetch/reload. Sem `id`, gera um novo (fluxo 100% local,
+  // sem backend).
+  if (id && intentRegistry.some((i) => i.id === id)) {
+    return intentRegistry.find((i) => i.id === id);
+  }
   const intent = {
-    id: novoIdPersonalizado(),
+    id: id ?? novoIdPersonalizado(),
     rotulo,
     exemplos,
     parametros: [],
     requerEntidade: () => true,
     resolver: () => ({ kind: 'text', text: respostaTexto }),
-    criadaEm: new Date().toISOString(),
-    ativa: true,
+    criadaEm: criadaEm ?? new Date().toISOString(),
+    ativa,
     origem: 'admin',
   };
   intentRegistry.push(intent);

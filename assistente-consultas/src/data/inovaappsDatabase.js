@@ -4,10 +4,10 @@
 // genérica em mockDatabase.js para as perguntas relacionadas à carteira de
 // clientes do desafio Pulso.
 
-import clientesRaw from './inovaapps/clientes.json';
-import atendimentoMensalRaw from './inovaapps/atendimentoMensal.json';
-import pesquisasNpsRaw from './inovaapps/pesquisasNps.json';
-import situacaoClientesRaw from './inovaapps/situacaoClientes.json';
+import clientesRaw from './inovaapps/clientes.json' with { type: 'json' };
+import atendimentoMensalRaw from './inovaapps/atendimentoMensal.json' with { type: 'json' };
+import pesquisasNpsRaw from './inovaapps/pesquisasNps.json' with { type: 'json' };
+import situacaoClientesRaw from './inovaapps/situacaoClientes.json' with { type: 'json' };
 
 export const clientes = clientesRaw;
 export const atendimentoMensal = atendimentoMensalRaw;
@@ -45,6 +45,58 @@ export function ultimoNpsRespondido(clienteId) {
   const respostas = npsDoCliente(clienteId).filter((n) => n.respondeu === 1);
   return respostas.length > 0 ? respostas[respostas.length - 1] : null;
 }
+
+// --- Joins cliente_id -> atributo cadastral, usados pelo motor de métricas
+// pra aplicar recortes (plano/porte/segmento/situação) em linhas que só têm
+// cliente_id (atendimento_mensal, pesquisas_nps, situacao_clientes). ---
+
+export function planoDoCliente(clienteId) {
+  return clientesPorId.get(clienteId)?.plano ?? null;
+}
+
+export function porteDoCliente(clienteId) {
+  return clientesPorId.get(clienteId)?.porte ?? null;
+}
+
+export function segmentoDoCliente(clienteId) {
+  return clientesPorId.get(clienteId)?.segmento ?? null;
+}
+
+export function situacaoDoCliente(clienteId) {
+  return situacaoPorId.get(clienteId)?.situacao ?? null;
+}
+
+// Valores possíveis de cada categoria, na base (confirmados no dicionário —
+// sem acento, é assim que a planilha grava). Ordem fixa (não a de
+// aparecimento) pra breakdowns saírem sempre na mesma ordem.
+export const PLANOS = ['Essencial', 'Avancado', 'Enterprise'];
+export const PORTES = ['Pequeno', 'Medio', 'Grande'];
+export const SEGMENTOS = ['Logistica', 'Saude', 'Educacao', 'Industria', 'Varejo', 'Servicos'];
+
+// Rótulos acentuados pra exibir no chat (a base grava sem acento).
+export const PLANO_LABELS = { Essencial: 'Essencial', Avancado: 'Avançado', Enterprise: 'Enterprise' };
+export const PORTE_LABELS = { Pequeno: 'Pequeno', Medio: 'Médio', Grande: 'Grande' };
+export const SEGMENTO_LABELS = {
+  Logistica: 'Logística',
+  Saude: 'Saúde',
+  Educacao: 'Educação',
+  Industria: 'Indústria',
+  Varejo: 'Varejo',
+  Servicos: 'Serviços',
+};
+
+// Fronteiras reais do histórico (usadas como "hoje" pro cálculo de períodos
+// relativos tipo "últimos N meses" — a base termina em 2026-06, bem antes
+// da data real de hoje, então "últimos 3 meses" tem que ser relativo ao
+// fim dos dados, não ao calendário real).
+export const PRIMEIRO_MES_DADOS = atendimentoMensal.reduce(
+  (min, a) => (a.mes_ref < min ? a.mes_ref : min),
+  atendimentoMensal[0].mes_ref,
+);
+export const ULTIMO_MES_DADOS = atendimentoMensal.reduce(
+  (max, a) => (a.mes_ref > max ? a.mes_ref : max),
+  atendimentoMensal[0].mes_ref,
+);
 
 // Reconhece um cliente_id (C001..C080) em qualquer lugar do texto,
 // case-insensitive e tolerante a espaço entre a letra e o número

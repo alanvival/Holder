@@ -46,7 +46,22 @@ export function MessageBubble({ mensagem, onConfirmarSugestao, onDispensarSugest
                 </div>
               ))}
             </div>
+            {mensagem.payload.contexto && <div className="ac-answer-contexto">{mensagem.payload.contexto}</div>}
           </>
+        )}
+        {mensagem.payload.kind === 'metric' && (
+          <>
+            <div>{mensagem.payload.text}</div>
+            <div className="ac-answer-highlight">
+              <span className="ac-answer-highlight__value">{mensagem.payload.valor}</span>
+            </div>
+            {mensagem.payload.contexto && <div className="ac-answer-contexto">{mensagem.payload.contexto}</div>}
+          </>
+        )}
+        {mensagem.origem === 'ia' && !isNotFound && (
+          <div className="ac-origem-ia">
+            <SparkleIcon size={10} color="#0156FC" /> Respondido pela IA — fora do catálogo padrão
+          </div>
         )}
         {isNotFound && (
           <>
