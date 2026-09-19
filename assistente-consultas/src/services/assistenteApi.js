@@ -140,6 +140,20 @@ export async function listarSugestoes() {
   return listarTodasSugestoes();
 }
 
+/**
+ * Pede pra IA sugerir um texto de resposta pra essa sugestão (mesmo motor
+ * de tool use do fallback — nunca inventa número, só formata em cima do
+ * dado real). Usado ao expandir "Aprovar" no painel de admin, pra
+ * pré-preencher o campo em vez de deixar em branco pro admin digitar do
+ * zero. Retorna null se a IA não achou nada (ou o backend/chave não estão
+ * configurados) — a tela trata isso deixando o campo em branco, como hoje.
+ */
+export async function sugerirRespostaIa(sugestaoId) {
+  const resultado = await chamarBackend(`/sugestoes/${sugestaoId}/sugerir-resposta`, { method: 'POST' });
+  if (resultado?.ok && resultado.dados?.encontrado) return resultado.dados.resposta;
+  return null;
+}
+
 export async function aprovarSugestaoUsuario(id, opcoes) {
   const resultado = await chamarBackend(`/sugestoes/${id}/aprovar`, {
     method: 'POST',

@@ -103,6 +103,27 @@ def criar_sugestao():
     return jsonify(armazenamento.criar_sugestao(pergunta_original)), 201
 
 
+@app.post("/api/sugestoes/<sugestao_id>/sugerir-resposta")
+def sugerir_resposta(sugestao_id):
+    """
+    Chamado quando o admin clica em "Aprovar" — pede pra Claude sugerir um
+    texto de resposta pra essa sugestão, usando o MESMO fluxo de tool use
+    do fallback (nunca inventa número, só formata em cima do resultado real
+    de consultar_metrica/buscar_registro_cliente). O admin ainda revisa e
+    pode editar antes de confirmar o cadastro — isso aqui só pré-preenche.
+    """
+    sugestao = armazenamento.buscar_sugestao(sugestao_id)
+    if sugestao is None:
+        return jsonify({"erro": "Sugestão não encontrada."}), 404
+
+    sessao_id = request.remote_addr or "anonimo"
+    if limite_excedido(sessao_id):
+        return jsonify({"origem": "ia", "encontrado": False, "erro": "rate_limit"}), 429
+
+    resultado = responder_com_fallback_ia(sugestao["perguntaOriginal"])
+    return jsonify(resultado)
+
+
 @app.post("/api/sugestoes/<sugestao_id>/aprovar")
 def aprovar_sugestao(sugestao_id):
     corpo = request.get_json(silent=True) or {}

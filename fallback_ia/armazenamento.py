@@ -129,6 +129,12 @@ def desativar_pergunta_admin(pergunta_id: str) -> bool:
 
 # --- Sugestões dos usuários ------------------------------------------------
 
+def buscar_sugestao(sugestao_id: str) -> dict | None:
+    with _conexao() as conn:
+        row = conn.execute("SELECT * FROM sugestoes WHERE id = ?", (sugestao_id,)).fetchone()
+    return _sugestao_para_dict(row) if row else None
+
+
 def listar_sugestoes(status: str | None = None):
     with _conexao() as conn:
         if status:

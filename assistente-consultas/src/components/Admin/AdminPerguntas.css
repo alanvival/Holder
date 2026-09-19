@@ -187,3 +187,12 @@
   margin-top: 10px;
   width: 100%;
 }
+
+.admin-ia-status {
+  font-size: 12px;
+  color: var(--gs-blue-accent);
+}
+
+.admin-ia-status--vazio {
+  color: rgba(0, 10, 30, 0.5);
+}
