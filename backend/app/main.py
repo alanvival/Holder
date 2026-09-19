@@ -7,9 +7,11 @@ from app.controllers import (
     analise_controller,
     auth_controller,
     catalogo_controller,
+    cliente_controller,
     dashboard_controller,
     health_controller,
     importacao_controller,
+    metrica_controller,
 )
 from app.core.config import Settings, get_settings
 from app.core.database import Base, criar_engine
@@ -45,4 +47,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(analise_controller.router, prefix="/api")
     app.include_router(dashboard_controller.router, prefix="/api")
     app.include_router(catalogo_controller.router, prefix="/api")
+    app.include_router(cliente_controller.router, prefix="/api")
+    app.include_router(metrica_controller.router, prefix="/api")
     return app

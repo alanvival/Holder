@@ -8,13 +8,17 @@ from app.core.config import Settings
 from app.core.exceptions import TokenInvalidoError
 from app.core.security import GerenciadorToken, HasherSenha
 from app.models import Usuario
+from app.repositories.atendimento_repository import AtendimentoRepository
 from app.repositories.avaliacao_repository import AvaliacaoRepository
+from app.repositories.cliente_repository import ClienteRepository
 from app.repositories.execucao_repository import ExecucaoRepository
 from app.repositories.health_repository import HealthRepository
+from app.repositories.nps_repository import NpsRepository
 from app.repositories.usuario_repository import UsuarioRepository
 from app.services.analise_service import AnaliseService
 from app.services.auth_service import AuthService
 from app.services.catalogo_service import CatalogoService
+from app.services.cliente_service import ClienteService
 from app.services.dashboard_service import DashboardService
 from app.services.fabrica import (
     criar_analise_service,
@@ -23,6 +27,7 @@ from app.services.fabrica import (
 )
 from app.services.health_service import HealthService
 from app.services.importacao_service import ImportacaoService
+from app.services.metrica_service import MetricaService
 from app.services.usuario_service import UsuarioService
 
 
@@ -98,3 +103,17 @@ def get_analise_service(
 
 def get_dashboard_service(db: Session = Depends(get_db)) -> DashboardService:
     return DashboardService(ExecucaoRepository(db), AvaliacaoRepository(db))
+
+
+def get_cliente_service(db: Session = Depends(get_db)) -> ClienteService:
+    return ClienteService(
+        ClienteRepository(db),
+        AtendimentoRepository(db),
+        NpsRepository(db),
+        ExecucaoRepository(db),
+        AvaliacaoRepository(db),
+    )
+
+
+def get_metrica_service(db: Session = Depends(get_db)) -> MetricaService:
+    return MetricaService(AtendimentoRepository(db))

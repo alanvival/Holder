@@ -26,3 +26,15 @@ class AtendimentoRepository:
 
     def ultimo_mes(self) -> date | None:
         return self._session.scalar(select(func.max(AtendimentoMensal.mes_ref)))
+
+    def agregado_mensal(self, coluna: str, agregacao: str) -> list[tuple[date, float]]:
+        """Média ou soma mensal de uma coluna de toda a carteira, ignorando nulos."""
+        campo = getattr(AtendimentoMensal, coluna)
+        funcao = func.avg if agregacao == "media" else func.sum
+        consulta = (
+            select(AtendimentoMensal.mes_ref, funcao(campo))
+            .where(campo.is_not(None))
+            .group_by(AtendimentoMensal.mes_ref)
+            .order_by(AtendimentoMensal.mes_ref)
+        )
+        return [(mes, float(valor)) for mes, valor in self._session.execute(consulta)]

@@ -1,6 +1,7 @@
 """Conversão de models para os schemas de resposta (a "View")."""
 
-from app.models import AcaoRecomendada, AvaliacaoRisco, EvidenciaRisco
+from app.models import AcaoRecomendada, AvaliacaoRisco, Cliente, EvidenciaRisco
+from app.schemas.cliente import ClienteResumo
 from app.schemas.dashboard import ItemFila
 from app.schemas.risco import AcaoDetalhe, AcaoResumo, AvaliacaoRiscoResponse, EvidenciaResponse
 
@@ -57,6 +58,25 @@ def avaliacao_response(avaliacao: AvaliacaoRisco) -> AvaliacaoRiscoResponse:
         posicao_fila=avaliacao.posicao_fila,
         evidencias=[evidencia_response(e) for e in avaliacao.evidencias],
         acao_recomendada=acao_detalhe(avaliacao.acao_recomendada),
+    )
+
+
+def cliente_resumo(cliente: Cliente, avaliacao: AvaliacaoRisco | None) -> ClienteResumo:
+    situacao = cliente.situacao
+    return ClienteResumo(
+        cliente_id=cliente.cliente_id,
+        segmento=cliente.segmento,
+        porte=cliente.porte,
+        plano=cliente.plano,
+        valor_mensal=float(cliente.valor_mensal),
+        sla_contratado_h=cliente.sla_contratado_h,
+        inicio_contrato=cliente.inicio_contrato,
+        situacao=situacao.situacao if situacao else None,
+        mes_cancelamento=situacao.mes_cancelamento if situacao else None,
+        score_risco=float(avaliacao.score_risco) if avaliacao else None,
+        faixa=avaliacao.faixa if avaliacao else None,
+        receita_em_risco=float(avaliacao.receita_em_risco) if avaliacao else None,
+        posicao_fila=avaliacao.posicao_fila if avaliacao else None,
     )
 
 
