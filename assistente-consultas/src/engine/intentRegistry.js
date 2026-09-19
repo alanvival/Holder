@@ -35,6 +35,7 @@ import {
   situacaoClientes,
   clientesComRisco,
 } from '../data/inovaappsDatabase.js';
+import { METRICAS, criarIntentDeMetrica } from './metricas.js';
 
 function ultimoAcompanhamento(entidades) {
   const { pessoa } = entidades;
@@ -431,6 +432,11 @@ export const intentRegistry = [
     criadaEm: '2026-09-19',
     ativa: true,
   },
+
+  // --- Métricas agregadas: cada definição em METRICAS (metricas.js) vira
+  // uma intenção aqui via criarIntentDeMetrica — nenhum resolver bespoke,
+  // todas passam pelo mesmo resolverMetricaGenerico. ---
+  ...METRICAS.map(criarIntentDeMetrica),
 ];
 
 // ---------------------------------------------------------------------

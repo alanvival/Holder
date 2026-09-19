@@ -46,6 +46,16 @@ export function MessageBubble({ mensagem, onConfirmarSugestao, onDispensarSugest
                 </div>
               ))}
             </div>
+            {mensagem.payload.contexto && <div className="ac-answer-contexto">{mensagem.payload.contexto}</div>}
+          </>
+        )}
+        {mensagem.payload.kind === 'metric' && (
+          <>
+            <div>{mensagem.payload.text}</div>
+            <div className="ac-answer-highlight">
+              <span className="ac-answer-highlight__value">{mensagem.payload.valor}</span>
+            </div>
+            {mensagem.payload.contexto && <div className="ac-answer-contexto">{mensagem.payload.contexto}</div>}
           </>
         )}
         {isNotFound && (
