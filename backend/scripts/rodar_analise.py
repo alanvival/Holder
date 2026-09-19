@@ -1,33 +1,31 @@
-"""Importa a planilha para o banco.
+"""Roda a análise de produção sobre os dados já importados.
 
-Uso (a partir de backend/):  python -m scripts.importar_base [caminho.xlsx]
+Uso (a partir de backend/):  python -m scripts.rodar_analise [AAAA-MM]
 """
 
 import sys
+from datetime import date
 
 from sqlalchemy.orm import Session
 
 import app.models  # noqa: F401
 from app.core.config import get_settings
 from app.core.database import Base, criar_engine
-from app.services.fabrica import criar_analise_service, criar_importacao_service
+from app.services.fabrica import criar_analise_service
 
 
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
+    mes = None
+    if argv:
+        ano, mes_num = argv[0].split("-")
+        mes = date(int(ano), int(mes_num), 1)
     settings = get_settings()
-    caminho = argv[0] if argv else settings.caminho_xlsx
     engine = criar_engine(settings.database_url)
     Base.metadata.create_all(engine)
     try:
         with Session(engine, expire_on_commit=False) as session:
-            relatorio = criar_importacao_service(session, settings).importar(caminho)
-            print("Importação concluída:")
-            for tabela, quantidade in relatorio.contagens.items():
-                print(f"  {tabela}: {quantidade}")
-            for aviso in relatorio.avisos:
-                print(f"  AVISO: {aviso}")
-            execucao = criar_analise_service(session, settings).executar()
+            execucao = criar_analise_service(session, settings).executar(mes)
             print(
                 f"Análise concluída: mês {execucao.mes_referencia}, "
                 f"{execucao.qtd_clientes_avaliados} clientes avaliados, "

@@ -52,3 +52,16 @@ def auth_headers(client: TestClient) -> dict[str, str]:
     )
     resposta = client.post("/api/auth/login", json={"usuario": "teste", "senha": "SenhaForte123"})
     return {"Authorization": f"Bearer {resposta.json()['access_token']}"}
+
+
+@pytest.fixture
+def client_com_base(
+    client: TestClient, auth_headers: dict[str, str], caminho_xlsx: Path
+) -> TestClient:
+    resposta = client.post(
+        "/api/importacao",
+        headers=auth_headers,
+        files={"arquivo": ("base.xlsx", caminho_xlsx.read_bytes())},
+    )
+    assert resposta.status_code == 200, resposta.text
+    return client
