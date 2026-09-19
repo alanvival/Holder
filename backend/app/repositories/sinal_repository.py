@@ -14,7 +14,7 @@ class SinalRepository:
     def listar_ativos(self) -> list[ConfiguracaoSinal]:
         consulta = (
             select(ConfiguracaoSinal)
-            .where(ConfiguracaoSinal.ativo.is_(True))
+            .where(ConfiguracaoSinal.ativo)  # "= 1" é portável; "IS 1" é inválido no SQL Server
             .order_by(ConfiguracaoSinal.id)
         )
         return list(self._session.scalars(consulta))

@@ -1,10 +1,14 @@
 from datetime import date
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Date, ForeignKey, Numeric, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
+
+if TYPE_CHECKING:
+    from app.models.cliente import Cliente
 
 
 class AtendimentoMensal(Base):
@@ -25,3 +29,6 @@ class AtendimentoMensal(Base):
     dias_atraso_pagamento: Mapped[int]
     reunioes_previstas: Mapped[int]
     reunioes_realizadas: Mapped[int]
+
+    # Declarar a relação faz o SQLAlchemy inserir o cliente antes (FK) no mesmo flush.
+    cliente: Mapped["Cliente"] = relationship()

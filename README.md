@@ -83,7 +83,25 @@ A URL da API pode ser trocada com a variável `API_URL` (padrão `http://localho
 
 Calibração de pesos, backtest e registro de contatos ficam para a próxima fase.
 
-## Trocar para SQL Server
+## Banco de dados (SQL Server local)
 
-Os models usam apenas tipos genéricos. Instale o extra `pip install -e "backend[sqlserver]"` e
-defina `DATABASE_URL` como no comentário do `backend/.env.example`.
+O backend usa o SQL Server Express local (`localhost:1433`, banco `holder`, autenticação do
+Windows), configurado em `backend/.env` a partir do `backend/.env.example`.
+
+1. Habilite TCP/IP na instância `SQLEXPRESS` com porta fixa 1433 (SQL Server Configuration
+   Manager → Protocolos para SQLEXPRESS → TCP/IP; em IPAll, Porta TCP = 1433) e reinicie o serviço.
+2. Crie o banco `holder` (o `python ingestao.py` da raiz já cria) e instale o driver Python:
+   `.venv/Scripts/python -m pip install -e "backend[sqlserver]"`.
+3. `cd backend && ../.venv/Scripts/python -m scripts.importar_base` cria as tabelas do backend
+   (`clientes`, `atendimentos_mensais`, `usuarios`, `avaliacoes_risco`, …) ao lado das tabelas
+   brutas do `ingestao.py` (`dClientes`, `fAtendimento`, …), que não são alteradas.
+
+Para rodar sem servidor, use `DATABASE_URL=sqlite:///./holder.db`.
+
+Os testes usam SQLite em memória por padrão. Para validar contra o SQL Server, crie um banco
+descartável `holder_testes` e rode:
+
+```bash
+TEST_DATABASE_URL='mssql+pyodbc://@localhost:1433/holder_testes?driver=ODBC+Driver+18+for+SQL+Server&trusted_connection=yes&TrustServerCertificate=yes' ../.venv/Scripts/python -m pytest
+```
+(as tabelas desse banco são apagadas e recriadas a cada teste).

@@ -1,3 +1,4 @@
+import os
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -7,21 +8,36 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings
+from app.core.database import Base, criar_engine
 from app.main import create_app
+
+# Padrão: SQLite em memória. Para validar a portabilidade, rode a suíte contra um banco
+# descartável de SQL Server, ex.: TEST_DATABASE_URL=mssql+pyodbc://@localhost:1433/holder_testes?...
+URL_BANCO_TESTE = os.getenv("TEST_DATABASE_URL", "sqlite://")
+
+
+def _limpar_banco(url: str) -> None:
+    engine = criar_engine(url)
+    Base.metadata.drop_all(engine)
+    engine.dispose()
 
 
 @pytest.fixture
 def settings() -> Settings:
     return Settings(
         _env_file=None,
-        database_url="sqlite://",
+        database_url=URL_BANCO_TESTE,
         jwt_secret="segredo-de-teste-com-mais-de-32-bytes-ok",
     )
 
 
 @pytest.fixture
-def app(settings: Settings) -> FastAPI:
-    return create_app(settings)
+def app(settings: Settings) -> Iterator[FastAPI]:
+    if not settings.database_url.startswith("sqlite"):
+        _limpar_banco(settings.database_url)  # banco persistente: começa cada teste do zero
+    aplicacao = create_app(settings)
+    yield aplicacao
+    aplicacao.state.engine.dispose()
 
 
 @pytest.fixture

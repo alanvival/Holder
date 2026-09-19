@@ -1,11 +1,15 @@
 from datetime import date
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, Date, ForeignKey, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 from app.core.enums import ClassificacaoNPS
 from app.models._tipos import coluna_enum
+
+if TYPE_CHECKING:
+    from app.models.cliente import Cliente
 
 
 class PesquisaNps(Base):
@@ -18,3 +22,6 @@ class PesquisaNps(Base):
     respondeu: Mapped[bool] = mapped_column(Boolean)
     nota_nps: Mapped[int | None]
     classificacao_nps: Mapped[ClassificacaoNPS] = mapped_column(coluna_enum(ClassificacaoNPS))
+
+    # Declarar a relação faz o SQLAlchemy inserir o cliente antes (FK) no mesmo flush.
+    cliente: Mapped["Cliente"] = relationship()
