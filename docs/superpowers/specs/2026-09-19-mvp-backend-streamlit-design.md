@@ -114,7 +114,7 @@ Convenções: tabelas snake_case no plural; `Unicode` para texto livre; `Numeric
 - **`situacao_clientes`**: `cliente_id` PK/FK, `situacao`, `mes_cancelamento` Date NULL.
 - **`atendimentos_mensais`**: `id` PK, `cliente_id` FK, `mes_ref` Date (índice), `chamados_abertos`, `chamados_criticos`, `chamados_reabertos`, `chamados_dentro_sla` int, `pct_sla_cumprido` Numeric(5,1) NULL, `tempo_medio_resolucao_h` Numeric(6,1), `reclamacoes_formais` int, `uso_plataforma_pct` Numeric(5,1), `dias_atraso_pagamento` int, `reunioes_previstas` int, `reunioes_realizadas` int. UNIQUE (`cliente_id`, `mes_ref`).
 - **`pesquisas_nps`**: `id`, `cliente_id` FK, `mes_ref` Date, `respondeu` bool, `nota_nps` int NULL, `classificacao_nps`. UNIQUE (`cliente_id`, `mes_ref`).
-- **`configuracoes_sinal`**: conforme plano §5.3 (`codigo` UNIQUE, `dimensao`, `variavel`, `tipo_regra`, `sentido_piora`, `limiar` Numeric(10,4), `persistencia_min_meses`, `peso` Numeric(6,4), `lift`/`cobertura_cancelados`/`taxa_falso_alarme`/`antecedencia_media_meses` NULL, `template_evidencia` Unicode(300), `ativo`, `atualizado_em`).
+- **`configuracoes_sinal`**: conforme plano §5.3 (`codigo` UNIQUE, `dimensao`, `variavel`, `tipo_regra`, `sentido_piora`, `limiar` Numeric(10,4), `metrica` String(20) default `media_3m` — **coluna nova**: qual indicador a regra NIVEL compara (`media_3m` ou `soma_3m`), `persistencia_min_meses`, `peso` Numeric(6,4), `lift`/`cobertura_cancelados`/`taxa_falso_alarme`/`antecedencia_media_meses` NULL, `template_evidencia` Unicode(300), `ativo`, `atualizado_em`).
 - **`acoes_recomendadas`**: `id`, `codigo` UNIQUE, `titulo`, `descricao` UnicodeText, `dimensao_gatilho` NULL, `responsavel_sugerido`, `prazo_dias`, `ordem`.
 - **`execucoes_analise`**: `id`, `tipo`, `mes_referencia` Date, `versao_modelo` String(20), `parametros_json` UnicodeText, `executado_por_usuario_id` FK NULL, `executado_em`, `qtd_clientes_avaliados`.
 - **`avaliacoes_risco`**: `id`, `execucao_id` FK, `cliente_id` FK, `mes_referencia`, `score_risco` Numeric(5,4), `faixa`, `qtd_dimensoes_afetadas`, `receita_em_risco` Numeric(12,2), `posicao_fila` NULL, `acao_recomendada_id` FK NULL. UNIQUE (`execucao_id`, `cliente_id`).
@@ -150,7 +150,7 @@ Todas as funções abaixo são puras.
   - `media_3m`: média de M−2..M ignorando NULL
   - `soma_3m`: soma de M−2..M ignorando NULL
   - `linha_base_6m`: média de M−8..M−3 ignorando NULL (NULL se não houver dados)
-  - `variacao_pct` = (media_3m − linha_base) / max(|linha_base|, 1e-6); NULL se linha_base NULL
+  - `variacao_pct` = (media_3m − linha_base) / max(|linha_base|, 0,5); NULL se linha_base NULL. O denominador mínimo 0,5 (em vez de ε) evita percentuais explosivos quando a base de contagens é ~0
   - `meses_consecutivos_piora`: meses seguidos terminando em M em que `valor_mes` está estritamente pior que a `linha_base_6m` **daquele mês** no sentido de piora da variável (mês com valor ou base NULL interrompe a contagem)
 
 ### 6.2 Sinais (`sinais.py`)
@@ -212,7 +212,7 @@ Seed das 6 ações com título, descrição, responsável e prazo (7 dias para C
 3. Numa transação grava `execucoes_analise` (tipo PRODUCAO, `versao_modelo="mvp-regras-1"`, parâmetros em JSON), `avaliacoes_risco`, `evidencias_risco`.
 4. Loga tempo e quantidade de clientes.
 
-Critério de sanidade com a base real: a fila não pode sair vazia. Se sair, ajustar pesos seed (dado, não código) e registrar no README.
+Critério de sanidade com a base real: a fila não pode sair vazia. Validado em protótipo com pesos 0,10: em 2026-06 saem 3 ATENCAO, 15 MONITORAR, 40 SAUDAVEL (fila com 3 clientes: C080, C067, C002).
 
 ## 7. Autenticação
 
