@@ -246,3 +246,43 @@ export const intentRegistry = [
     ativa: true,
   },
 ];
+
+// ---------------------------------------------------------------------
+// Gestão de intenções (item 2 do prompt de continuação): o admin cadastra
+// novas perguntas-chave em runtime. Intenções nascidas aqui não têm um
+// resolver programado — respondem com o texto-modelo definido pelo admin,
+// sem extração dinâmica de entidades. É uma simplificação deliberada: dar
+// inteligência real a uma intenção nova (like ultimoAcompanhamento) exige
+// código, então isso continua sendo trabalho de dev; o que o admin controla
+// aqui é o vocabulário (frases de exemplo) e o texto de resposta.
+
+let proximoIdPersonalizado = 1;
+
+function novoIdPersonalizado() {
+  return `intent-admin-${proximoIdPersonalizado++}`;
+}
+
+export function registrarIntentPersonalizada({ rotulo, exemplos, respostaTexto }) {
+  const intent = {
+    id: novoIdPersonalizado(),
+    rotulo,
+    exemplos,
+    parametros: [],
+    requerEntidade: () => true,
+    resolver: () => ({ kind: 'text', text: respostaTexto }),
+    criadaEm: new Date().toISOString(),
+    ativa: true,
+    origem: 'admin',
+  };
+  intentRegistry.push(intent);
+  return intent;
+}
+
+export function listarIntents() {
+  return intentRegistry.map((intent) => ({ ...intent, origem: intent.origem ?? 'sistema' }));
+}
+
+export function desativarIntent(id) {
+  const intent = intentRegistry.find((i) => i.id === id);
+  if (intent) intent.ativa = false;
+}

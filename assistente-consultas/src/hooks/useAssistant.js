@@ -1,6 +1,6 @@
-import { useCallback, useRef, useState } from 'react';
-import { interpretarPergunta } from '../engine/matchIntent.js';
-import { registrarSugestao } from '../engine/suggestionsStore.js';
+import { useCallback, useState } from 'react';
+import { consultarPergunta, registrarSugestaoUsuario } from '../services/assistenteApi.js';
+import { useTenant } from '../context/TenantContext.jsx';
 
 // Histórico de conversa — estrutura pronta para persistir por usuário depois:
 // Mensagem = {
@@ -26,11 +26,11 @@ const SAUDACAO_INICIAL = {
 };
 
 export function useAssistant() {
+  const tenant = useTenant();
   const [aberto, setAberto] = useState(false);
   const [bolhaSaudacaoVisivel, setBolhaSaudacaoVisivel] = useState(true);
   const [mensagens, setMensagens] = useState([SAUDACAO_INICIAL]);
   const [status, setStatus] = useState('idle'); // idle | loading | erro
-  const pendingTimer = useRef(null);
 
   const abrir = useCallback(() => {
     setAberto(true);
@@ -40,7 +40,7 @@ export function useAssistant() {
   const fechar = useCallback(() => setAberto(false), []);
   const fecharBolha = useCallback(() => setBolhaSaudacaoVisivel(false), []);
 
-  const enviarPergunta = useCallback((textoBruto) => {
+  const enviarPergunta = useCallback(async (textoBruto) => {
     const texto = textoBruto.trim();
     if (!texto || status === 'loading') return;
 
@@ -53,35 +53,33 @@ export function useAssistant() {
     setMensagens((atual) => [...atual, mensagemUsuario]);
     setStatus('loading');
 
-    // Simula latência real de consulta — mantém o estado "Consultando os
-    // registros..." visível o suficiente para não parecer instantâneo/falso.
-    pendingTimer.current = setTimeout(() => {
-      try {
-        const { payload } = interpretarPergunta(texto);
-        const mensagemResposta = {
-          id: newId(),
-          autor: 'assistente',
-          payload,
-          ...(payload.kind === 'not_found'
-            ? { perguntaOrigem: texto, sugestaoStatus: 'pendente' }
-            : {}),
-          criadaEm: new Date().toISOString(),
-        };
-        setMensagens((atual) => [...atual, mensagemResposta]);
-        setStatus('idle');
-      } catch {
-        setStatus('erro');
-      }
-    }, 900);
-  }, [status]);
+    try {
+      const { payload } = await consultarPergunta(texto, tenant);
+      const mensagemResposta = {
+        id: newId(),
+        autor: 'assistente',
+        payload,
+        ...(payload.kind === 'not_found'
+          ? { perguntaOrigem: texto, sugestaoStatus: 'pendente' }
+          : {}),
+        criadaEm: new Date().toISOString(),
+      };
+      setMensagens((atual) => [...atual, mensagemResposta]);
+      setStatus('idle');
+    } catch {
+      setStatus('erro');
+    }
+  }, [status, tenant]);
 
-  const confirmarSugestao = useCallback((mensagemId) => {
-    setMensagens((atual) => {
-      const alvo = atual.find((m) => m.id === mensagemId);
-      if (alvo?.perguntaOrigem) registrarSugestao(alvo.perguntaOrigem);
-      return atual.map((m) => (m.id === mensagemId ? { ...m, sugestaoStatus: 'enviada' } : m));
-    });
-  }, []);
+  const confirmarSugestao = useCallback(async (mensagemId, perguntaOrigem) => {
+    // Efeito colateral (chamada de serviço) fica FORA do updater funcional
+    // de setState — updaters podem rodar mais de uma vez (StrictMode em
+    // dev, ou React reprocessando) e não podem ter side effects impuros.
+    if (perguntaOrigem) await registrarSugestaoUsuario(perguntaOrigem, tenant);
+    setMensagens((atual) =>
+      atual.map((m) => (m.id === mensagemId ? { ...m, sugestaoStatus: 'enviada' } : m)),
+    );
+  }, [tenant]);
 
   const dispensarSugestao = useCallback((mensagemId) => {
     setMensagens((atual) =>

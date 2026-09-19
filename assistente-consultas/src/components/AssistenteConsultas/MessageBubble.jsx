@@ -63,7 +63,7 @@ export function MessageBubble({ mensagem, onConfirmarSugestao, onDispensarSugest
                   <button
                     type="button"
                     className="ac-btn ac-btn--primary"
-                    onClick={() => onConfirmarSugestao(mensagem.id)}
+                    onClick={() => onConfirmarSugestao(mensagem.id, mensagem.perguntaOrigem)}
                   >
                     Sim, sugerir
                   </button>

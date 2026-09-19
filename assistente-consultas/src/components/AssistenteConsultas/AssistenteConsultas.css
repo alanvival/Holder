@@ -91,8 +91,10 @@
 
 .ac-panel {
   width: var(--ac-panel-width);
-  height: var(--ac-panel-height);
-  max-height: calc(100vh - 48px);
+  /* Nunca deixa o painel crescer para além do topo da viewport: desconta a
+     distância do FAB até o rodapé (--ac-fab-size + 20px de respiro) + a
+     margem do .ac-root (24px) + uma folga de 24px no topo. */
+  height: min(var(--ac-panel-height), calc(100vh - var(--ac-fab-size) - 68px));
   background: var(--gs-white);
   border-radius: 22px;
   box-shadow: var(--ac-shadow-panel);
