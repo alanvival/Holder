@@ -35,3 +35,11 @@ def test_scripts_importar_e_rodar_analise(banco_arquivo, caminho_xlsx, capsys):
     assert execucoes == 2
     saida = capsys.readouterr().out
     assert "Análise concluída" in saida
+
+
+def test_rodar_analise_mes_malformado_retorna_erro_de_uso(banco_arquivo, capsys):
+    assert rodar_analise.main(["2026/06"]) == 2
+
+    capturado = capsys.readouterr()
+    assert capturado.out == ""
+    assert "Uso: python -m scripts.rodar_analise [AAAA-MM]" in capturado.err

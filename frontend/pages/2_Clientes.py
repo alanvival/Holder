@@ -92,7 +92,7 @@ st.dataframe(
                 "Faixa": ROTULO_FAIXA.get(c["faixa"] or "", "—"),
                 "Score": f"{c['score_risco']:.2f}" if c["score_risco"] is not None else "—",
                 "Receita em risco": brl(c["receita_em_risco"]),
-                "Posição na fila": c["posicao_fila"] if c["posicao_fila"] is not None else "—",
+                "Posição na fila": str(c["posicao_fila"]) if c["posicao_fila"] is not None else "—",
             }
             for c in resultado["itens"]
         ]

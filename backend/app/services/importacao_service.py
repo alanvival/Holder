@@ -9,7 +9,7 @@ import io
 import unicodedata
 from dataclasses import dataclass, field
 from datetime import date, datetime
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from enum import Enum
 from pathlib import Path
 from typing import Any
@@ -91,6 +91,12 @@ def _mes(valor: Any, campo: str) -> date | None:
         raise ImportacaoInvalidaError(f"Mês inválido '{valor}' em {campo}") from erro
 
 
+def _mes_obrigatorio(valor: Any, campo: str) -> date:
+    if _nulo(valor):
+        raise ImportacaoInvalidaError(f"Valor vazio em {campo}")
+    return _mes(valor, campo)  # type: ignore[return-value]
+
+
 def _data(valor: Any, campo: str) -> date:
     if isinstance(valor, datetime):
         return valor.date()
@@ -100,14 +106,31 @@ def _data(valor: Any, campo: str) -> date:
         raise ImportacaoInvalidaError(f"Data inválida '{valor}' em {campo}") from erro
 
 
-def _decimal(valor: Any) -> Decimal | None:
-    return None if _nulo(valor) else Decimal(str(valor))
+def _decimal(valor: Any, campo: str) -> Decimal | None:
+    if _nulo(valor):
+        return None
+    try:
+        return Decimal(str(valor))
+    except (InvalidOperation, ValueError) as erro:
+        raise ImportacaoInvalidaError(f"Valor inválido '{valor}' em {campo}") from erro
+
+
+def _decimal_obrigatorio(valor: Any, campo: str) -> Decimal:
+    if _nulo(valor):
+        raise ImportacaoInvalidaError(f"Valor vazio em {campo}")
+    return _decimal(valor, campo)  # type: ignore[return-value]
 
 
 def _inteiro(valor: Any, campo: str) -> int:
     if _nulo(valor):
         raise ImportacaoInvalidaError(f"Valor vazio em {campo}")
-    return int(valor)
+    try:
+        numero = float(valor)
+    except (TypeError, ValueError) as erro:
+        raise ImportacaoInvalidaError(f"Valor inválido '{valor}' em {campo}") from erro
+    if not numero.is_integer():
+        raise ImportacaoInvalidaError(f"Valor inválido '{valor}' em {campo}")
+    return int(numero)
 
 
 class ImportacaoService:
@@ -162,7 +185,7 @@ class ImportacaoService:
             segmento=str(linha["segmento"]).strip(),
             porte=_enum(linha["porte"], Porte, "clientes.porte"),
             plano=_enum(linha["plano"], Plano, "clientes.plano"),
-            valor_mensal=_decimal(linha["valor_mensal"]),
+            valor_mensal=_decimal_obrigatorio(linha["valor_mensal"], "clientes.valor_mensal"),
             sla_contratado_h=_inteiro(linha["sla_contratado_h"], "clientes.sla_contratado_h"),
             inicio_contrato=_data(linha["inicio_contrato"], "clientes.inicio_contrato"),
         )
@@ -192,10 +215,16 @@ class ImportacaoService:
         }
         return AtendimentoMensal(
             cliente_id=str(linha["cliente_id"]).strip(),
-            mes_ref=_mes(linha["mes_ref"], "atendimento_mensal.mes_ref"),
-            pct_sla_cumprido=_decimal(linha["pct_sla_cumprido"]),
-            tempo_medio_resolucao_h=_decimal(linha["tempo_medio_resolucao_h"]),
-            uso_plataforma_pct=_decimal(linha["uso_plataforma_pct"]),
+            mes_ref=_mes_obrigatorio(linha["mes_ref"], "atendimento_mensal.mes_ref"),
+            pct_sla_cumprido=_decimal(
+                linha["pct_sla_cumprido"], "atendimento_mensal.pct_sla_cumprido"
+            ),
+            tempo_medio_resolucao_h=_decimal_obrigatorio(
+                linha["tempo_medio_resolucao_h"], "atendimento_mensal.tempo_medio_resolucao_h"
+            ),
+            uso_plataforma_pct=_decimal_obrigatorio(
+                linha["uso_plataforma_pct"], "atendimento_mensal.uso_plataforma_pct"
+            ),
             **inteiros,
         )
 
@@ -203,9 +232,11 @@ class ImportacaoService:
     def _pesquisa(linha: dict[str, Any]) -> PesquisaNps:
         return PesquisaNps(
             cliente_id=str(linha["cliente_id"]).strip(),
-            mes_ref=_mes(linha["mes_ref"], "pesquisas_nps.mes_ref"),
+            mes_ref=_mes_obrigatorio(linha["mes_ref"], "pesquisas_nps.mes_ref"),
             respondeu=bool(_inteiro(linha["respondeu"], "pesquisas_nps.respondeu")),
-            nota_nps=None if _nulo(linha["nota_nps"]) else int(linha["nota_nps"]),
+            nota_nps=None
+            if _nulo(linha["nota_nps"])
+            else _inteiro(linha["nota_nps"], "pesquisas_nps.nota_nps"),
             classificacao_nps=_enum(
                 linha["classificacao_nps"], ClassificacaoNPS, "pesquisas_nps.classificacao_nps"
             ),
@@ -234,6 +265,12 @@ class ImportacaoService:
                 raise ImportacaoInvalidaError(
                     f"Aba '{aba}' cita clientes inexistentes: {', '.join(sorted(desconhecidos))}"
                 )
+
+        sem_situacao = conhecidos - {s.cliente_id for s in situacoes}
+        if sem_situacao:
+            raise ImportacaoInvalidaError(
+                "Aba 'situacao_clientes' sem situação para: " + ", ".join(sorted(sem_situacao))
+            )
 
     @staticmethod
     def _avisos(contagens: dict[str, int], cancelados: int) -> list[str]:

@@ -139,6 +139,81 @@ def test_enum_invalido_gera_erro_claro(service, caminho_xlsx):
         service.importar(_xlsx(abas))
 
 
+def test_texto_em_coluna_inteira_gera_422_e_preserva_dados(service, db_session, caminho_xlsx):
+    service.importar(caminho_xlsx)
+    abas = _abas_reais(caminho_xlsx)
+    abas["atendimento_mensal"]["chamados_abertos"] = abas["atendimento_mensal"][
+        "chamados_abertos"
+    ].astype(object)
+    abas["atendimento_mensal"].loc[0, "chamados_abertos"] = "abc"
+
+    with pytest.raises(ImportacaoInvalidaError, match="chamados_abertos"):
+        service.importar(_xlsx(abas))
+
+    assert _contar(db_session, Cliente) == 80
+
+
+def test_texto_em_coluna_decimal_gera_422_e_preserva_dados(service, db_session, caminho_xlsx):
+    service.importar(caminho_xlsx)
+    abas = _abas_reais(caminho_xlsx)
+    abas["atendimento_mensal"]["tempo_medio_resolucao_h"] = abas["atendimento_mensal"][
+        "tempo_medio_resolucao_h"
+    ].astype(object)
+    abas["atendimento_mensal"].loc[0, "tempo_medio_resolucao_h"] = "n/d"
+
+    with pytest.raises(ImportacaoInvalidaError, match="tempo_medio_resolucao_h"):
+        service.importar(_xlsx(abas))
+
+    assert _contar(db_session, Cliente) == 80
+
+
+def test_valor_mensal_vazio_gera_422_e_preserva_dados(service, db_session, caminho_xlsx):
+    service.importar(caminho_xlsx)
+    abas = _abas_reais(caminho_xlsx)
+    abas["clientes"].loc[0, "valor_mensal"] = None
+
+    with pytest.raises(ImportacaoInvalidaError, match="valor_mensal"):
+        service.importar(_xlsx(abas))
+
+    assert _contar(db_session, Cliente) == 80
+
+
+def test_mes_ref_vazio_gera_422_e_preserva_dados(service, db_session, caminho_xlsx):
+    service.importar(caminho_xlsx)
+    abas = _abas_reais(caminho_xlsx)
+    abas["atendimento_mensal"].loc[0, "mes_ref"] = None
+
+    with pytest.raises(ImportacaoInvalidaError, match="mes_ref"):
+        service.importar(_xlsx(abas))
+
+    assert _contar(db_session, Cliente) == 80
+
+
+def test_inteiro_nao_integral_gera_422_e_preserva_dados(service, db_session, caminho_xlsx):
+    service.importar(caminho_xlsx)
+    abas = _abas_reais(caminho_xlsx)
+    abas["atendimento_mensal"]["chamados_abertos"] = abas["atendimento_mensal"][
+        "chamados_abertos"
+    ].astype(float)
+    abas["atendimento_mensal"].loc[0, "chamados_abertos"] = 3.7
+
+    with pytest.raises(ImportacaoInvalidaError, match="chamados_abertos"):
+        service.importar(_xlsx(abas))
+
+    assert _contar(db_session, Cliente) == 80
+
+
+def test_situacao_faltando_para_cliente_gera_erro_claro(service, caminho_xlsx):
+    abas = _abas_reais(caminho_xlsx)
+    primeiro_id = abas["clientes"].loc[0, "cliente_id"]
+    abas["situacao_clientes"] = abas["situacao_clientes"][
+        abas["situacao_clientes"]["cliente_id"] != primeiro_id
+    ]
+
+    with pytest.raises(ImportacaoInvalidaError, match=f"situação.*{primeiro_id}"):
+        service.importar(_xlsx(abas))
+
+
 def test_linha_duplicada_gera_erro_claro(service, caminho_xlsx):
     abas = _abas_reais(caminho_xlsx)
     abas["atendimento_mensal"] = pd.concat(

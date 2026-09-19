@@ -45,8 +45,8 @@ A URL da API pode ser trocada com a variável `API_URL` (padrão `http://localho
 ## Testes e qualidade
 
 ```bash
-cd backend && ../.venv/Scripts/python -m pytest && ../.venv/Scripts/python -m ruff check .
-cd frontend && ../.venv/Scripts/python -m pytest && ../.venv/Scripts/python -m ruff check .
+(cd backend && ../.venv/Scripts/python -m pytest && ../.venv/Scripts/python -m ruff check .)
+(cd frontend && ../.venv/Scripts/python -m pytest && ../.venv/Scripts/python -m ruff check .)
 ```
 
 ## Endpoints (prefixo `/api`)
@@ -74,6 +74,8 @@ cd frontend && ../.venv/Scripts/python -m pytest && ../.venv/Scripts/python -m r
 1. **Indicadores** por cliente no mês de referência (só dados até aquele mês): média de 3 meses,
    linha de base dos 6 meses anteriores, variação e meses seguidos de piora.
 2. **10 sinais** (seed em `configuracoes_sinal`) com limiares do planejamento e peso igual (0,10).
+   `PERSISTENCIA_MIN_MESES` só é aplicado nesse seed inicial; depois disso, o valor de cada sinal
+   vive na tabela `configuracoes_sinal`.
 3. **Score** = Σ peso × intensidade; faixas CRÍTICO ≥ 0,55, ATENÇÃO ≥ 0,30, MONITORAR ≥ 0,15.
    Com menos de 2 dimensões afetadas, a faixa máxima é MONITORAR (anti-alarme-falso).
 4. **Ação recomendada** pela dimensão dominante (ou comitê com 3+ dimensões).

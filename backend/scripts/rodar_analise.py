@@ -18,8 +18,12 @@ def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
     mes = None
     if argv:
-        ano, mes_num = argv[0].split("-")
-        mes = date(int(ano), int(mes_num), 1)
+        try:
+            ano, mes_num = argv[0].split("-")
+            mes = date(int(ano), int(mes_num), 1)
+        except (ValueError, TypeError):
+            print("Uso: python -m scripts.rodar_analise [AAAA-MM]", file=sys.stderr)
+            return 2
     settings = get_settings()
     engine = criar_engine(settings.database_url)
     Base.metadata.create_all(engine)

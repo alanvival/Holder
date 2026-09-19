@@ -1,6 +1,6 @@
 from datetime import date
 
-from sqlalchemy import func, select
+from sqlalchemy import Float, cast, func, select
 from sqlalchemy.orm import Session
 
 from app.models import AtendimentoMensal
@@ -28,11 +28,15 @@ class AtendimentoRepository:
         return self._session.scalar(select(func.max(AtendimentoMensal.mes_ref)))
 
     def agregado_mensal(self, coluna: str, agregacao: str) -> list[tuple[date, float]]:
-        """Média ou soma mensal de uma coluna de toda a carteira, ignorando nulos."""
+        """Média ou soma mensal de uma coluna de toda a carteira, ignorando nulos.
+
+        A média usa `cast(campo, Float)` para que colunas inteiras não sejam
+        truncadas por uma AVG inteira (comportamento do SQL Server).
+        """
         campo = getattr(AtendimentoMensal, coluna)
-        funcao = func.avg if agregacao == "media" else func.sum
+        valor_agregado = func.avg(cast(campo, Float)) if agregacao == "media" else func.sum(campo)
         consulta = (
-            select(AtendimentoMensal.mes_ref, funcao(campo))
+            select(AtendimentoMensal.mes_ref, valor_agregado)
             .where(campo.is_not(None))
             .group_by(AtendimentoMensal.mes_ref)
             .order_by(AtendimentoMensal.mes_ref)

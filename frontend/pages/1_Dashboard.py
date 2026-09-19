@@ -39,7 +39,8 @@ col1, col2, col3, col4 = st.columns(4)
 col1.metric("Clientes ativos", resumo["clientes_ativos"])
 col2.metric("Receita ativa (mês)", brl(resumo["receita_ativa"]))
 col3.metric("Receita em risco (mês)", brl(resumo["receita_em_risco"]))
-col4.metric("Na fila de atenção", resumo["qtd_na_fila"])
+qtd_criticos_atencao = resumo["por_faixa"].get("CRITICO", 0) + resumo["por_faixa"].get("ATENCAO", 0)
+col4.metric("Críticos + Atenção", qtd_criticos_atencao)
 
 st.subheader("Fila priorizada")
 if not fila:

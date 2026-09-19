@@ -144,6 +144,8 @@ def test_dashboard_mostra_kpis_e_fila(api_falsa):
     rotulos = [m.label for m in at.metric]
     assert "Receita em risco (mês)" in rotulos
     assert len(at.dataframe) >= 1
+    criticos_atencao = next(m for m in at.metric if m.label == "Críticos + Atenção")
+    assert criticos_atencao.value == "1"
 
 
 def test_dashboard_sem_analise_orienta_importacao(api_falsa):
@@ -244,6 +246,24 @@ def test_clientes_cancelado_sem_avaliacao_nao_gera_nan(api_falsa):
     tabela = at.dataframe[0].value
     assert tabela.loc[0, "Score"] == "—"
     assert tabela.loc[0, "Posição na fila"] == "—"
+
+
+def test_clientes_lista_com_posicao_mista_nao_quebra_a_tabela(api_falsa):
+    api_falsa.responder(
+        "GET",
+        "/clientes",
+        200,
+        {"itens": [CLIENTE_RESUMO, CLIENTE_CANCELADO], "total": 2, "pagina": 1, "tamanho": 20},
+    )
+    api_falsa.responder("GET", "/clientes/C080", 200, DETALHE)
+    api_falsa.responder("GET", "/clientes/C080/historico", 200, HISTORICO)
+
+    at = _logado(CLIENTES).run()
+
+    assert not at.exception
+    tabela = at.dataframe[0].value
+    assert tabela.loc[0, "Posição na fila"] == "1"
+    assert tabela.loc[1, "Posição na fila"] == "—"
 
 
 def test_analise_mensal(api_falsa):
