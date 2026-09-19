@@ -85,10 +85,14 @@ TOOLS = [
         "name": "clientes_em_risco",
         "description": (
             "Lista clientes ativos classificados num nível de risco de "
-            "cancelamento (Alto, Médio ou Baixo), calculado comparando o "
-            "mês mais recente de cada cliente com a própria média "
-            "histórica dele. Use pra perguntas tipo 'quais clientes estão "
-            "em risco', 'quem eu devo ligar primeiro'."
+            "cancelamento (Alto, Médio ou Baixo) por uma pontuação "
+            "ponderada estilo credit score (soma de pesos dos sinais que "
+            "dispararam, calibrados pelo quanto cada sinal realmente "
+            "diferencia clientes ativos de cancelados na base — não uma "
+            "contagem simples), comparando o mês mais recente de cada "
+            "cliente com a própria média histórica dele. Use pra "
+            "perguntas tipo 'quais clientes estão em risco', 'quem eu "
+            "devo ligar primeiro'."
         ),
         "input_schema": {
             "type": "object",

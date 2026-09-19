@@ -121,10 +121,31 @@ function media(valores) {
   return validos.reduce((soma, v) => soma + v, 0) / validos.length;
 }
 
+// Pontuação ponderada estilo credit score (soma de pesos dos sinais que
+// dispararam, não contagem simples) — pesos calibrados por
+// fallback_ia/metricas.py::analisar_fatores_churn() (o quanto cada sinal
+// realmente diferencia clientes ativos de cancelados na base real, não um
+// chute). Mesma fonte de dados dos dois lados (a planilha do desafio), por
+// isso os números batem entre o catálogo determinístico (aqui) e a tool de
+// IA (Python) — mantidos em sincronia manualmente já que os dois motores
+// já são portados um do outro no resto do projeto.
+const PESOS_SINAIS_RISCO = {
+  'Mais chamados críticos': 83,
+  'Reclamação formal recente': 70,
+  'Atraso de pagamento crescente': 48,
+  'NPS detrator': 24,
+  'Mais chamados reabertos': 22,
+  'Queda no SLA cumprido': 14,
+  'Queda no uso da plataforma': 10,
+  'Reunião prevista não realizada': 12,
+};
+const PONTUACAO_MAXIMA_RISCO = Object.values(PESOS_SINAIS_RISCO).reduce((a, b) => a + b, 0);
+
 /**
- * Calcula quantos dos sinais de risco monitorados pioraram no mês mais
- * recente do cliente em relação à média dos meses anteriores dele mesmo.
- * Retorna null se o cliente não tem histórico suficiente (menos de 2 meses).
+ * Calcula uma pontuação de risco ponderada (estilo credit score) a partir
+ * dos sinais que pioraram no mês mais recente do cliente em relação à
+ * média dos meses anteriores dele mesmo. Retorna null se o cliente não tem
+ * histórico suficiente (menos de 2 meses).
  */
 export function calcularRisco(clienteId) {
   if (SINAIS_RISCO_CACHE.has(clienteId)) return SINAIS_RISCO_CACHE.get(clienteId);
@@ -169,11 +190,14 @@ export function calcularRisco(clienteId) {
     sinais.push('NPS detrator');
   }
 
-  let nivel = 'Baixo';
-  if (sinais.length >= 4) nivel = 'Alto';
-  else if (sinais.length >= 2) nivel = 'Médio';
+  const pontuacaoRisco = sinais.reduce((soma, s) => soma + PESOS_SINAIS_RISCO[s], 0);
+  const percentual = (pontuacaoRisco / PONTUACAO_MAXIMA_RISCO) * 100;
 
-  const resultado = { nivel, sinais, mesRef: atual.mes_ref };
+  let nivel = 'Baixo';
+  if (percentual >= 50) nivel = 'Alto';
+  else if (percentual >= 20) nivel = 'Médio';
+
+  const resultado = { nivel, pontuacaoRisco, pontuacaoMaxima: PONTUACAO_MAXIMA_RISCO, sinais, mesRef: atual.mes_ref };
   SINAIS_RISCO_CACHE.set(clienteId, resultado);
   return resultado;
 }
@@ -185,5 +209,6 @@ export function clientesAtivos() {
 export function clientesComRisco(nivel) {
   return clientesAtivos()
     .map((id) => ({ clienteId: id, risco: calcularRisco(id) }))
-    .filter((c) => c.risco && c.risco.nivel === nivel);
+    .filter((c) => c.risco && c.risco.nivel === nivel)
+    .sort((a, b) => b.risco.pontuacaoRisco - a.risco.pontuacaoRisco);
 }

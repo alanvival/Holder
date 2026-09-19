@@ -356,7 +356,7 @@ def comparar_metrica_por_categoria(metrica_id: str, categoria: str, filtros: dic
 # parte, calculado como média.
 _METRICAS_PARA_ANALISE_CHURN = [
     "sla_cumprido", "uso_plataforma", "media_reclamacoes", "atraso_pagamento",
-    "tempo_medio_resolucao", "taxa_reabertura", "ticket_medio",
+    "tempo_medio_resolucao", "taxa_reabertura", "ticket_medio", "reunioes_realizadas",
 ]
 
 
@@ -443,7 +443,31 @@ def _serie_valida(valores):
     return sum(limpos) / len(limpos)
 
 
-def _calcular_risco_cliente(cliente_id: str) -> dict | None:
+def _pesos_sinais_risco() -> dict[str, int]:
+    """
+    Pontuação de cada sinal de risco (estilo credit score: soma ponderada,
+    não contagem simples) — os pesos NÃO são chutados, vêm do próprio
+    `analisar_fatores_churn`: o quanto cada indicador difere, em %, entre
+    clientes ativos e cancelados na base real. Um sinal que historicamente
+    separa mais quem cancela de quem fica pesa mais na pontuação de risco
+    de um cliente ativo específico. Recalculado a cada chamada (não
+    hardcoded) pra nunca dessincronizar do dado real se a base mudar.
+    """
+    fatores = {item["metrica"]: abs(item["diferenca_percentual"]) for item in analisar_fatores_churn()["ranking_por_maior_diferenca"]}
+    peso = lambda chave, minimo=1: max(minimo, round(fatores.get(chave, minimo)))
+    return {
+        "Mais chamados críticos": peso("chamados_criticos_media"),
+        "Reclamação formal recente": peso("media_reclamacoes"),
+        "Atraso de pagamento crescente": peso("atraso_pagamento"),
+        "NPS detrator": peso("nps"),
+        "Mais chamados reabertos": peso("taxa_reabertura"),
+        "Queda no SLA cumprido": peso("sla_cumprido"),
+        "Queda no uso da plataforma": peso("uso_plataforma"),
+        "Reunião prevista não realizada": peso("reunioes_realizadas"),
+    }
+
+
+def _calcular_risco_cliente(cliente_id: str, pesos: dict[str, int]) -> dict | None:
     historico = dados.atendimento_mensal[dados.atendimento_mensal["cliente_id"] == cliente_id].sort_values("mes_ref")
     if len(historico) < 2:
         return None
@@ -477,31 +501,47 @@ def _calcular_risco_cliente(cliente_id: str) -> dict | None:
     if len(respostas_nps) > 0 and respostas_nps.iloc[-1]["classificacao_nps"] == "Detrator":
         sinais.append("NPS detrator")
 
+    pontuacao = sum(pesos[s] for s in sinais)
+    pontuacao_maxima = sum(pesos.values())
+    percentual = pontuacao / pontuacao_maxima * 100
+
     nivel = "Baixo"
-    if len(sinais) >= 4:
+    if percentual >= 50:
         nivel = "Alto"
-    elif len(sinais) >= 2:
+    elif percentual >= 20:
         nivel = "Médio"
 
-    return {"cliente_id": cliente_id, "nivel": nivel, "sinais": sinais, "mes_ref": atual["mes_ref"]}
+    return {
+        "cliente_id": cliente_id,
+        "nivel": nivel,
+        "pontuacao_risco": pontuacao,
+        "pontuacao_maxima": pontuacao_maxima,
+        "sinais": sinais,
+        "mes_ref": atual["mes_ref"],
+    }
 
 
 def clientes_em_risco(nivel: str = "Alto") -> dict:
     """Lista clientes ativos num nível de risco — pra perguntas tipo 'quais
-    clientes estão em risco' ou 'quem eu devo ligar primeiro'."""
+    clientes estão em risco' ou 'quem eu devo ligar primeiro'. Nível vem de
+    uma pontuação ponderada (estilo credit score — ver _pesos_sinais_risco),
+    não de contar sinais como se todos pesassem igual."""
     if nivel not in ("Alto", "Médio", "Baixo"):
         nivel = "Alto"
 
+    pesos = _pesos_sinais_risco()
     ativos = dados.situacao_clientes[dados.situacao_clientes["situacao"] == "Ativo"]["cliente_id"].tolist()
     encontrados = []
     for cliente_id in ativos:
-        risco = _calcular_risco_cliente(cliente_id)
+        risco = _calcular_risco_cliente(cliente_id, pesos)
         if risco and risco["nivel"] == nivel:
             encontrados.append(risco)
 
+    encontrados.sort(key=lambda r: r["pontuacao_risco"], reverse=True)
     return {
         "nivel": nivel,
         "total_clientes_ativos": len(ativos),
         "clientes_encontrados": len(encontrados),
+        "pesos_sinais": pesos,
         "clientes": encontrados,
     }
