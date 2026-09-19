@@ -17,7 +17,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from . import ia_fallback
-from .metricas import calcular_metrica
+from .metricas import calcular_metrica, analisar_fatores_churn
 
 
 class FakeFunction:
@@ -87,6 +87,27 @@ def caso_buscar_registro_cliente():
     print("OK   buscar_registro_cliente (1 turno):", resultado["resposta"])
 
 
+def caso_analisar_fatores_churn():
+    """Pergunta tipo 'o que mais influencia o cancelamento' — a que gerou
+    esta tool: antes caía em 'não encontrei' por não ter tool que
+    respondesse análise de correlação, não por bug."""
+    tool_call = FakeToolCall("call_6", "analisar_fatores_churn", {})
+    sequencia = [
+        _resposta(FakeMessage(tool_calls=[tool_call])),
+        _resposta(FakeMessage(content="A métrica que mais difere entre clientes ativos e cancelados é chamados críticos (82,6% maior entre quem cancela).")),
+    ]
+    with patch.object(ia_fallback, "_chamar_modelo", side_effect=sequencia):
+        resultado = ia_fallback.responder_com_fallback_ia("Qual métrica mais influencia no cancelamento do cliente?")
+
+    assert resultado["origem"] == "ia"
+    assert resultado["encontrado"] is True
+    assert resultado["tool"] == "analisar_fatores_churn"
+    esperado = analisar_fatores_churn()
+    assert resultado["resultado"]["ranking_por_maior_diferenca"] == esperado["ranking_por_maior_diferenca"]
+    assert resultado["resultado"]["ranking_por_maior_diferenca"][0]["metrica"] == "chamados_criticos_media"
+    print("OK   analisar_fatores_churn:", resultado["resposta"])
+
+
 def caso_multi_turno():
     """
     Reproduz o bug encontrado em teste manual ao vivo: pergunta aberta
@@ -149,6 +170,7 @@ def caso_timeout():
 if __name__ == "__main__":
     caso_consultar_metrica()
     caso_buscar_registro_cliente()
+    caso_analisar_fatores_churn()
     caso_multi_turno()
     caso_max_turnos_excedido()
     caso_fora_do_escopo()

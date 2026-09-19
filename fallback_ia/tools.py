@@ -51,6 +51,20 @@ TOOLS = [
         },
     },
     {
+        "name": "analisar_fatores_churn",
+        "description": (
+            "Compara os indicadores médios entre clientes ativos e "
+            "cancelados (SLA, uso da plataforma, reclamações, atraso de "
+            "pagamento, tempo de resolução, chamados críticos, taxa de "
+            "reabertura, ticket médio, NPS) e devolve um ranking de qual "
+            "métrica mais difere entre os dois grupos. Use pra perguntas "
+            "tipo 'o que mais influencia o cancelamento', 'quais fatores "
+            "levam ao churn', 'o que diferencia quem cancela de quem fica'. "
+            "Não tem parâmetros — sempre compara a carteira inteira."
+        ),
+        "input_schema": {"type": "object", "properties": {}},
+    },
+    {
         "name": "buscar_registro_cliente",
         "description": (
             "Busca informações pontuais de um cliente específico: último "
@@ -97,6 +111,8 @@ def executar_tool(nome: str, entrada: dict) -> dict:
     livre — sempre um dict estruturado que a Claude só pode reformatar."""
     if nome == "consultar_metrica":
         return metricas.calcular_metrica(entrada.get("metrica"), entrada.get("filtros") or {})
+    if nome == "analisar_fatores_churn":
+        return metricas.analisar_fatores_churn()
     if nome == "buscar_registro_cliente":
         return registro_cliente.buscar_registro_cliente(entrada.get("cliente_id"), entrada.get("campo"))
     return {"erro": f"Tool desconhecida: {nome}"}
