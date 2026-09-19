@@ -31,10 +31,10 @@ const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:8000/a
 // chamadas da mesma sessão — não é autenticação nem identifica a pessoa.
 const SESSAO_ID = `sessao-${Math.random().toString(36).slice(2)}-${Date.now()}`;
 
-async function chamarBackend(caminho, opcoes) {
+async function chamarBackend(caminho, opcoes, timeoutMs = 8000) {
   try {
     const controlador = new AbortController();
-    const timeoutId = setTimeout(() => controlador.abort(), 8000);
+    const timeoutId = setTimeout(() => controlador.abort(), timeoutMs);
     const resposta = await fetch(`${BACKEND_URL}${caminho}`, {
       headers: { 'Content-Type': 'application/json' },
       signal: controlador.signal,
@@ -49,11 +49,23 @@ async function chamarBackend(caminho, opcoes) {
   }
 }
 
+// O fallback de IA pode legitimamente demorar mais que uma chamada normal
+// de CRUD: o backend tem seu próprio guardrail de até TIMEOUT_SEGUNDOS (20s,
+// ver fallback_ia/guardrails.py) POR chamada ao modelo, e perguntas que
+// encadeiam tools (ex: comparação indireta) fazem várias chamadas antes de
+// responder. 8s (o timeout padrão de chamarBackend) abortava a requisição
+// ANTES do backend terminar, mesmo quando ele ia responder certo — bug
+// reportado ao vivo ("não encontrei" pra uma pergunta que o log do backend
+// mostrava ter respondido com sucesso em ~14s). 45s dá margem confortável
+// pro pior caso (múltiplos turnos, cada um até 20s) sem deixar o usuário
+// esperando indefinidamente se o backend realmente travar.
+const TIMEOUT_FALLBACK_IA_MS = 45000;
+
 async function tentarFallbackIa(texto) {
   const resultado = await chamarBackend('/fallback-ia', {
     method: 'POST',
     body: JSON.stringify({ pergunta: texto, sessaoId: SESSAO_ID }),
-  });
+  }, TIMEOUT_FALLBACK_IA_MS);
   return resultado?.ok ? resultado.dados : null;
 }
 
