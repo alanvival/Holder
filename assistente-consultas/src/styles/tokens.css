@@ -1,0 +1,41 @@
+:root {
+  --gs-navy-900: #041833;
+  --gs-blue-800: #0000aa;
+  --gs-blue-700: #1d1ddb;
+  --gs-blue-600: #0f0fc3;
+  --gs-navy-950: #00083d;
+  --gs-blue-accent: #0156fc;
+  --gs-text: #000a1e;
+  --gs-white: #ffffff;
+  --gs-bg-alt: #faf9f5;
+  --gs-cyan-accent: #00f3ff;
+  --gs-border: rgba(0, 10, 30, 0.1);
+  --gs-border-soft: rgba(0, 10, 30, 0.08);
+
+  --gs-gradient-brand: linear-gradient(
+    112.61deg,
+    #041833 0%,
+    #0000aa 24%,
+    #1d1ddb 62%,
+    #0f0fc3 81%,
+    #00083d 100%
+  );
+  --gs-gradient-cta: linear-gradient(90deg, #0000aa 0%, #0156fc 100%);
+
+  --gs-font-heading: 'Space Grotesk', sans-serif;
+  --gs-font-body: 'Montserrat', sans-serif;
+
+  --gs-radius-card: 20px;
+  --gs-radius-pill: 50px;
+
+  /* tokens específicos do widget, derivados do protótipo de referência */
+  --ac-panel-width: 404px;
+  --ac-panel-height: 624px;
+  --ac-panel-width-mobile: 100vw;
+  --ac-panel-height-mobile: 100dvh;
+  --ac-fab-size: 64px;
+  --ac-avatar-size: 26px;
+  --ac-shadow-panel: 0 20px 50px rgba(0, 10, 44, 0.25);
+  --ac-shadow-fab: 0 12px 28px rgba(0, 10, 44, 0.32);
+  --ac-shadow-bubble: 0 16px 36px rgba(0, 10, 44, 0.2);
+}

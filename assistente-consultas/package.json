@@ -1,0 +1,20 @@
+{
+  "name": "assistente-consultas",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Widget de consultas em linguagem natural (sem IA generativa) para o app Globalsys — motor de intenções determinístico sobre dados estruturados.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^5.4.11"
+  }
+}
