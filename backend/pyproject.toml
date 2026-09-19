@@ -34,7 +34,7 @@ pythonpath = ["."]
 filterwarnings = [
     "ignore:Using.*httpx.*starlette.testclient.*deprecated",
     "ignore:The anyio.abc.BlockingPortal alias is deprecated",
-    "ignore:Dialect sqlite.*does not support Decimal objects natively",
+    "ignore:Dialect sqlite.*does \\*not\\* support Decimal objects natively",
 ]
 
 [tool.ruff]
