@@ -19,9 +19,11 @@ if esta_logado():
 aba_entrar, aba_cadastrar = st.tabs(["Entrar", "Criar conta"])
 
 with aba_entrar:
-    usuario = st.text_input("Usuário", key="login_usuario")
-    senha = st.text_input("Senha", type="password", key="login_senha")
-    if st.button("Entrar", type="primary", key="botao_entrar"):
+    with st.form("form_login"):
+        usuario = st.text_input("Usuário", key="login_usuario")
+        senha = st.text_input("Senha", type="password", key="login_senha")
+        entrar = st.form_submit_button("Entrar", type="primary", key="botao_entrar")
+    if entrar:
         resposta = None
         if not usuario or not senha:
             st.error("Informe usuário e senha.")
@@ -35,20 +37,22 @@ with aba_entrar:
             st.rerun()
 
 with aba_cadastrar:
-    nome = st.text_input("Nome completo", key="cadastro_nome")
-    novo_usuario = st.text_input(
-        "Usuário",
-        key="cadastro_usuario",
-        help="3 a 50 caracteres: letras, números, ponto, hífen ou sublinhado.",
-    )
-    nova_senha = st.text_input(
-        "Senha",
-        type="password",
-        key="cadastro_senha",
-        help="8 a 128 caracteres, com ao menos uma letra e um número.",
-    )
-    confirmacao = st.text_input("Confirme a senha", type="password", key="cadastro_confirmacao")
-    if st.button("Criar conta", type="primary", key="botao_cadastrar"):
+    with st.form("form_cadastro"):
+        nome = st.text_input("Nome completo", key="cadastro_nome")
+        novo_usuario = st.text_input(
+            "Usuário",
+            key="cadastro_usuario",
+            help="3 a 50 caracteres: letras, números, ponto, hífen ou sublinhado.",
+        )
+        nova_senha = st.text_input(
+            "Senha",
+            type="password",
+            key="cadastro_senha",
+            help="8 a 128 caracteres, com ao menos uma letra e um número.",
+        )
+        confirmacao = st.text_input("Confirme a senha", type="password", key="cadastro_confirmacao")
+        cadastrar = st.form_submit_button("Criar conta", type="primary", key="botao_cadastrar")
+    if cadastrar:
         resposta = None
         if nova_senha != confirmacao:
             st.error("As senhas não conferem.")
