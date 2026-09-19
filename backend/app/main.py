@@ -6,6 +6,7 @@ import app.models  # noqa: F401  (registra os models no metadata)
 from app.controllers import health_controller
 from app.core.config import Settings, get_settings
 from app.core.database import Base, criar_engine
+from app.core.handlers import registrar_handlers
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -26,5 +27,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    registrar_handlers(app)
     app.include_router(health_controller.router, prefix="/api")
     return app
