@@ -1,5 +1,5 @@
-import { useCallback, useState } from 'react';
-import { consultarPergunta, registrarSugestaoUsuario } from '../services/assistenteApi.js';
+import { useCallback, useEffect, useState } from 'react';
+import { consultarPergunta, registrarSugestaoUsuario, hidratarCatalogoAdmin } from '../services/assistenteApi.js';
 import { useTenant } from '../context/TenantContext.jsx';
 
 // Histórico de conversa — estrutura pronta para persistir por usuário depois:
@@ -32,6 +32,13 @@ export function useAssistant() {
   const [mensagens, setMensagens] = useState([SAUDACAO_INICIAL]);
   const [status, setStatus] = useState('idle'); // idle | loading | erro
 
+  // Sincroniza as perguntas cadastradas pelo admin (persistidas no
+  // backend) pro motor local de matching, uma vez ao montar — assim elas
+  // ficam respondíveis mesmo que o usuário nunca abra a tela de Admin.
+  useEffect(() => {
+    hidratarCatalogoAdmin();
+  }, []);
+
   const abrir = useCallback(() => {
     setAberto(true);
     setBolhaSaudacaoVisivel(false);
@@ -54,11 +61,12 @@ export function useAssistant() {
     setStatus('loading');
 
     try {
-      const { payload } = await consultarPergunta(texto, tenant);
+      const { payload, origem } = await consultarPergunta(texto, tenant);
       const mensagemResposta = {
         id: newId(),
         autor: 'assistente',
         payload,
+        origem, // 'catalogo' | 'ia' — usado só pra um indicador visual sutil
         ...(payload.kind === 'not_found'
           ? { perguntaOrigem: texto, sugestaoStatus: 'pendente' }
           : {}),

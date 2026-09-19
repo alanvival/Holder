@@ -8,6 +8,7 @@ import {
   listarSugestoes,
   aprovarSugestaoUsuario,
   rejeitarSugestaoUsuario,
+  sugerirRespostaIa,
 } from '../../services/assistenteApi.js';
 
 function NovaPerguntaForm({ onCriada }) {
@@ -78,6 +79,23 @@ function LinhaSugestao({ sugestao, onAprovar, onRejeitar }) {
   const [expandido, setExpandido] = useState(false);
   const [respostaTexto, setRespostaTexto] = useState('');
   const [processando, setProcessando] = useState(false);
+  const [sugerindo, setSugerindo] = useState(false);
+  const [iaTentou, setIaTentou] = useState(false);
+
+  const abrirAprovacao = async () => {
+    const jaAberto = expandido;
+    setExpandido(true);
+    if (jaAberto || iaTentou) return; // já tentou sugerir uma vez — não repete a cada toggle
+
+    setSugerindo(true);
+    setIaTentou(true);
+    try {
+      const sugestaoIa = await sugerirRespostaIa(sugestao.id);
+      if (sugestaoIa) setRespostaTexto((atual) => atual || sugestaoIa);
+    } finally {
+      setSugerindo(false);
+    }
+  };
 
   const confirmarAprovacao = async () => {
     setProcessando(true);
@@ -98,11 +116,7 @@ function LinhaSugestao({ sugestao, onAprovar, onRejeitar }) {
           </div>
         </div>
         <div className="admin-row__actions">
-          <button
-            type="button"
-            className="admin-btn admin-btn--primary"
-            onClick={() => setExpandido((v) => !v)}
-          >
+          <button type="button" className="admin-btn admin-btn--primary" onClick={abrirAprovacao}>
             Aprovar
           </button>
           <button
@@ -116,12 +130,18 @@ function LinhaSugestao({ sugestao, onAprovar, onRejeitar }) {
       </div>
       {expandido && (
         <div className="admin-approve-inline">
+          {sugerindo && <div className="admin-ia-status">Pedindo uma sugestão de resposta pra IA…</div>}
           <textarea
             placeholder="Texto de resposta para essa consulta (opcional — pode configurar depois)"
             value={respostaTexto}
             onChange={(e) => setRespostaTexto(e.target.value)}
             style={{ minHeight: 56 }}
           />
+          {iaTentou && !sugerindo && !respostaTexto && (
+            <div className="admin-ia-status admin-ia-status--vazio">
+              A IA não conseguiu sugerir uma resposta (sem chave configurada, ou pergunta fora do escopo dos dados) — escreva manualmente.
+            </div>
+          )}
           <button
             type="button"
             className="admin-btn admin-btn--primary"

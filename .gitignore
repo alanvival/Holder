@@ -1,0 +1,16 @@
+# Segredos — nunca versionar
+.env
+.env.local
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Logs
+*.log
+logs/
+
+# Banco local (estado de runtime, não código-fonte)
+*.sqlite3
