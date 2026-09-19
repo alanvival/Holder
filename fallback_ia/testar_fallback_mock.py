@@ -17,7 +17,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from . import ia_fallback
-from .metricas import calcular_metrica, analisar_fatores_churn
+from .metricas import calcular_metrica, analisar_fatores_churn, contar_clientes, ranking_clientes, clientes_em_risco
 
 
 class FakeFunction:
@@ -108,6 +108,58 @@ def caso_analisar_fatores_churn():
     print("OK   analisar_fatores_churn:", resultado["resposta"])
 
 
+def caso_ranking_clientes():
+    """Pergunta tipo 'qual cliente tem o maior ticket' — bate em
+    ranking_clientes, não em consultar_metrica (que só agrega toda a carteira)."""
+    tool_call = FakeToolCall("call_7", "ranking_clientes", {"metrica": "ticket_medio", "direcao": "maior", "quantidade": 1})
+    sequencia = [
+        _resposta(FakeMessage(tool_calls=[tool_call])),
+        _resposta(FakeMessage(content="O cliente com maior ticket médio é C032, com R$ 36.208,00.")),
+    ]
+    with patch.object(ia_fallback, "_chamar_modelo", side_effect=sequencia):
+        resultado = ia_fallback.responder_com_fallback_ia("Qual cliente tem o maior ticket?")
+
+    assert resultado["origem"] == "ia"
+    assert resultado["encontrado"] is True
+    assert resultado["tool"] == "ranking_clientes"
+    esperado = ranking_clientes("ticket_medio", "maior", 1)
+    assert resultado["resultado"]["ranking"] == esperado["ranking"]
+    assert resultado["resultado"]["ranking"][0]["cliente_id"] == "C032"  # maior valor_mensal da base
+    print("OK   ranking_clientes:", resultado["resposta"])
+
+
+def caso_contar_clientes():
+    """Pergunta tipo 'quantos clientes tem o plano Enterprise'."""
+    tool_call = FakeToolCall("call_8", "contar_clientes", {"filtros": {"plano": "Enterprise"}})
+    sequencia = [
+        _resposta(FakeMessage(tool_calls=[tool_call])),
+        _resposta(FakeMessage(content="Existem 19 clientes com o plano Enterprise.")),
+    ]
+    with patch.object(ia_fallback, "_chamar_modelo", side_effect=sequencia):
+        resultado = ia_fallback.responder_com_fallback_ia("Quantos clientes tem o plano Enterprise?")
+
+    assert resultado["encontrado"] is True
+    assert resultado["resultado"]["total"] == contar_clientes({"plano": "Enterprise"})["total"]
+    print("OK   contar_clientes:", resultado["resposta"])
+
+
+def caso_clientes_em_risco():
+    """Pergunta tipo 'quais clientes estão em risco alto agora'."""
+    tool_call = FakeToolCall("call_9", "clientes_em_risco", {"nivel": "Alto"})
+    sequencia = [
+        _resposta(FakeMessage(tool_calls=[tool_call])),
+        _resposta(FakeMessage(content="4 clientes estão em risco alto: C019, C029, C067 e C080.")),
+    ]
+    with patch.object(ia_fallback, "_chamar_modelo", side_effect=sequencia):
+        resultado = ia_fallback.responder_com_fallback_ia("Quais clientes estão em risco alto agora?")
+
+    assert resultado["encontrado"] is True
+    esperado_ids = {c["cliente_id"] for c in clientes_em_risco("Alto")["clientes"]}
+    obtido_ids = {c["cliente_id"] for c in resultado["resultado"]["clientes"]}
+    assert obtido_ids == esperado_ids
+    print("OK   clientes_em_risco:", resultado["resposta"])
+
+
 def caso_multi_turno():
     """
     Reproduz o bug encontrado em teste manual ao vivo: pergunta aberta
@@ -171,6 +223,9 @@ if __name__ == "__main__":
     caso_consultar_metrica()
     caso_buscar_registro_cliente()
     caso_analisar_fatores_churn()
+    caso_ranking_clientes()
+    caso_contar_clientes()
+    caso_clientes_em_risco()
     caso_multi_turno()
     caso_max_turnos_excedido()
     caso_fora_do_escopo()

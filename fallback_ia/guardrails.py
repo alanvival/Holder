@@ -13,7 +13,12 @@ from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeou
 from pathlib import Path
 from threading import Lock
 
-TIMEOUT_SEGUNDOS = 8
+# O prompt original pedia "~8s"; subiu pra 15s depois de observar timeouts
+# reais em perguntas cujo resultado de tool é mais volumoso (ex:
+# clientes_em_risco devolvendo vários clientes com listas de sinais cada) —
+# gpt-oss é um reasoning model e gasta mais tempo "pensando" sobre payloads
+# maiores antes de escrever a resposta final.
+TIMEOUT_SEGUNDOS = 15
 RATE_LIMIT_MAX_CHAMADAS = 5
 RATE_LIMIT_JANELA_SEGUNDOS = 60
 

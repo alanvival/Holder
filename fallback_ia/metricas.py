@@ -339,3 +339,248 @@ def analisar_fatores_churn() -> dict:
             "Isso mostra associação, não prova causa."
         ),
     }
+
+
+# churn é um indicador de grupo (cliente cancelou ou não — binário, não faz
+# sentido "ranquear"); nps tem estrutura própria (dict), tratado à parte.
+_METRICAS_SEM_RANKING = {"churn", "nps"}
+
+
+def ranking_clientes(metrica_id: str, direcao: str = "maior", quantidade: int = 5, filtros: dict | None = None) -> dict:
+    """
+    Top/bottom N clientes numa métrica — é a tool `ranking_clientes`, pra
+    perguntas tipo "qual cliente tem o maior ticket" ou "quais clientes têm
+    o pior SLA". Diferente de calcular_metrica (que agrega TODOS os
+    clientes num só número), aqui a mesma fórmula de cada métrica roda
+    separadamente PARA CADA cliente, e o resultado é ordenado — ainda é só
+    aritmética real sobre os dados, a IA não escolhe nem estima quem está
+    no topo.
+    """
+    filtros = dict(filtros or {})
+    filtros.pop("cliente_id", None)  # ranking é entre clientes, não de 1 só
+
+    if metrica_id in _METRICAS_SEM_RANKING:
+        return {"erro": f"Ranking não é aplicável à métrica '{metrica_id}'."}
+
+    definicao = METRICAS.get(metrica_id)
+    if not definicao:
+        return {"erro": f"Métrica desconhecida: {metrica_id}"}
+
+    df = _filtrar(definicao["aba"], filtros)
+    if len(df) == 0:
+        return {"erro": "Sem dados para essa combinação de filtros."}
+
+    df_calculo = definicao["filtro_linha"](df) if "filtro_linha" in definicao else df
+
+    posicoes = []
+    for cliente_id, grupo in df_calculo.groupby("cliente_id"):
+        valor = definicao["calcular"](grupo)
+        if valor is None:
+            continue
+        escalado = valor * 100 if definicao.get("escala100") else valor
+        posicoes.append({
+            "cliente_id": cliente_id,
+            "valor": round(escalado, 4) if isinstance(escalado, float) else escalado,
+        })
+
+    if not posicoes:
+        return {"erro": "Sem amostra suficiente pra montar o ranking com esses filtros."}
+
+    posicoes.sort(key=lambda p: p["valor"], reverse=(direcao != "menor"))
+    quantidade = max(1, min(quantidade or 5, len(posicoes)))
+
+    return {
+        "metrica": metrica_id,
+        "rotulo": definicao["rotulo"],
+        "formato": definicao["formato"],
+        "direcao": direcao,
+        "universo": _descrever_universo(definicao["aba"], filtros, df) + f" Ranking entre {len(posicoes)} cliente(s) com dado disponível.",
+        "ranking": posicoes[:quantidade],
+    }
+
+
+# --- Tool: contar_clientes ------------------------------------------------
+
+def contar_clientes(filtros: dict | None = None) -> dict:
+    """Conta clientes que batem com um conjunto de filtros — pra perguntas
+    tipo 'quantos clientes tem o plano Enterprise'. Sem filtro, conta todos."""
+    filtros = dict(filtros or {})
+    filtros.pop("cliente_id", None)
+    df = _filtrar("clientes", filtros)
+    return {
+        "total": int(len(df)),
+        "universo": _descrever_universo("clientes", filtros, df),
+    }
+
+
+# --- Tool: evolucao_metrica -----------------------------------------------
+
+# Métricas sem sentido "mês a mês": ticket_medio é atributo fixo do cliente
+# (aba clientes, sem mes_ref); churn é um evento pontual, não uma taxa
+# recalculada todo mês nesta base; nps tem estrutura própria (score+nota).
+_METRICAS_SEM_EVOLUCAO = {"ticket_medio", "churn", "nps"}
+
+
+def evolucao_metrica(metrica_id: str, filtros: dict | None = None) -> dict:
+    """Série mensal de uma métrica — pra perguntas tipo 'como o SLA evoluiu
+    nos últimos meses' ou 'a carteira está melhorando ou piorando'. Mesma
+    fórmula de calcular_metrica, só que agrupada por mes_ref em vez de
+    agregada num único número."""
+    filtros = dict(filtros or {})
+    filtros.pop("cliente_id", None)
+
+    if metrica_id in _METRICAS_SEM_EVOLUCAO:
+        return {"erro": f"Métrica '{metrica_id}' não tem evolução mensal aplicável nesta base."}
+
+    definicao = METRICAS.get(metrica_id)
+    if not definicao:
+        return {"erro": f"Métrica desconhecida: {metrica_id}"}
+
+    df = _filtrar(definicao["aba"], filtros)
+    if len(df) == 0:
+        return {"erro": "Sem dados para essa combinação de filtros."}
+
+    df_calculo = definicao["filtro_linha"](df) if "filtro_linha" in definicao else df
+
+    serie = []
+    for mes_ref, grupo in df_calculo.groupby("mes_ref"):
+        valor = definicao["calcular"](grupo)
+        if valor is None:
+            continue
+        escalado = valor * 100 if definicao.get("escala100") else valor
+        serie.append({"mes_ref": mes_ref, "valor": round(escalado, 4) if isinstance(escalado, float) else escalado})
+
+    serie.sort(key=lambda s: s["mes_ref"])
+    if not serie:
+        return {"erro": "Sem amostra suficiente pra montar a série mensal."}
+
+    return {
+        "metrica": metrica_id,
+        "rotulo": definicao["rotulo"],
+        "formato": definicao["formato"],
+        "universo": _descrever_universo(definicao["aba"], filtros, df),
+        "serie_mensal": serie,
+    }
+
+
+# --- Tool: comparar_por_categoria ------------------------------------------
+
+_CATEGORIAS_VALIDAS = {"plano": dados.PLANOS, "porte": dados.PORTES, "segmento": dados.SEGMENTOS}
+
+
+def comparar_por_categoria(metrica_id: str, categoria: str, filtros: dict | None = None) -> dict:
+    """Compara uma métrica entre plano/porte/segmento — pra perguntas tipo
+    'qual segmento tem mais churn' ou 'compare os planos por SLA'. Roda
+    calcular_metrica uma vez por valor da categoria (reaproveita, não
+    duplica a lógica de agregação)."""
+    if categoria not in _CATEGORIAS_VALIDAS:
+        return {"erro": f"Categoria inválida: '{categoria}'. Use plano, porte ou segmento."}
+
+    filtros = dict(filtros or {})
+    filtros.pop("cliente_id", None)
+    filtros.pop(categoria, None)  # a categoria é o que vai variar, não um filtro fixo
+
+    if metrica_id not in METRICAS:
+        return {"erro": f"Métrica desconhecida: {metrica_id}"}
+
+    comparacao = []
+    for valor_categoria in _CATEGORIAS_VALIDAS[categoria]:
+        resultado = calcular_metrica(metrica_id, {**filtros, categoria: valor_categoria})
+        valor = resultado.get("valor", resultado.get("nota_media"))
+        if valor is None:
+            continue
+        rotulo_categoria = (
+            PLANO_LABELS.get(valor_categoria, valor_categoria) if categoria == "plano"
+            else PORTE_LABELS.get(valor_categoria, valor_categoria) if categoria == "porte"
+            else valor_categoria
+        )
+        comparacao.append({categoria: rotulo_categoria, "valor": valor})
+
+    if not comparacao:
+        return {"erro": "Sem amostra suficiente pra comparar essas categorias."}
+
+    comparacao.sort(key=lambda c: c["valor"], reverse=True)
+    return {
+        "metrica": metrica_id,
+        "rotulo": METRICAS[metrica_id]["rotulo"],
+        "formato": METRICAS[metrica_id]["formato"],
+        "categoria": categoria,
+        "comparacao": comparacao,
+    }
+
+
+# --- Tool: clientes_em_risco ------------------------------------------------
+# Porta a mesma lógica de src/engine/inovaappsDatabase.js#calcularRisco: en
+# vez de comparar com a média da carteira, compara o mês mais recente de
+# CADA cliente com a própria média histórica dele — evita falso alarme em
+# quem sempre operou "abaixo da média" mas nunca piorou de verdade.
+
+def _serie_valida(valores):
+    limpos = [v for v in valores if v is not None and v == v]  # v == v descarta NaN
+    if not limpos:
+        return None
+    return sum(limpos) / len(limpos)
+
+
+def _calcular_risco_cliente(cliente_id: str) -> dict | None:
+    historico = dados.atendimento_mensal[dados.atendimento_mensal["cliente_id"] == cliente_id].sort_values("mes_ref")
+    if len(historico) < 2:
+        return None
+
+    atual = historico.iloc[-1]
+    anteriores = historico.iloc[:-1]
+
+    baseline_sla = _serie_valida(anteriores["pct_sla_cumprido"].tolist())
+    baseline_uso = _serie_valida(anteriores["uso_plataforma_pct"].tolist())
+    baseline_atraso = _serie_valida(anteriores["dias_atraso_pagamento"].tolist())
+
+    sinais = []
+    if baseline_sla is not None and atual["pct_sla_cumprido"] == atual["pct_sla_cumprido"] and atual["pct_sla_cumprido"] < baseline_sla - 10:
+        sinais.append("Queda no SLA cumprido")
+    if baseline_uso is not None and atual["uso_plataforma_pct"] < baseline_uso - 10:
+        sinais.append("Queda no uso da plataforma")
+    if baseline_atraso is not None and atual["dias_atraso_pagamento"] > baseline_atraso + 3:
+        sinais.append("Atraso de pagamento crescente")
+    if atual["chamados_criticos"] >= 2:
+        sinais.append("Mais chamados críticos")
+    if atual["chamados_reabertos"] >= 2:
+        sinais.append("Mais chamados reabertos")
+    if atual["reunioes_previstas"] == 1 and atual["reunioes_realizadas"] == 0:
+        sinais.append("Reunião prevista não realizada")
+    if atual["reclamacoes_formais"] >= 1:
+        sinais.append("Reclamação formal recente")
+
+    respostas_nps = dados.pesquisas_nps[
+        (dados.pesquisas_nps["cliente_id"] == cliente_id) & (dados.pesquisas_nps["respondeu"] == 1)
+    ].sort_values("mes_ref")
+    if len(respostas_nps) > 0 and respostas_nps.iloc[-1]["classificacao_nps"] == "Detrator":
+        sinais.append("NPS detrator")
+
+    nivel = "Baixo"
+    if len(sinais) >= 4:
+        nivel = "Alto"
+    elif len(sinais) >= 2:
+        nivel = "Médio"
+
+    return {"cliente_id": cliente_id, "nivel": nivel, "sinais": sinais, "mes_ref": atual["mes_ref"]}
+
+
+def clientes_em_risco(nivel: str = "Alto") -> dict:
+    """Lista clientes ativos num nível de risco — pra perguntas tipo 'quais
+    clientes estão em risco' ou 'quem eu devo ligar primeiro'."""
+    if nivel not in ("Alto", "Médio", "Baixo"):
+        nivel = "Alto"
+
+    ativos = dados.situacao_clientes[dados.situacao_clientes["situacao"] == "Ativo"]["cliente_id"].tolist()
+    encontrados = []
+    for cliente_id in ativos:
+        risco = _calcular_risco_cliente(cliente_id)
+        if risco and risco["nivel"] == nivel:
+            encontrados.append(risco)
+
+    return {
+        "nivel": nivel,
+        "total_clientes_ativos": len(ativos),
+        "clientes_encontrados": len(encontrados),
+        "clientes": encontrados,
+    }
