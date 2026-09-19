@@ -2,8 +2,14 @@
 Testa o fluxo de tool use (responder_com_fallback_ia) com a chamada à API
 da Groq mockada — valida roteamento, execução da tool contra os dados
 reais, o loop multi-turno e os guardrails, sem precisar de rede/chave de
-verdade. Serve como substituto do "teste manual" pedido no item 5 do
-entregável quando a API real não está acessível.
+verdade.
+
+Cobre as 5 tools genéricas (campos.py / tools_genericas.py) que
+substituíram a família de tools estreitas (uma por pergunta): os 4 casos
+originais do prompt de refatoração (maior cliente, clientes por segmento,
+cancelamentos por período, detratores) + os 3 cenários que são o teste real
+de que a generalização cobre casos não previstos (comparação indireta,
+comparação entre dois períodos, evolução temporal).
 
 Os fakes abaixo espelham o formato de resposta da Groq (compatível com
 OpenAI): choices[0].message.tool_calls[i].function.{name,arguments}, e
@@ -17,7 +23,8 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from . import ia_fallback
-from .metricas import calcular_metrica, analisar_fatores_churn, contar_clientes, ranking_clientes, clientes_em_risco, listar_clientes
+from .metricas import calcular_metrica, analisar_fatores_churn, clientes_em_risco
+from .tools_genericas import listar_clientes, buscar_campo_cliente, comparar_clientes, evolucao_temporal
 
 
 class FakeFunction:
@@ -64,34 +71,14 @@ def caso_consultar_metrica():
     assert resultado["origem"] == "ia"
     assert resultado["encontrado"] is True
     assert resultado["tool"] == "consultar_metrica"
-    # a tool foi executada de verdade contra os dados reais — não é um número inventado
     esperado = calcular_metrica("ticket_medio", {"plano": "Enterprise"})["valor"]
     assert resultado["resultado"]["valor"] == esperado
     print("OK   consultar_metrica (1 turno):", resultado["resposta"])
 
 
-def caso_buscar_registro_cliente():
-    """Pergunta que deveria bater em buscar_registro_cliente, resolvida em 1 turno."""
-    tool_call = FakeToolCall("call_2", "buscar_registro_cliente", {"cliente_id": "C007", "campo": "situacao"})
-    sequencia = [
-        _resposta(FakeMessage(tool_calls=[tool_call])),
-        _resposta(FakeMessage(content="O cliente C007 está cancelado desde 03/2026.")),
-    ]
-    with patch.object(ia_fallback, "_chamar_modelo", side_effect=sequencia):
-        resultado = ia_fallback.responder_com_fallback_ia("O cliente C007 ainda está ativo?")
-
-    assert resultado["origem"] == "ia"
-    assert resultado["encontrado"] is True
-    assert resultado["tool"] == "buscar_registro_cliente"
-    assert resultado["resultado"]["situacao"] == "Cancelado"
-    print("OK   buscar_registro_cliente (1 turno):", resultado["resposta"])
-
-
 def caso_analisar_fatores_churn():
-    """Pergunta tipo 'o que mais influencia o cancelamento' — a que gerou
-    esta tool: antes caía em 'não encontrei' por não ter tool que
-    respondesse análise de correlação, não por bug."""
-    tool_call = FakeToolCall("call_6", "analisar_fatores_churn", {})
+    """Pergunta tipo 'o que mais influencia o cancelamento'."""
+    tool_call = FakeToolCall("call_2", "analisar_fatores_churn", {})
     sequencia = [
         _resposta(FakeMessage(tool_calls=[tool_call])),
         _resposta(FakeMessage(content="A métrica que mais difere entre clientes ativos e cancelados é chamados críticos (82,6% maior entre quem cancela).")),
@@ -99,72 +86,16 @@ def caso_analisar_fatores_churn():
     with patch.object(ia_fallback, "_chamar_modelo", side_effect=sequencia):
         resultado = ia_fallback.responder_com_fallback_ia("Qual métrica mais influencia no cancelamento do cliente?")
 
-    assert resultado["origem"] == "ia"
     assert resultado["encontrado"] is True
     assert resultado["tool"] == "analisar_fatores_churn"
     esperado = analisar_fatores_churn()
     assert resultado["resultado"]["ranking_por_maior_diferenca"] == esperado["ranking_por_maior_diferenca"]
-    assert resultado["resultado"]["ranking_por_maior_diferenca"][0]["metrica"] == "chamados_criticos_media"
     print("OK   analisar_fatores_churn:", resultado["resposta"])
-
-
-def caso_ranking_clientes():
-    """Pergunta tipo 'qual cliente tem o maior ticket' — bate em
-    ranking_clientes, não em consultar_metrica (que só agrega toda a carteira)."""
-    tool_call = FakeToolCall("call_7", "ranking_clientes", {"metrica": "ticket_medio", "direcao": "maior", "quantidade": 1})
-    sequencia = [
-        _resposta(FakeMessage(tool_calls=[tool_call])),
-        _resposta(FakeMessage(content="O cliente com maior ticket médio é C032, com R$ 36.208,00.")),
-    ]
-    with patch.object(ia_fallback, "_chamar_modelo", side_effect=sequencia):
-        resultado = ia_fallback.responder_com_fallback_ia("Qual cliente tem o maior ticket?")
-
-    assert resultado["origem"] == "ia"
-    assert resultado["encontrado"] is True
-    assert resultado["tool"] == "ranking_clientes"
-    esperado = ranking_clientes("ticket_medio", "maior", 1)
-    assert resultado["resultado"]["ranking"] == esperado["ranking"]
-    assert resultado["resultado"]["ranking"][0]["cliente_id"] == "C032"  # maior valor_mensal da base
-    print("OK   ranking_clientes:", resultado["resposta"])
-
-
-def caso_ranking_por_antiguidade():
-    """Pergunta tipo 'qual cliente mais antigo' — métrica não numérica
-    direta (precisa parsear inicio_contrato), achada em teste manual como
-    outra lacuna real de tool."""
-    tool_call = FakeToolCall("call_10", "ranking_clientes", {"metrica": "antiguidade_contrato", "direcao": "maior", "quantidade": 1})
-    sequencia = [
-        _resposta(FakeMessage(tool_calls=[tool_call])),
-        _resposta(FakeMessage(content="O cliente mais antigo é C002, com 2.422 dias de contrato.")),
-    ]
-    with patch.object(ia_fallback, "_chamar_modelo", side_effect=sequencia):
-        resultado = ia_fallback.responder_com_fallback_ia("Qual cliente mais antigo?")
-
-    assert resultado["encontrado"] is True
-    esperado = ranking_clientes("antiguidade_contrato", "maior", 1)
-    assert resultado["resultado"]["ranking"] == esperado["ranking"]
-    assert resultado["resultado"]["ranking"][0]["cliente_id"] == "C002"  # inicio_contrato mais antigo da base
-    print("OK   ranking por antiguidade:", resultado["resposta"])
-
-
-def caso_contar_clientes():
-    """Pergunta tipo 'quantos clientes tem o plano Enterprise'."""
-    tool_call = FakeToolCall("call_8", "contar_clientes", {"filtros": {"plano": "Enterprise"}})
-    sequencia = [
-        _resposta(FakeMessage(tool_calls=[tool_call])),
-        _resposta(FakeMessage(content="Existem 19 clientes com o plano Enterprise.")),
-    ]
-    with patch.object(ia_fallback, "_chamar_modelo", side_effect=sequencia):
-        resultado = ia_fallback.responder_com_fallback_ia("Quantos clientes tem o plano Enterprise?")
-
-    assert resultado["encontrado"] is True
-    assert resultado["resultado"]["total"] == contar_clientes({"plano": "Enterprise"})["total"]
-    print("OK   contar_clientes:", resultado["resposta"])
 
 
 def caso_clientes_em_risco():
     """Pergunta tipo 'quais clientes estão em risco alto agora'."""
-    tool_call = FakeToolCall("call_9", "clientes_em_risco", {"nivel": "Alto"})
+    tool_call = FakeToolCall("call_3", "clientes_em_risco", {"nivel": "Alto"})
     sequencia = [
         _resposta(FakeMessage(tool_calls=[tool_call])),
         _resposta(FakeMessage(content="4 clientes estão em risco alto: C019, C029, C067 e C080.")),
@@ -179,34 +110,114 @@ def caso_clientes_em_risco():
     print("OK   clientes_em_risco:", resultado["resposta"])
 
 
-def caso_listar_clientes():
-    """Pergunta tipo 'quais clientes cancelaram em 2026' — lista (não
-    conta, não ranqueia) os clientes que batem com um filtro."""
+# --- Os 4 casos originais do prompt de refatoração (via listar_clientes) --
+
+def caso_maior_cliente():
+    """'Qual o maior cliente' -> listar_clientes com ordenar_por='valor_mensal',
+    direcao='desc', limite=1 — ranking vira um caso particular de listagem."""
     tool_call = FakeToolCall(
-        "call_11", "listar_clientes",
-        {"filtros": {"cancelamento_inicio": "2026-01", "cancelamento_fim": "2026-12"}},
+        "call_4", "listar_clientes",
+        {"ordenar_por": "valor_mensal", "direcao": "desc", "limite": 1},
     )
     sequencia = [
         _resposta(FakeMessage(tool_calls=[tool_call])),
-        _resposta(FakeMessage(content="12 clientes cancelaram em 2026: C004, C007, C024, C025, C030, C031, C034, C047, C053, C054, C073, C075.")),
+        _resposta(FakeMessage(content="O maior cliente é o C032, com valor mensal de R$ 36.208,00.")),
     ]
     with patch.object(ia_fallback, "_chamar_modelo", side_effect=sequencia):
-        resultado = ia_fallback.responder_com_fallback_ia("Quais clientes cancelaram em 2026?")
+        resultado = ia_fallback.responder_com_fallback_ia("Qual é o maior cliente?")
 
-    assert resultado["origem"] == "ia"
     assert resultado["encontrado"] is True
     assert resultado["tool"] == "listar_clientes"
-    esperado = listar_clientes({"cancelamento_inicio": "2026-01", "cancelamento_fim": "2026-12"})
-    assert resultado["resultado"]["clientes"] == esperado["clientes"]
-    assert resultado["resultado"]["total_encontrado"] == 12
-    print("OK   listar_clientes:", resultado["resposta"])
+    esperado = listar_clientes(ordenar_por="valor_mensal", direcao="desc", limite=1)
+    assert resultado["resultado"]["clientes"] == esperado["clientes"] == ["C032"]
+    print("OK   maior cliente (listar_clientes + ordenar_por):", resultado["resposta"])
+
+
+def caso_clientes_por_segmento():
+    """'Quais clientes são do segmento Varejo' -> listar_clientes com filtro simples."""
+    tool_call = FakeToolCall(
+        "call_5", "listar_clientes",
+        {"filtros": [{"campo": "segmento", "operador": "igual", "valor": "Varejo"}]},
+    )
+    sequencia = [
+        _resposta(FakeMessage(tool_calls=[tool_call])),
+        _resposta(FakeMessage(content="16 clientes são do segmento Varejo: C010, C011, C015...")),
+    ]
+    with patch.object(ia_fallback, "_chamar_modelo", side_effect=sequencia):
+        resultado = ia_fallback.responder_com_fallback_ia("Quais clientes são do segmento Varejo?")
+
+    assert resultado["encontrado"] is True
+    esperado = listar_clientes(filtros=[{"campo": "segmento", "operador": "igual", "valor": "Varejo"}])
+    assert resultado["resultado"]["total_encontrado"] == esperado["total_encontrado"] == 16
+    print("OK   clientes por segmento (listar_clientes):", resultado["resposta"])
+
+
+def caso_cancelamentos_por_periodo():
+    """'Quantos clientes cancelaram em 2026' -> listar_clientes com
+    retornar='contagem', filtrando mes_cancelamento por 'entre'."""
+    tool_call = FakeToolCall(
+        "call_6", "listar_clientes",
+        {
+            "filtros": [{"campo": "mes_cancelamento", "operador": "entre", "valor": "2026-01", "valor2": "2026-12"}],
+            "retornar": "contagem",
+        },
+    )
+    sequencia = [
+        _resposta(FakeMessage(tool_calls=[tool_call])),
+        _resposta(FakeMessage(content="12 clientes cancelaram em 2026.")),
+    ]
+    with patch.object(ia_fallback, "_chamar_modelo", side_effect=sequencia):
+        resultado = ia_fallback.responder_com_fallback_ia("Quantos clientes cancelaram em 2026?")
+
+    assert resultado["encontrado"] is True
+    esperado = listar_clientes(
+        filtros=[{"campo": "mes_cancelamento", "operador": "entre", "valor": "2026-01", "valor2": "2026-12"}],
+        retornar="contagem",
+    )
+    assert resultado["resultado"]["total"] == esperado["total"] == 12
+    print("OK   cancelamentos por período (listar_clientes, retornar=contagem):", resultado["resposta"])
+
+
+def caso_detratores():
+    """'Quais clientes são detratores' -> listar_clientes filtrando
+    classificacao_nps (campo de série temporal — usa a pesquisa mais recente)."""
+    tool_call = FakeToolCall(
+        "call_7", "listar_clientes",
+        {"filtros": [{"campo": "classificacao_nps", "operador": "igual", "valor": "Detrator"}], "limite": 100},
+    )
+    sequencia = [
+        _resposta(FakeMessage(tool_calls=[tool_call])),
+        _resposta(FakeMessage(content="33 clientes são detratores.")),
+    ]
+    with patch.object(ia_fallback, "_chamar_modelo", side_effect=sequencia):
+        resultado = ia_fallback.responder_com_fallback_ia("Quais clientes são detratores?")
+
+    assert resultado["encontrado"] is True
+    esperado = listar_clientes(filtros=[{"campo": "classificacao_nps", "operador": "igual", "valor": "Detrator"}], limite=100)
+    assert resultado["resultado"]["total_encontrado"] == esperado["total_encontrado"] == 33
+    print("OK   detratores (listar_clientes, campo de série temporal):", resultado["resposta"])
+
+
+# --- buscar_campo_cliente (cobre a lacuna real: "qual dia entrou o cliente") -
+
+def caso_buscar_campo_cliente():
+    tool_call = FakeToolCall("call_8", "buscar_campo_cliente", {"cliente_id": "C002", "campos": ["inicio_contrato", "plano"]})
+    sequencia = [
+        _resposta(FakeMessage(tool_calls=[tool_call])),
+        _resposta(FakeMessage(content="O cliente C002 iniciou o contrato em 01/02/2020, no plano Avançado.")),
+    ]
+    with patch.object(ia_fallback, "_chamar_modelo", side_effect=sequencia):
+        resultado = ia_fallback.responder_com_fallback_ia("Qual dia entrou o cliente C002?")
+
+    assert resultado["encontrado"] is True
+    assert resultado["resultado"]["inicio_contrato"] == "2020-02-01"
+    print("OK   buscar_campo_cliente:", resultado["resposta"])
 
 
 def caso_normaliza_cliente_id_com_erro_de_digitacao():
     """Reproduz o bug reportado ao vivo: 'CO02' (letra O) em vez de 'C002'
-    (zero) — a tool tem que normalizar antes de buscar, não devolver 'não
-    encontrado' por causa de um erro de digitação comum."""
-    tool_call = FakeToolCall("call_12", "buscar_registro_cliente", {"cliente_id": "CO02", "campo": "plano"})
+    (zero) — a tool tem que normalizar antes de buscar."""
+    tool_call = FakeToolCall("call_9", "buscar_campo_cliente", {"cliente_id": "CO02", "campos": ["inicio_contrato"]})
     sequencia = [
         _resposta(FakeMessage(tool_calls=[tool_call])),
         _resposta(FakeMessage(content="O cliente C002 iniciou o contrato em 01/02/2020.")),
@@ -220,16 +231,115 @@ def caso_normaliza_cliente_id_com_erro_de_digitacao():
     print("OK   normaliza cliente_id com erro de digitação (CO02 -> C002):", resultado["resposta"])
 
 
+# --- Os 3 cenários novos (teste real de generalização) ---------------------
+
+def caso_comparacao_indireta():
+    """'Compare o maior cliente do Varejo com o de Saúde' — o modelo não
+    conhece os cliente_id de antemão: precisa encadear duas chamadas de
+    listar_clientes (uma por segmento) pra descobrir quem são, e só então
+    chamar comparar_clientes. É o teste do encadeamento de tools do system
+    prompt (Passo 3), não só de uma tool isolada."""
+    tool_call_varejo = FakeToolCall(
+        "call_10", "listar_clientes",
+        {"filtros": [{"campo": "segmento", "operador": "igual", "valor": "Varejo"}], "ordenar_por": "valor_mensal", "direcao": "desc", "limite": 1},
+    )
+    tool_call_saude = FakeToolCall(
+        "call_11", "listar_clientes",
+        {"filtros": [{"campo": "segmento", "operador": "igual", "valor": "Saude"}], "ordenar_por": "valor_mensal", "direcao": "desc", "limite": 1},
+    )
+    maior_varejo = listar_clientes(filtros=[{"campo": "segmento", "operador": "igual", "valor": "Varejo"}], ordenar_por="valor_mensal", direcao="desc", limite=1)["clientes"][0]
+    maior_saude = listar_clientes(filtros=[{"campo": "segmento", "operador": "igual", "valor": "Saude"}], ordenar_por="valor_mensal", direcao="desc", limite=1)["clientes"][0]
+    tool_call_comparar = FakeToolCall(
+        "call_12", "comparar_clientes",
+        {"cliente_ids": [maior_varejo, maior_saude], "campos": ["valor_mensal", "plano"]},
+    )
+    sequencia = [
+        _resposta(FakeMessage(tool_calls=[tool_call_varejo])),
+        _resposta(FakeMessage(tool_calls=[tool_call_saude])),
+        _resposta(FakeMessage(tool_calls=[tool_call_comparar])),
+        _resposta(FakeMessage(content=f"O maior cliente do Varejo ({maior_varejo}) tem valor mensal maior/menor que o maior de Saúde ({maior_saude}).")),
+    ]
+    with patch.object(ia_fallback, "_chamar_modelo", side_effect=sequencia):
+        resultado = ia_fallback.responder_com_fallback_ia("Compare o maior cliente do Varejo com o de Saúde")
+
+    assert resultado["encontrado"] is True
+    assert resultado["tool"] == "comparar_clientes"
+    ids_comparados = {c["cliente_id"] for c in resultado["resultado"]["clientes"]}
+    assert ids_comparados == {maior_varejo, maior_saude}
+    print("OK   comparação indireta (encadeamento de 3 tools):", resultado["resposta"])
+
+
+def caso_comparacao_entre_periodos():
+    """'Compare o cliente C047 entre 2025 e 2026' — mesmo cliente, dois
+    períodos, via periodo_comparacao."""
+    tool_call = FakeToolCall(
+        "call_13", "comparar_clientes",
+        {
+            "cliente_ids": ["C047"], "campos": ["pct_sla_cumprido"],
+            "periodo_inicio": "2025-01", "periodo_fim": "2025-12",
+            "periodo_comparacao": {"periodo_inicio": "2026-01", "periodo_fim": "2026-12"},
+        },
+    )
+    sequencia = [
+        _resposta(FakeMessage(tool_calls=[tool_call])),
+        _resposta(FakeMessage(content="O SLA cumprido do cliente C047 mudou entre 2025 e 2026.")),
+    ]
+    with patch.object(ia_fallback, "_chamar_modelo", side_effect=sequencia):
+        resultado = ia_fallback.responder_com_fallback_ia("Compare o SLA do cliente C047 entre 2025 e 2026")
+
+    assert resultado["encontrado"] is True
+    assert resultado["resultado"]["modo"] == "entre_periodos"
+    esperado = comparar_clientes(
+        ["C047"], ["pct_sla_cumprido"], "2025-01", "2025-12",
+        {"periodo_inicio": "2026-01", "periodo_fim": "2026-12"},
+    )
+    assert resultado["resultado"]["clientes"] == esperado["clientes"]
+    print("OK   comparação entre dois períodos (mesmo cliente):", resultado["resposta"])
+
+
+def caso_evolucao_temporal():
+    """'Como evoluiu o uso da plataforma do cliente C047 nos últimos meses' —
+    nenhuma tool anterior devolvia série mensal de um campo bruto."""
+    tool_call = FakeToolCall("call_14", "evolucao_temporal", {"campo": "uso_plataforma_pct", "cliente_id": "C047"})
+    sequencia = [
+        _resposta(FakeMessage(tool_calls=[tool_call])),
+        _resposta(FakeMessage(content="O uso da plataforma do cliente C047 variou mês a mês assim: ...")),
+    ]
+    with patch.object(ia_fallback, "_chamar_modelo", side_effect=sequencia):
+        resultado = ia_fallback.responder_com_fallback_ia("Como evoluiu o uso da plataforma do cliente C047?")
+
+    assert resultado["encontrado"] is True
+    esperado = evolucao_temporal("uso_plataforma_pct", cliente_id="C047")
+    assert resultado["resultado"]["tabela"] == esperado["tabela"]
+    assert len(resultado["resultado"]["tabela"]["linhas"]) > 0
+    print("OK   evolução temporal (cliente único):", resultado["resposta"])
+
+
+def caso_campo_invalido():
+    """Campo fora do allowlist -> erro estruturado com sugestão, nunca
+    exceção crua nem acesso a coluna arbitrária."""
+    tool_call = FakeToolCall("call_15", "buscar_campo_cliente", {"cliente_id": "C001", "campos": ["nome_fantasia"]})
+    sequencia = [
+        _resposta(FakeMessage(tool_calls=[tool_call])),
+        _resposta(FakeMessage(content="Esse campo não existe na base.")),
+    ]
+    with patch.object(ia_fallback, "_chamar_modelo", side_effect=sequencia):
+        resultado = ia_fallback.responder_com_fallback_ia("Qual o nome fantasia do cliente C001?")
+
+    assert resultado["encontrado"] is True
+    assert "erro" in resultado["resultado"]
+    assert "campos_validos" in resultado["resultado"]
+    print("OK   campo inválido -> erro estruturado com sugestão:", resultado["resultado"]["erro"])
+
+
 def caso_multi_turno():
     """
     Reproduz o bug encontrado em teste manual ao vivo: pergunta aberta
     ("diagnóstico geral") faz o modelo chamar uma tool, olhar o resultado,
-    e decidir chamar OUTRA tool antes de escrever texto. Um fluxo de 1
-    turno trata isso como sucesso com resposta vazia (bug); o loop
-    multi-turno precisa continuar até o modelo escrever o texto final.
+    e decidir chamar OUTRA tool antes de escrever texto.
     """
-    tool_call_1 = FakeToolCall("call_3", "consultar_metrica", {"metrica": "ticket_medio", "filtros": {"cliente_id": "C047"}})
-    tool_call_2 = FakeToolCall("call_4", "buscar_registro_cliente", {"cliente_id": "C047", "campo": "historico_chamados"})
+    tool_call_1 = FakeToolCall("call_16", "consultar_metrica", {"metrica": "ticket_medio", "filtros": {"cliente_id": "C047"}})
+    tool_call_2 = FakeToolCall("call_17", "buscar_campo_cliente", {"cliente_id": "C047", "campos": ["chamados_criticos"]})
     sequencia = [
         _resposta(FakeMessage(tool_calls=[tool_call_1])),
         _resposta(FakeMessage(tool_calls=[tool_call_2])),  # 2ª tool em vez de texto — o caso que quebrava
@@ -241,14 +351,14 @@ def caso_multi_turno():
     assert resultado["origem"] == "ia"
     assert resultado["encontrado"] is True
     assert resultado["resposta"]  # não pode vir vazio
-    assert resultado["tool"] == "buscar_registro_cliente"  # última tool chamada
+    assert resultado["tool"] == "buscar_campo_cliente"  # última tool chamada
     print("OK   multi-turno (2 tools antes do texto):", resultado["resposta"])
 
 
 def caso_max_turnos_excedido():
     """Se o modelo só encadear tool_calls sem nunca escrever texto, desiste
     após MAX_TURNOS_TOOL rodadas em vez de girar pra sempre."""
-    tool_call = FakeToolCall("call_5", "consultar_metrica", {"metrica": "churn"})
+    tool_call = FakeToolCall("call_18", "consultar_metrica", {"metrica": "churn"})
     sequencia = [_resposta(FakeMessage(tool_calls=[tool_call]))] * ia_fallback.MAX_TURNOS_TOOL
     with patch.object(ia_fallback, "_chamar_modelo", side_effect=sequencia):
         resultado = ia_fallback.responder_com_fallback_ia("pergunta que nunca fecha")
@@ -272,7 +382,7 @@ def caso_timeout():
     nunca travar o request nem propagar a exceção pro cliente."""
     from .guardrails import FallbackTimeoutError
 
-    with patch.object(ia_fallback, "com_timeout", side_effect=FallbackTimeoutError("excedeu 8s")):
+    with patch.object(ia_fallback, "com_timeout", side_effect=FallbackTimeoutError("excedeu 20s")):
         resultado = ia_fallback.responder_com_fallback_ia("pergunta qualquer")
 
     assert resultado == {"origem": "ia", "encontrado": False, "erro": "timeout"}
@@ -281,16 +391,20 @@ def caso_timeout():
 
 if __name__ == "__main__":
     caso_consultar_metrica()
-    caso_buscar_registro_cliente()
     caso_analisar_fatores_churn()
-    caso_ranking_clientes()
-    caso_ranking_por_antiguidade()
-    caso_contar_clientes()
     caso_clientes_em_risco()
-    caso_listar_clientes()
+    caso_maior_cliente()
+    caso_clientes_por_segmento()
+    caso_cancelamentos_por_periodo()
+    caso_detratores()
+    caso_buscar_campo_cliente()
     caso_normaliza_cliente_id_com_erro_de_digitacao()
+    caso_comparacao_indireta()
+    caso_comparacao_entre_periodos()
+    caso_evolucao_temporal()
+    caso_campo_invalido()
     caso_multi_turno()
     caso_max_turnos_excedido()
     caso_fora_do_escopo()
     caso_timeout()
-    print("\nTodos os cenários (incluindo o multi-turno) passaram (com API mockada).")
+    print("\nTodos os cenários (incluindo encadeamento de tools e generalização) passaram (com API mockada).")

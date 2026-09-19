@@ -109,7 +109,7 @@ def sugerir_resposta(sugestao_id):
     Chamado quando o admin clica em "Aprovar" — pede pra Claude sugerir um
     texto de resposta pra essa sugestão, usando o MESMO fluxo de tool use
     do fallback (nunca inventa número, só formata em cima do resultado real
-    de consultar_metrica/buscar_registro_cliente). O admin ainda revisa e
+    de consultar_metrica/buscar_campo_cliente). O admin ainda revisa e
     pode editar antes de confirmar o cadastro — isso aqui só pré-preenche.
     """
     sugestao = armazenamento.buscar_sugestao(sugestao_id)

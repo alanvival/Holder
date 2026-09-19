@@ -290,6 +290,36 @@
   color: rgba(0, 10, 30, 0.55);
 }
 
+.ac-answer-table-wrap {
+  overflow-x: auto;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 10, 30, 0.08);
+}
+
+.ac-answer-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 12px;
+}
+
+.ac-answer-table th,
+.ac-answer-table td {
+  padding: 6px 10px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.ac-answer-table th {
+  background: rgba(1, 86, 252, 0.06);
+  color: var(--gs-blue-accent);
+  font-family: var(--gs-font-heading);
+  font-weight: 600;
+}
+
+.ac-answer-table tbody tr:not(:last-child) td {
+  border-bottom: 1px solid rgba(0, 10, 30, 0.06);
+}
+
 .ac-origem-ia {
   display: flex;
   align-items: center;

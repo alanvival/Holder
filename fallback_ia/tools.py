@@ -1,39 +1,37 @@
 """
 Schema das tools expostas ao provedor de IA (formato Anthropic —
-`input_schema` — que é a fonte da verdade), ligado às mesmas funções que já
-resolvem o catálogo determinístico (metricas.py / registro_cliente.py).
-Nenhuma lógica de cálculo mora aqui: este módulo só descreve a interface e
-roteia pra quem já sabe calcular. `tools_formato_openai()` converte pro
-formato usado pela Groq/OpenAI (`function.parameters`), sem duplicar o
-schema — um só lugar descreve as tools, cada provedor só lê num formato
-diferente.
+`input_schema` — que é a fonte da verdade). `tools_formato_openai()`
+converte pro formato usado pela Groq/OpenAI (`function.parameters`), sem
+duplicar o schema — um só lugar descreve as tools, cada provedor só lê num
+formato diferente.
+
+Refatorado pra tools GENÉRICAS (ver fallback_ia/campos.py e
+fallback_ia/tools_genericas.py): antes, cada pergunta nova exigia uma tool
+nova e estreita (ranking_clientes, contar_clientes, evolucao_metrica,
+comparar_por_categoria, listar_clientes antigo, buscar_registro_cliente) —
+isso não escala, o número de perguntas possíveis é infinito. Agora
+`listar_clientes`, `buscar_campo_cliente`, `comparar_clientes` e
+`evolucao_temporal` cobrem essas famílias inteiras via parâmetros (campo é
+validado contra CAMPOS_PERMITIDOS, nunca vira nome de coluna cru).
+`consultar_metrica` continua à parte porque métricas agregadas (ticket
+médio, SLA, NPS, churn...) são CÁLCULOS com fórmula própria, não um campo
+só; `analisar_fatores_churn` e `clientes_em_risco` também continuam à parte
+pelo mesmo motivo — são análises que cruzam várias métricas, não uma leitura
+de campo.
 """
 from __future__ import annotations
 
-from . import dados, metricas, registro_cliente
-
-# Reaproveitado em várias tools — mesmo shape de recorte em todo lugar.
-_FILTROS_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "plano": {"type": "string", "enum": ["Essencial", "Avancado", "Enterprise"]},
-        "porte": {"type": "string", "enum": ["Pequeno", "Medio", "Grande"]},
-        "segmento": {"type": "string"},
-        "situacao": {"type": "string", "enum": ["Ativo", "Cancelado"]},
-        "periodo_inicio": {"type": "string", "description": "AAAA-MM"},
-        "periodo_fim": {"type": "string", "description": "AAAA-MM"},
-    },
-}
+from . import dados, metricas, tools_genericas
 
 TOOLS = [
     {
         "name": "consultar_metrica",
         "description": (
             "Calcula uma métrica agregada sobre a base de clientes "
-            "(ticket médio, antiguidade de contrato, tempo de resolução, "
-            "reclamações, atraso de pagamento, SLA, NPS, churn, uso da "
-            "plataforma, reuniões, chamados críticos, taxa de reabertura), "
-            "com filtros opcionais."
+            "(ticket médio, antiguidade de contrato, SLA contratado, tempo "
+            "de resolução, reclamações, atraso de pagamento, SLA cumprido, "
+            "NPS, churn, uso da plataforma, reuniões, chamados críticos, "
+            "taxa de reabertura), com filtros opcionais."
         ),
         "input_schema": {
             "type": "object",
@@ -41,10 +39,10 @@ TOOLS = [
                 "metrica": {
                     "type": "string",
                     "enum": [
-                        "ticket_medio", "antiguidade_contrato", "tempo_medio_resolucao",
-                        "media_reclamacoes", "atraso_pagamento", "sla_cumprido", "nps", "churn",
-                        "uso_plataforma", "reunioes_realizadas", "chamados_criticos",
-                        "taxa_reabertura",
+                        "ticket_medio", "antiguidade_contrato", "sla_contratado",
+                        "tempo_medio_resolucao", "media_reclamacoes", "atraso_pagamento",
+                        "sla_cumprido", "nps", "churn", "uso_plataforma",
+                        "reunioes_realizadas", "chamados_criticos", "taxa_reabertura",
                     ],
                     "description": "Qual métrica calcular. 'antiguidade_contrato' = dias desde o início do contrato.",
                 },
@@ -68,114 +66,12 @@ TOOLS = [
         "name": "analisar_fatores_churn",
         "description": (
             "Compara os indicadores médios entre clientes ativos e "
-            "cancelados (SLA, uso da plataforma, reclamações, atraso de "
-            "pagamento, tempo de resolução, chamados críticos, taxa de "
-            "reabertura, ticket médio, NPS) e devolve um ranking de qual "
-            "métrica mais difere entre os dois grupos. Use pra perguntas "
-            "tipo 'o que mais influencia o cancelamento', 'quais fatores "
-            "levam ao churn', 'o que diferencia quem cancela de quem fica'. "
+            "cancelados e devolve um ranking de qual métrica mais difere "
+            "entre os dois grupos. Use pra perguntas tipo 'o que mais "
+            "influencia o cancelamento', 'quais fatores levam ao churn'. "
             "Não tem parâmetros — sempre compara a carteira inteira."
         ),
         "input_schema": {"type": "object", "properties": {}},
-    },
-    {
-        "name": "ranking_clientes",
-        "description": (
-            "Lista os clientes com maior ou menor valor numa métrica "
-            "específica — use pra perguntas tipo 'qual cliente tem o maior "
-            "ticket', 'quais clientes têm o pior SLA', 'quem tem mais "
-            "chamados críticos', 'top 5 clientes por uso da plataforma', "
-            "'qual cliente é o mais antigo' (use 'antiguidade_contrato' com "
-            "direcao 'maior'), 'qual cliente é mais novo' (direcao 'menor'). "
-            "Diferente de consultar_metrica (que devolve UM número agregado "
-            "de toda a carteira), esta tool devolve uma LISTA de clientes "
-            "individuais ordenada. Não suporta as métricas 'churn' nem "
-            "'nps' (não fazem sentido por cliente individual nesse formato)."
-        ),
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "metrica": {
-                    "type": "string",
-                    "enum": [
-                        "ticket_medio", "antiguidade_contrato", "tempo_medio_resolucao",
-                        "media_reclamacoes", "atraso_pagamento", "sla_cumprido", "uso_plataforma",
-                        "reunioes_realizadas", "chamados_criticos", "taxa_reabertura",
-                    ],
-                    "description": "Qual métrica usar pra ordenar os clientes.",
-                },
-                "direcao": {
-                    "type": "string",
-                    "enum": ["maior", "menor"],
-                    "description": "'maior' = do maior valor pro menor (topo do ranking); 'menor' = do menor pro maior.",
-                },
-                "quantidade": {"type": "integer", "description": "Quantos clientes retornar (padrão 5)."},
-                "filtros": _FILTROS_SCHEMA,
-            },
-            "required": ["metrica"],
-        },
-    },
-    {
-        "name": "contar_clientes",
-        "description": (
-            "Conta quantos clientes batem com um conjunto de filtros — use "
-            "pra perguntas tipo 'quantos clientes tem o plano Enterprise', "
-            "'quantos clientes ativos no segmento Varejo'. Sem filtros, "
-            "conta a carteira inteira."
-        ),
-        "input_schema": {
-            "type": "object",
-            "properties": {"filtros": _FILTROS_SCHEMA},
-        },
-    },
-    {
-        "name": "evolucao_metrica",
-        "description": (
-            "Série mensal de uma métrica ao longo do tempo — use pra "
-            "perguntas tipo 'como o SLA evoluiu nos últimos meses', 'a "
-            "carteira está melhorando ou piorando', 'tendência de uso da "
-            "plataforma'. Não suporta 'ticket_medio', 'churn' nem 'nps' "
-            "(não variam mês a mês da mesma forma nesta base)."
-        ),
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "metrica": {
-                    "type": "string",
-                    "enum": [
-                        "tempo_medio_resolucao", "media_reclamacoes", "atraso_pagamento",
-                        "sla_cumprido", "uso_plataforma", "reunioes_realizadas",
-                        "chamados_criticos", "taxa_reabertura",
-                    ],
-                },
-                "filtros": _FILTROS_SCHEMA,
-            },
-            "required": ["metrica"],
-        },
-    },
-    {
-        "name": "comparar_por_categoria",
-        "description": (
-            "Compara uma métrica entre as categorias de plano, porte ou "
-            "segmento — use pra perguntas tipo 'qual segmento tem mais "
-            "churn', 'compare os planos por SLA', 'qual porte reclama mais'."
-        ),
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "metrica": {
-                    "type": "string",
-                    "enum": [
-                        "ticket_medio", "antiguidade_contrato", "tempo_medio_resolucao",
-                        "media_reclamacoes", "atraso_pagamento", "sla_cumprido", "churn",
-                        "uso_plataforma", "reunioes_realizadas", "chamados_criticos", "taxa_reabertura",
-                    ],
-                },
-                "categoria": {"type": "string", "enum": ["plano", "porte", "segmento"]},
-                "filtros": _FILTROS_SCHEMA,
-            },
-            "required": ["metrica", "categoria"],
-        },
     },
     {
         "name": "clientes_em_risco",
@@ -183,76 +79,146 @@ TOOLS = [
             "Lista clientes ativos classificados num nível de risco de "
             "cancelamento (Alto, Médio ou Baixo), calculado comparando o "
             "mês mais recente de cada cliente com a própria média "
-            "histórica dele (não com a média da carteira). Use pra "
-            "perguntas tipo 'quais clientes estão em risco', 'quem eu "
-            "devo ligar primeiro', 'quais contas estão em perigo'."
+            "histórica dele. Use pra perguntas tipo 'quais clientes estão "
+            "em risco', 'quem eu devo ligar primeiro'."
         ),
         "input_schema": {
             "type": "object",
             "properties": {
-                "nivel": {
-                    "type": "string",
-                    "enum": ["Alto", "Médio", "Baixo"],
-                    "description": "Nível de risco a listar. Padrão: Alto.",
-                },
+                "nivel": {"type": "string", "enum": ["Alto", "Médio", "Baixo"], "description": "Padrão: Alto."},
             },
         },
     },
     {
         "name": "listar_clientes",
         "description": (
-            "Lista (não conta, não ranqueia por valor) os clientes que "
-            "batem com um conjunto de filtros — use pra perguntas tipo "
-            "'quais clientes são do segmento Varejo', 'quais clientes são "
-            "detratores' (filtros.nps_classificacao = 'Detrator'), 'quais "
-            "clientes cancelaram em 2026' (filtros.cancelamento_inicio = "
-            "'2026-01', filtros.cancelamento_fim = '2026-12'). Devolve até "
-            "'limite' cliente_id (padrão 20)."
+            "Tool genérica de busca/ranking/contagem/agrupamento de "
+            "clientes — cobre qualquer combinação de filtros sobre qualquer "
+            "campo do allowlist (segmento, porte, plano, situação, valor "
+            "mensal, SLA contratado, início de contrato, mês de "
+            "cancelamento, chamados, SLA cumprido, reclamações, uso da "
+            "plataforma, atraso de pagamento, reuniões, NPS...). "
+            "'retornar' decide o formato: 'lista' = os cliente_id que "
+            "batem (com 'ordenar_por' vira ranking, ex: 'qual o maior "
+            "cliente' -> ordenar_por='valor_mensal', direcao='desc', "
+            "limite=1); 'contagem' = só o total (ex: 'quantos clientes "
+            "cancelaram'); 'agrupado' = contagem por valor de um campo "
+            "(ex: 'cancelamentos por segmento' -> agrupar_por='segmento', "
+            "com filtros=[{campo:'situacao',operador:'igual',valor:"
+            "'Cancelado'}])."
         ),
         "input_schema": {
             "type": "object",
             "properties": {
                 "filtros": {
-                    "type": "object",
-                    "properties": {
-                        "plano": {"type": "string", "enum": ["Essencial", "Avancado", "Enterprise"]},
-                        "porte": {"type": "string", "enum": ["Pequeno", "Medio", "Grande"]},
-                        "segmento": {"type": "string"},
-                        "situacao": {"type": "string", "enum": ["Ativo", "Cancelado"]},
-                        "nps_classificacao": {"type": "string", "enum": ["Promotor", "Neutro", "Detrator"]},
-                        "cancelamento_inicio": {"type": "string", "description": "AAAA-MM — só clientes cancelados a partir desse mês."},
-                        "cancelamento_fim": {"type": "string", "description": "AAAA-MM — só clientes cancelados até esse mês."},
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "campo": {"type": "string", "description": "Campo do allowlist — ver buscar_campo_cliente pra lista completa."},
+                            "operador": {"type": "string", "enum": ["igual", "diferente", "maior_que", "menor_que", "contem", "entre"]},
+                            "valor": {"type": ["string", "number"]},
+                            "valor2": {"type": ["string", "number"], "description": "Usado só com operador 'entre'."},
+                        },
+                        "required": ["campo", "operador", "valor"],
                     },
                 },
-                "limite": {"type": "integer", "description": "Máximo de clientes a listar (padrão 20)."},
+                "ordenar_por": {"type": "string", "description": "Campo do allowlist pra ordenar/ranquear."},
+                "direcao": {"type": "string", "enum": ["asc", "desc"], "description": "Padrão desc (maior primeiro)."},
+                "periodo_inicio": {"type": "string", "description": "AAAA-MM — aplica-se a campos de série temporal usados em filtros/ordenar_por."},
+                "periodo_fim": {"type": "string"},
+                "limite": {"type": "integer", "description": "Padrão 20, máximo 100. Ignorado quando retornar='contagem'."},
+                "retornar": {"type": "string", "enum": ["lista", "contagem", "agrupado"], "description": "Padrão 'lista'."},
+                "agrupar_por": {"type": "string", "description": "Campo do allowlist — obrigatório quando retornar='agrupado'."},
             },
         },
     },
     {
-        "name": "buscar_registro_cliente",
+        "name": "buscar_campo_cliente",
         "description": (
-            "Busca informações pontuais de um cliente específico. Use "
-            "campo='plano' pra perguntas sobre plano, porte, segmento, "
-            "valor mensal, SLA contratado E DATA DE INÍCIO DO CONTRATO "
-            "(ex: 'quando o cliente C002 entrou', 'qual dia começou o "
-            "contrato do cliente X', 'desde quando é cliente'); "
-            "campo='situacao' pra saber se está ativo ou cancelado (e "
-            "quando cancelou); campo='historico_chamados' ou "
-            "'historico_nps' pro histórico recente."
+            "Busca um ou mais campos pontuais de UM cliente específico — "
+            "cobre qualquer campo do allowlist: segmento, porte, plano, "
+            "valor_mensal, sla_contratado_h, inicio_contrato (data que o "
+            "contrato começou), situacao, mes_cancelamento, chamados_*, "
+            "pct_sla_cumprido, tempo_medio_resolucao_h, "
+            "reclamacoes_formais, uso_plataforma_pct, "
+            "dias_atraso_pagamento, reunioes_realizadas/previstas, "
+            "nota_nps, classificacao_nps. Campo de série temporal sem "
+            "período pega o mês mais recente disponível."
         ),
         "input_schema": {
             "type": "object",
             "properties": {
                 "cliente_id": {"type": "string", "description": "ID do cliente, ex: C007"},
-                "campo": {
-                    "type": "string",
-                    "enum": [
-                        "ultimo_acompanhamento", "situacao", "plano",
-                        "historico_chamados", "historico_nps",
-                    ],
+                "campos": {"type": "array", "items": {"type": "string"}},
+                "periodo_inicio": {"type": "string", "description": "AAAA-MM"},
+                "periodo_fim": {"type": "string", "description": "AAAA-MM — se omitido, usa o mês mais recente disponível."},
+            },
+            "required": ["cliente_id", "campos"],
+        },
+    },
+    {
+        "name": "comparar_clientes",
+        "description": (
+            "Compara dois ou mais clientes num mesmo período, OU compara "
+            "o(s) mesmo(s) cliente(s) entre dois períodos diferentes (ex: "
+            "2025 vs 2026, informando 'periodo_comparacao'). Pra comparar "
+            "clientes descritos indiretamente (\"o maior cliente do Varejo "
+            "com o de Saúde\"), primeiro use listar_clientes pra descobrir "
+            "os cliente_id, e só então chame esta tool."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "cliente_ids": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+                "campos": {"type": "array", "items": {"type": "string"}},
+                "periodo_inicio": {"type": "string"},
+                "periodo_fim": {"type": "string"},
+                "periodo_comparacao": {
+                    "type": "object",
+                    "description": "Segundo intervalo de período pra comparar contra o principal — presente só quando a pergunta compara dois períodos, não dois clientes.",
+                    "properties": {
+                        "periodo_inicio": {"type": "string"},
+                        "periodo_fim": {"type": "string"},
+                    },
                 },
             },
-            "required": ["cliente_id", "campo"],
+            "required": ["cliente_ids", "campos"],
+        },
+    },
+    {
+        "name": "evolucao_temporal",
+        "description": (
+            "Retorna a evolução mês a mês (ou pesquisa a pesquisa, para "
+            "campos de NPS) de UM campo de série temporal — pra um cliente "
+            "específico (cliente_id) ou agregado sobre um grupo de "
+            "clientes (filtros, mesmo formato de listar_clientes). Use pra "
+            "perguntas tipo 'como o SLA evoluiu', 'a carteira está "
+            "melhorando ou piorando'."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "campo": {"type": "string", "description": "Campo de série temporal do allowlist (ex: pct_sla_cumprido, uso_plataforma_pct, chamados_criticos, nota_nps, classificacao_nps)."},
+                "cliente_id": {"type": "string", "description": "Opcional — se omitido, agrega sobre 'filtros'."},
+                "filtros": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "campo": {"type": "string"},
+                            "operador": {"type": "string", "enum": ["igual", "diferente", "maior_que", "menor_que", "contem", "entre"]},
+                            "valor": {"type": ["string", "number"]},
+                            "valor2": {"type": ["string", "number"]},
+                        },
+                        "required": ["campo", "operador", "valor"],
+                    },
+                    "description": "Usado só quando cliente_id é omitido, pra agregar um grupo (ex: média do segmento Varejo).",
+                },
+                "periodo_inicio": {"type": "string"},
+                "periodo_fim": {"type": "string"},
+            },
+            "required": ["campo"],
         },
     },
 ]
@@ -277,16 +243,28 @@ def tools_formato_openai() -> list[dict]:
 
 def _normalizar_entrada(entrada: dict) -> dict:
     """Corrige erros de digitação comuns no cliente_id (ex: 'CO02' -> 'C002')
-    antes de rodar qualquer tool — tanto no parâmetro direto quanto dentro
-    de filtros aninhados."""
+    antes de rodar qualquer tool — no parâmetro direto, dentro de filtros
+    aninhados (dict, tool antiga consultar_metrica) e dentro de listas de
+    filtro (array, tools genéricas) e de cliente_ids."""
     entrada = dict(entrada or {})
     if "cliente_id" in entrada:
         entrada["cliente_id"] = dados.normalizar_cliente_id(entrada["cliente_id"])
+    if isinstance(entrada.get("cliente_ids"), list):
+        entrada["cliente_ids"] = [dados.normalizar_cliente_id(c) for c in entrada["cliente_ids"]]
+
     filtros = entrada.get("filtros")
     if isinstance(filtros, dict) and "cliente_id" in filtros:
         filtros = dict(filtros)
         filtros["cliente_id"] = dados.normalizar_cliente_id(filtros["cliente_id"])
         entrada["filtros"] = filtros
+    elif isinstance(filtros, list):
+        nova_lista = []
+        for f in filtros:
+            if isinstance(f, dict) and f.get("campo") == "cliente_id":
+                f = dict(f)
+                f["valor"] = dados.normalizar_cliente_id(f.get("valor"))
+            nova_lista.append(f)
+        entrada["filtros"] = nova_lista
     return entrada
 
 
@@ -298,21 +276,33 @@ def executar_tool(nome: str, entrada: dict) -> dict:
         return metricas.calcular_metrica(entrada.get("metrica"), entrada.get("filtros") or {})
     if nome == "analisar_fatores_churn":
         return metricas.analisar_fatores_churn()
-    if nome == "ranking_clientes":
-        return metricas.ranking_clientes(
-            entrada.get("metrica"), entrada.get("direcao", "maior"),
-            entrada.get("quantidade", 5), entrada.get("filtros") or {},
-        )
-    if nome == "contar_clientes":
-        return metricas.contar_clientes(entrada.get("filtros") or {})
-    if nome == "evolucao_metrica":
-        return metricas.evolucao_metrica(entrada.get("metrica"), entrada.get("filtros") or {})
-    if nome == "comparar_por_categoria":
-        return metricas.comparar_por_categoria(entrada.get("metrica"), entrada.get("categoria"), entrada.get("filtros") or {})
     if nome == "clientes_em_risco":
         return metricas.clientes_em_risco(entrada.get("nivel", "Alto"))
     if nome == "listar_clientes":
-        return metricas.listar_clientes(entrada.get("filtros") or {}, entrada.get("limite", 20))
-    if nome == "buscar_registro_cliente":
-        return registro_cliente.buscar_registro_cliente(entrada.get("cliente_id"), entrada.get("campo"))
+        return tools_genericas.listar_clientes(
+            filtros=entrada.get("filtros"),
+            ordenar_por=entrada.get("ordenar_por"),
+            direcao=entrada.get("direcao", "desc"),
+            periodo_inicio=entrada.get("periodo_inicio"),
+            periodo_fim=entrada.get("periodo_fim"),
+            limite=entrada.get("limite", 20),
+            retornar=entrada.get("retornar", "lista"),
+            agrupar_por=entrada.get("agrupar_por"),
+        )
+    if nome == "buscar_campo_cliente":
+        return tools_genericas.buscar_campo_cliente(
+            entrada.get("cliente_id"), entrada.get("campos") or [],
+            entrada.get("periodo_inicio"), entrada.get("periodo_fim"),
+        )
+    if nome == "comparar_clientes":
+        return tools_genericas.comparar_clientes(
+            entrada.get("cliente_ids") or [], entrada.get("campos") or [],
+            entrada.get("periodo_inicio"), entrada.get("periodo_fim"),
+            entrada.get("periodo_comparacao"),
+        )
+    if nome == "evolucao_temporal":
+        return tools_genericas.evolucao_temporal(
+            entrada.get("campo"), entrada.get("cliente_id"), entrada.get("filtros"),
+            entrada.get("periodo_inicio"), entrada.get("periodo_fim"),
+        )
     return {"erro": f"Tool desconhecida: {nome}"}

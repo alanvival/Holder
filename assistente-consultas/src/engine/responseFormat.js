@@ -18,6 +18,14 @@ export function locationResponse(text, local) {
   return { kind: 'location', text, local };
 }
 
+// Resposta tabular — pra tools que naturalmente devolvem várias linhas (ex:
+// listar_clientes com ordenar_por, comparar_clientes, evolucao_temporal do
+// fallback de IA). colunas: string[]; linhas: array de objetos com uma
+// chave por coluna.
+export function tableResponse(text, colunas, linhas, contexto) {
+  return { kind: 'table', text, colunas, linhas, contexto };
+}
+
 // Resposta de métrica agregada: valor em destaque (já formatado) + linha
 // menor de contexto declarando o universo considerado (item 4 das "Regras
 // de cálculo" do prompt de métricas — nunca um número solto).

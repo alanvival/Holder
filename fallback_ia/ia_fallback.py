@@ -42,7 +42,11 @@ MAX_TOKENS = 2048
 
 # Guardrail contra loop de tool use: no máximo N idas e vindas antes de
 # desistir e cair em "não encontrei" — perguntas legítimas resolvem em 1-2.
-MAX_TURNOS_TOOL = 4
+# Subiu de 4 pra 6 depois de introduzir o encadeamento de tools no system
+# prompt (comparação indireta: "o maior cliente do Varejo" precisa de
+# listar_clientes x2 + comparar_clientes + texto final = 4 turnos no mínimo,
+# sem margem nenhuma se o modelo tropeçar e refizer uma chamada).
+MAX_TURNOS_TOOL = 6
 
 SYSTEM_PROMPT = (
     "Você é o mecanismo de resposta de um assistente de consultas sobre uma "
@@ -53,7 +57,17 @@ SYSTEM_PROMPT = (
     "forma — isso será tratado separadamente pelo sistema. Ao formatar a "
     "resposta final, use o valor exatamente como veio do resultado da tool, "
     "declare o universo considerado (quantos clientes, qual período, quais "
-    "filtros), e use formatação brasileira (R$, vírgula decimal)."
+    "filtros), e use formatação brasileira (R$, vírgula decimal).\n\n"
+    "Quando uma pergunta exigir informação que nenhuma tool sozinha resolve "
+    "— por exemplo, identificar um cliente por uma descrição antes de "
+    "comparar ou detalhar algo sobre ele — chame as tools necessárias em "
+    "sequência, usando o resultado de uma para montar os parâmetros da "
+    "próxima. Só escreva a resposta final depois de ter todos os resultados "
+    "reais necessários. Nunca preencha uma lacuna de identificação com um "
+    "palpite.\n\n"
+    "Datas relativas ('este mês', 'ano passado', 'nos últimos 3 meses') são "
+    "sua responsabilidade traduzir para AAAA-MM explícito antes de chamar a "
+    "tool — o backend só entende período explícito, nunca texto relativo."
 )
 
 _client = None

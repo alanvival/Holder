@@ -49,6 +49,32 @@ export function MessageBubble({ mensagem, onConfirmarSugestao, onDispensarSugest
             {mensagem.payload.contexto && <div className="ac-answer-contexto">{mensagem.payload.contexto}</div>}
           </>
         )}
+        {mensagem.payload.kind === 'table' && (
+          <>
+            <div>{mensagem.payload.text}</div>
+            <div className="ac-answer-table-wrap">
+              <table className="ac-answer-table">
+                <thead>
+                  <tr>
+                    {mensagem.payload.colunas.map((coluna) => (
+                      <th key={coluna}>{coluna}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {mensagem.payload.linhas.map((linha, index) => (
+                    <tr key={`${mensagem.id}-row-${index}`}>
+                      {mensagem.payload.colunas.map((coluna) => (
+                        <td key={coluna}>{linha[coluna] ?? '—'}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {mensagem.payload.contexto && <div className="ac-answer-contexto">{mensagem.payload.contexto}</div>}
+          </>
+        )}
         {mensagem.payload.kind === 'metric' && (
           <>
             <div>{mensagem.payload.text}</div>

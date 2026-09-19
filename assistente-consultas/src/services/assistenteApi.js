@@ -18,7 +18,12 @@ import {
   aprovarSugestao,
   rejeitarSugestao,
 } from '../engine/suggestionsStore.js';
-import { textResponse, notFoundResponse } from '../engine/responseFormat.js';
+import { textResponse, tableResponse, notFoundResponse } from '../engine/responseFormat.js';
+
+// Tools cujo resultado é naturalmente tabular — quando o backend devolve um
+// bloco `tabela` (colunas + linhas), a UI renderiza como tabela em vez de
+// só texto corrido, mesmo a IA continuando a escrever o texto de contexto.
+const TOOLS_COM_TABELA = new Set(['listar_clientes', 'comparar_clientes', 'evolucao_temporal']);
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:8000/api';
 
@@ -65,7 +70,11 @@ export async function consultarPergunta(texto) {
 
   const respostaIa = await tentarFallbackIa(texto);
   if (respostaIa?.encontrado) {
-    return { payload: textResponse(respostaIa.resposta), intentId: respostaIa.tool ?? null, origem: 'ia' };
+    const tabela = respostaIa.resultado?.tabela;
+    const payload = TOOLS_COM_TABELA.has(respostaIa.tool) && tabela?.colunas?.length
+      ? tableResponse(respostaIa.resposta, tabela.colunas, tabela.linhas)
+      : textResponse(respostaIa.resposta);
+    return { payload, intentId: respostaIa.tool ?? null, origem: 'ia' };
   }
 
   // Fallback não achou tool, deu timeout, ou o backend nem está no ar —
