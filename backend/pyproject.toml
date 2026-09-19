@@ -1,0 +1,41 @@
+[project]
+name = "holder-backend"
+version = "0.1.0"
+description = "API de risco de churn (INOVAAPPS 2026) — MVP"
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.30",
+  "sqlalchemy>=2.0.30",
+  "pydantic>=2.7",
+  "pydantic-settings>=2.3",
+  "pwdlib[argon2]>=0.2",
+  "PyJWT>=2.8",
+  "pandas>=2.2",
+  "numpy>=1.26",
+  "openpyxl>=3.1",
+  "python-multipart>=0.0.9",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "httpx>=0.27", "ruff>=0.5"]
+sqlserver = ["pyodbc>=5"]
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["app*", "scripts*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["B008"]  # Depends(...) em default de parâmetro é o padrão do FastAPI
