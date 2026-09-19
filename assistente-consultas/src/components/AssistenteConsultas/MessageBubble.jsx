@@ -58,6 +58,11 @@ export function MessageBubble({ mensagem, onConfirmarSugestao, onDispensarSugest
             {mensagem.payload.contexto && <div className="ac-answer-contexto">{mensagem.payload.contexto}</div>}
           </>
         )}
+        {mensagem.origem === 'ia' && !isNotFound && (
+          <div className="ac-origem-ia">
+            <SparkleIcon size={10} color="#0156FC" /> Respondido pela IA — fora do catálogo padrão
+          </div>
+        )}
         {isNotFound && (
           <>
             <div className="ac-not-found__header">

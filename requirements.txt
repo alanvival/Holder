@@ -1,0 +1,11 @@
+# Dashboard (app.py, analise_sla.py)
+streamlit
+pandas
+plotly
+openpyxl
+
+# Backend do fallback de IA do Assistente de Consultas (server.py)
+Flask>=3.1
+flask-cors>=6.0
+anthropic>=1.7
+python-dotenv>=1.2

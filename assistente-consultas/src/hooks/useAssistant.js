@@ -54,11 +54,12 @@ export function useAssistant() {
     setStatus('loading');
 
     try {
-      const { payload } = await consultarPergunta(texto, tenant);
+      const { payload, origem } = await consultarPergunta(texto, tenant);
       const mensagemResposta = {
         id: newId(),
         autor: 'assistente',
         payload,
+        origem, // 'catalogo' | 'ia' — usado só pra um indicador visual sutil
         ...(payload.kind === 'not_found'
           ? { perguntaOrigem: texto, sugestaoStatus: 'pendente' }
           : {}),

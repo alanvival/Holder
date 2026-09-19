@@ -290,6 +290,14 @@
   color: rgba(0, 10, 30, 0.55);
 }
 
+.ac-origem-ia {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  color: var(--gs-blue-accent);
+}
+
 /* ---------- Sugestões (chips) ---------- */
 
 .ac-suggestions {
