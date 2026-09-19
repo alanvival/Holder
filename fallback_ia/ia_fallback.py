@@ -1,24 +1,31 @@
 """
-Fallback com a Claude API (tool use) — só entra quando o catálogo
-determinístico (JS, no front) não reconhece a pergunta. A Claude nunca
-calcula ou "lembra" um número: ela escolhe qual tool rodar, o backend
-executa a consulta de verdade contra os dados reais (tools.executar_tool),
-e só then a Claude formata a resposta final em cima do resultado real.
+Fallback com IA (tool use) — só entra quando o catálogo determinístico (JS,
+no front) não reconhece a pergunta. O modelo nunca calcula ou "lembra" um
+número: ele escolhe qual tool rodar, o backend executa a consulta de
+verdade contra os dados reais (tools.executar_tool), e só então o modelo
+formata a resposta final em cima do resultado real.
 
-tool_choice fica sempre "auto" — nunca "any": forçar uma tool faz a Claude
-inventar parâmetros pra uma tool que não faz sentido pra pergunta.
+Provedor: Groq (API compatível com OpenAI — chat.completions + tool
+calling). A arquitetura é a mesma pensada originalmente pra Claude API;
+trocar de provedor de novo (ex: voltar pra Anthropic) significa reescrever
+só _chamar_modelo/_chamar_modelo_com_resultado, não o resto do fluxo.
+
+tool_choice fica sempre "auto" — nunca "required"/força uma tool: forçar
+faz o modelo "inventar" parâmetros pra uma tool que não faz sentido pra
+pergunta.
 """
 from __future__ import annotations
 
+import json
 import os
 import time
 
-import anthropic
+from groq import Groq
 
 from .guardrails import FallbackTimeoutError, com_timeout, registrar_chamada
-from .tools import TOOLS, executar_tool
+from .tools import executar_tool, tools_formato_openai
 
-MODEL = "claude-sonnet-5"
+MODEL = "llama-3.3-70b-versatile"
 MAX_TOKENS = 1024
 
 SYSTEM_PROMPT = (
@@ -39,76 +46,79 @@ _client = None
 def _get_client():
     global _client
     if _client is None:
-        api_key = os.environ.get("ANTHROPIC_API_KEY")
+        api_key = os.environ.get("GROQ_API_KEY")
         if not api_key:
             raise RuntimeError(
-                "ANTHROPIC_API_KEY não configurada — copie .env.example para "
+                "GROQ_API_KEY não configurada — copie .env.example para "
                 ".env e preencha com uma chave real."
             )
-        _client = anthropic.Anthropic(api_key=api_key)
+        _client = Groq(api_key=api_key)
     return _client
 
 
-def _chamar_claude(pergunta: str):
+def _chamar_modelo(pergunta: str):
     client = _get_client()
-    return client.messages.create(
+    return client.chat.completions.create(
         model=MODEL,
         max_tokens=MAX_TOKENS,
-        system=SYSTEM_PROMPT,
-        tools=TOOLS,
-        tool_choice={"type": "auto"},
-        messages=[{"role": "user", "content": pergunta}],
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": pergunta},
+        ],
+        tools=tools_formato_openai(),
+        tool_choice="auto",
     )
 
 
-def _chamar_claude_com_resultado(pergunta: str, resposta_bruta, bloco_tool, resultado_real):
+def _chamar_modelo_com_resultado(pergunta: str, mensagem_bruta, tool_call, resultado_real):
     client = _get_client()
-    return client.messages.create(
+    return client.chat.completions.create(
         model=MODEL,
         max_tokens=MAX_TOKENS,
-        system=SYSTEM_PROMPT,
-        tools=TOOLS,
         messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": pergunta},
-            {"role": "assistant", "content": resposta_bruta.content},
+            mensagem_bruta.model_dump(exclude_none=True),
             {
-                "role": "user",
-                "content": [
-                    {"type": "tool_result", "tool_use_id": bloco_tool.id, "content": str(resultado_real)}
-                ],
+                "role": "tool",
+                "tool_call_id": tool_call.id,
+                "content": json.dumps(resultado_real, ensure_ascii=False),
             },
         ],
+        tools=tools_formato_openai(),
     )
 
 
 def responder_com_fallback_ia(pergunta: str) -> dict:
     """
     Retorna sempre um dict com "origem": "ia" e:
-      - {"encontrado": False} quando a Claude não achou tool pra pergunta
+      - {"encontrado": False} quando o modelo não achou tool pra pergunta
         (cai no mesmo fluxo de "não encontrei" do catálogo);
       - {"encontrado": True, "resposta": str, "tool": str} quando resolveu.
-    Nunca deixa a Claude devolver texto livre sem ter passado por uma tool.
+    Nunca deixa o modelo devolver texto livre sem ter passado por uma tool.
     """
     inicio = time.monotonic()
     tool_escolhida = None
     try:
-        resposta = com_timeout(_chamar_claude, pergunta)
+        resposta = com_timeout(_chamar_modelo, pergunta)
+        mensagem = resposta.choices[0].message
 
-        if resposta.stop_reason != "tool_use":
+        if not mensagem.tool_calls:
             registrar_chamada(
                 pergunta=pergunta, tool_escolhida=None, sucesso=True,
                 tempo_ms=int((time.monotonic() - inicio) * 1000),
             )
             return {"origem": "ia", "encontrado": False}
 
-        bloco_tool = next(b for b in resposta.content if b.type == "tool_use")
-        tool_escolhida = bloco_tool.name
-        resultado_real = executar_tool(bloco_tool.name, bloco_tool.input)
+        tool_call = mensagem.tool_calls[0]
+        tool_escolhida = tool_call.function.name
+        argumentos = json.loads(tool_call.function.arguments)
+        resultado_real = executar_tool(tool_escolhida, argumentos)
 
         resposta_final = com_timeout(
-            _chamar_claude_com_resultado, pergunta, resposta, bloco_tool, resultado_real,
+            _chamar_modelo_com_resultado, pergunta, mensagem, tool_call, resultado_real,
         )
-        texto = next(b.text for b in resposta_final.content if b.type == "text")
+        texto = resposta_final.choices[0].message.content
 
         registrar_chamada(
             pergunta=pergunta, tool_escolhida=tool_escolhida, sucesso=True,
@@ -122,7 +132,7 @@ def responder_com_fallback_ia(pergunta: str) -> dict:
             "resultado": resultado_real,
         }
 
-    except FallbackTimeoutError as exc:
+    except FallbackTimeoutError:
         registrar_chamada(
             pergunta=pergunta, tool_escolhida=tool_escolhida, sucesso=False,
             tempo_ms=int((time.monotonic() - inicio) * 1000), origem_erro="timeout",

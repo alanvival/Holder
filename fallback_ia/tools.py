@@ -1,8 +1,12 @@
 """
-Schema das tools expostas à Claude API — igual ao definido no prompt de
-fallback, ligado às mesmas funções que já resolvem o catálogo determinístico
-(metricas.py / registro_cliente.py). Nenhuma lógica de cálculo mora aqui:
-este módulo só descreve a interface e roteia pra quem já sabe calcular.
+Schema das tools expostas ao provedor de IA (formato Anthropic —
+`input_schema` — que é a fonte da verdade), ligado às mesmas funções que já
+resolvem o catálogo determinístico (metricas.py / registro_cliente.py).
+Nenhuma lógica de cálculo mora aqui: este módulo só descreve a interface e
+roteia pra quem já sabe calcular. `tools_formato_openai()` converte pro
+formato usado pela Groq/OpenAI (`function.parameters`), sem duplicar o
+schema — um só lugar descreve as tools, cada provedor só lê num formato
+diferente.
 """
 from __future__ import annotations
 
@@ -69,6 +73,23 @@ TOOLS = [
         },
     },
 ]
+
+
+def tools_formato_openai() -> list[dict]:
+    """Groq (e qualquer API compatível com OpenAI) espera
+    {"type": "function", "function": {name, description, parameters}} em
+    vez de {name, description, input_schema} — só reembala, mesmo schema."""
+    return [
+        {
+            "type": "function",
+            "function": {
+                "name": t["name"],
+                "description": t["description"],
+                "parameters": t["input_schema"],
+            },
+        }
+        for t in TOOLS
+    ]
 
 
 def executar_tool(nome: str, entrada: dict) -> dict:

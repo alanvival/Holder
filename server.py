@@ -5,14 +5,14 @@ Duas responsabilidades:
 1. Fallback de IA — o catálogo determinístico (assistente-consultas/src/
    engine/*.js) continua rodando 100% no navegador; só quando ele não
    reconhece uma pergunta o widget chama POST /api/fallback-ia, que roda o
-   fluxo de tool use (fallback_ia/claude_fallback.py). Existe só pra manter
-   a ANTHROPIC_API_KEY fora do bundle do front.
+   fluxo de tool use (fallback_ia/ia_fallback.py, via Groq). Existe só pra
+   manter a GROQ_API_KEY fora do bundle do front.
 2. Persistência das perguntas cadastradas pelo admin e das sugestões dos
    usuários (fallback_ia/armazenamento.py, SQLite) — antes viviam só em
    memória no navegador e sumiam a cada refresh.
 
 Rodar:
-    cp .env.example .env   # preencher ANTHROPIC_API_KEY
+    cp .env.example .env   # preencher GROQ_API_KEY
     pip install -r requirements.txt
     python server.py
 Escuta em http://localhost:8000 por padrão.
@@ -25,7 +25,7 @@ from flask_cors import CORS
 
 load_dotenv()
 
-from fallback_ia.claude_fallback import responder_com_fallback_ia  # noqa: E402
+from fallback_ia.ia_fallback import responder_com_fallback_ia  # noqa: E402
 from fallback_ia.guardrails import limite_excedido  # noqa: E402
 from fallback_ia import armazenamento  # noqa: E402
 
@@ -51,7 +51,7 @@ def fallback_ia():
 
 @app.get("/api/health")
 def health():
-    return jsonify({"status": "ok", "chave_configurada": bool(os.environ.get("ANTHROPIC_API_KEY"))})
+    return jsonify({"status": "ok", "chave_configurada": bool(os.environ.get("GROQ_API_KEY"))})
 
 
 # --- Perguntas cadastradas pelo admin -------------------------------------
