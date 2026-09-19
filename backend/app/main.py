@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import sessionmaker
 
 import app.models  # noqa: F401  (registra os models no metadata)
-from app.controllers import health_controller
+from app.controllers import auth_controller, health_controller
 from app.core.config import Settings, get_settings
 from app.core.database import Base, criar_engine
 from app.core.handlers import registrar_handlers
@@ -29,4 +29,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     registrar_handlers(app)
     app.include_router(health_controller.router, prefix="/api")
+    app.include_router(auth_controller.router, prefix="/api")
     return app

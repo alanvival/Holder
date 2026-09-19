@@ -36,3 +36,13 @@ def db_session(app: FastAPI) -> Iterator[Session]:
         yield session
     finally:
         session.close()
+
+
+@pytest.fixture
+def auth_headers(client: TestClient) -> dict[str, str]:
+    client.post(
+        "/api/auth/cadastro",
+        json={"nome_completo": "Usuária Teste", "usuario": "teste", "senha": "SenhaForte123"},
+    )
+    resposta = client.post("/api/auth/login", json={"usuario": "teste", "senha": "SenhaForte123"})
+    return {"Authorization": f"Bearer {resposta.json()['access_token']}"}
