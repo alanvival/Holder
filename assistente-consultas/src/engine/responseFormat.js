@@ -26,3 +26,9 @@ export function formatDatePt(isoDate) {
   const [year, month, day] = isoDate.split('-');
   return `${day}/${month}/${year}`;
 }
+
+// mes_ref na base do desafio INOVAAPPS vem como "AAAA-MM" (sem dia).
+export function formatMesPt(mesRef) {
+  const [year, month] = mesRef.split('-');
+  return `${month}/${year}`;
+}

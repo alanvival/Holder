@@ -1,0 +1,722 @@
+[
+  {
+    "cliente_id": "C001",
+    "segmento": "Logistica",
+    "porte": "Pequeno",
+    "plano": "Essencial",
+    "valor_mensal": 3848,
+    "sla_contratado_h": 24,
+    "inicio_contrato": "2020-09-01"
+  },
+  {
+    "cliente_id": "C002",
+    "segmento": "Saude",
+    "porte": "Medio",
+    "plano": "Avancado",
+    "valor_mensal": 10742,
+    "sla_contratado_h": 12,
+    "inicio_contrato": "2020-02-01"
+  },
+  {
+    "cliente_id": "C003",
+    "segmento": "Educacao",
+    "porte": "Pequeno",
+    "plano": "Essencial",
+    "valor_mensal": 3179,
+    "sla_contratado_h": 24,
+    "inicio_contrato": "2020-08-01"
+  },
+  {
+    "cliente_id": "C004",
+    "segmento": "Educacao",
+    "porte": "Pequeno",
+    "plano": "Essencial",
+    "valor_mensal": 3939,
+    "sla_contratado_h": 24,
+    "inicio_contrato": "2024-03-01"
+  },
+  {
+    "cliente_id": "C005",
+    "segmento": "Logistica",
+    "porte": "Pequeno",
+    "plano": "Essencial",
+    "valor_mensal": 2467,
+    "sla_contratado_h": 24,
+    "inicio_contrato": "2020-05-01"
+  },
+  {
+    "cliente_id": "C006",
+    "segmento": "Logistica",
+    "porte": "Pequeno",
+    "plano": "Essencial",
+    "valor_mensal": 3458,
+    "sla_contratado_h": 24,
+    "inicio_contrato": "2021-08-01"
+  },
+  {
+    "cliente_id": "C007",
+    "segmento": "Saude",
+    "porte": "Grande",
+    "plano": "Enterprise",
+    "valor_mensal": 32602,
+    "sla_contratado_h": 6,
+    "inicio_contrato": "2022-08-01"
+  },
+  {
+    "cliente_id": "C008",
+    "segmento": "Educacao",
+    "porte": "Pequeno",
+    "plano": "Essencial",
+    "valor_mensal": 4072,
+    "sla_contratado_h": 24,
+    "inicio_contrato": "2023-01-01"
+  },
+  {
+    "cliente_id": "C009",
+    "segmento": "Industria",
+    "porte": "Pequeno",
+    "plano": "Essencial",
+    "valor_mensal": 2836,
+    "sla_contratado_h": 24,
+    "inicio_contrato": "2024-03-01"
+  },
+  {
+    "cliente_id": "C010",
+    "segmento": "Varejo",
+    "porte": "Grande",
+    "plano": "Enterprise",
+    "valor_mensal": 31510,
+    "sla_contratado_h": 6,
+    "inicio_contrato": "2023-03-01"
+  },
+  {
+    "cliente_id": "C011",
+    "segmento": "Varejo",
+    "porte": "Grande",
+    "plano": "Enterprise",
+    "valor_mensal": 30742,
+    "sla_contratado_h": 6,
+    "inicio_contrato": "2020-09-01"
+  },
+  {
+    "cliente_id": "C012",
+    "segmento": "Industria",
+    "porte": "Medio",
+    "plano": "Avancado",
+    "valor_mensal": 10445,
+    "sla_contratado_h": 12,
+    "inicio_contrato": "2023-11-01"
+  },
+  {
+    "cliente_id": "C013",
+    "segmento": "Servicos",
+    "porte": "Medio",
+    "plano": "Avancado",
+    "valor_mensal": 12052,
+    "sla_contratado_h": 12,
+    "inicio_contrato": "2021-04-01"
+  },
+  {
+    "cliente_id": "C014",
+    "segmento": "Logistica",
+    "porte": "Medio",
+    "plano": "Avancado",
+    "valor_mensal": 12518,
+    "sla_contratado_h": 12,
+    "inicio_contrato": "2022-12-01"
+  },
+  {
+    "cliente_id": "C015",
+    "segmento": "Varejo",
+    "porte": "Pequeno",
+    "plano": "Essencial",
+    "valor_mensal": 3879,
+    "sla_contratado_h": 24,
+    "inicio_contrato": "2021-03-01"
+  },
+  {
+    "cliente_id": "C016",
+    "segmento": "Logistica",
+    "porte": "Pequeno",
+    "plano": "Essencial",
+    "valor_mensal": 2940,
+    "sla_contratado_h": 24,
+    "inicio_contrato": "2021-06-01"
+  },
+  {
+    "cliente_id": "C017",
+    "segmento": "Logistica",
+    "porte": "Medio",
+    "plano": "Avancado",
+    "valor_mensal": 8666,
+    "sla_contratado_h": 12,
+    "inicio_contrato": "2024-03-01"
+  },
+  {
+    "cliente_id": "C018",
+    "segmento": "Logistica",
+    "porte": "Grande",
+    "plano": "Enterprise",
+    "valor_mensal": 32299,
+    "sla_contratado_h": 6,
+    "inicio_contrato": "2021-11-01"
+  },
+  {
+    "cliente_id": "C019",
+    "segmento": "Saude",
+    "porte": "Pequeno",
+    "plano": "Essencial",
+    "valor_mensal": 2897,
+    "sla_contratado_h": 24,
+    "inicio_contrato": "2023-02-01"
+  },
+  {
+    "cliente_id": "C020",
+    "segmento": "Varejo",
+    "porte": "Medio",
+    "plano": "Avancado",
+    "valor_mensal": 12739,
+    "sla_contratado_h": 12,
+    "inicio_contrato": "2022-04-01"
+  },
+  {
+    "cliente_id": "C021",
+    "segmento": "Saude",
+    "porte": "Medio",
+    "plano": "Avancado",
+    "valor_mensal": 11994,
+    "sla_contratado_h": 12,
+    "inicio_contrato": "2020-10-01"
+  },
+  {
+    "cliente_id": "C022",
+    "segmento": "Educacao",
+    "porte": "Medio",
+    "plano": "Avancado",
+    "valor_mensal": 13161,
+    "sla_contratado_h": 12,
+    "inicio_contrato": "2024-02-01"
+  },
+  {
+    "cliente_id": "C023",
+    "segmento": "Logistica",
+    "porte": "Grande",
+    "plano": "Enterprise",
+    "valor_mensal": 32645,
+    "sla_contratado_h": 6,
+    "inicio_contrato": "2021-03-01"
+  },
+  {
+    "cliente_id": "C024",
+    "segmento": "Servicos",
+    "porte": "Pequeno",
+    "plano": "Essencial",
+    "valor_mensal": 3792,
+    "sla_contratado_h": 24,
+    "inicio_contrato": "2021-04-01"
+  },
+  {
+    "cliente_id": "C025",
+    "segmento": "Servicos",
+    "porte": "Grande",
+    "plano": "Enterprise",
+    "valor_mensal": 33350,
+    "sla_contratado_h": 6,
+    "inicio_contrato": "2024-07-01"
+  },
+  {
+    "cliente_id": "C026",
+    "segmento": "Varejo",
+    "porte": "Pequeno",
+    "plano": "Essencial",
+    "valor_mensal": 3644,
+    "sla_contratado_h": 24,
+    "inicio_contrato": "2023-01-01"
+  },
+  {
+    "cliente_id": "C027",
+    "segmento": "Varejo",
+    "porte": "Medio",
+    "plano": "Avancado",
+    "valor_mensal": 12277,
+    "sla_contratado_h": 12,
+    "inicio_contrato": "2023-07-01"
+  },
+  {
+    "cliente_id": "C028",
+    "segmento": "Industria",
+    "porte": "Pequeno",
+    "plano": "Essencial",
+    "valor_mensal": 4228,
+    "sla_contratado_h": 24,
+    "inicio_contrato": "2023-10-01"
+  },
+  {
+    "cliente_id": "C029",
+    "segmento": "Varejo",
+    "porte": "Medio",
+    "plano": "Avancado",
+    "valor_mensal": 12868,
+    "sla_contratado_h": 12,
+    "inicio_contrato": "2023-12-01"
+  },
+  {
+    "cliente_id": "C030",
+    "segmento": "Varejo",
+    "porte": "Pequeno",
+    "plano": "Essencial",
+    "valor_mensal": 3404,
+    "sla_contratado_h": 24,
+    "inicio_contrato": "2023-04-01"
+  },
+  {
+    "cliente_id": "C031",
+    "segmento": "Servicos",
+    "porte": "Pequeno",
+    "plano": "Essencial",
+    "valor_mensal": 3791,
+    "sla_contratado_h": 24,
+    "inicio_contrato": "2024-09-01"
+  },
+  {
+    "cliente_id": "C032",
+    "segmento": "Logistica",
+    "porte": "Grande",
+    "plano": "Enterprise",
+    "valor_mensal": 36208,
+    "sla_contratado_h": 6,
+    "inicio_contrato": "2021-02-01"
+  },
+  {
+    "cliente_id": "C033",
+    "segmento": "Servicos",
+    "porte": "Pequeno",
+    "plano": "Essencial",
+    "valor_mensal": 4310,
+    "sla_contratado_h": 24,
+    "inicio_contrato": "2020-12-01"
+  },
+  {
+    "cliente_id": "C034",
+    "segmento": "Industria",
+    "porte": "Grande",
+    "plano": "Enterprise",
+    "valor_mensal": 32070,
+    "sla_contratado_h": 6,
+    "inicio_contrato": "2022-06-01"
+  },
+  {
+    "cliente_id": "C035",
+    "segmento": "Saude",
+    "porte": "Medio",
+    "plano": "Avancado",
+    "valor_mensal": 8760,
+    "sla_contratado_h": 12,
+    "inicio_contrato": "2020-08-01"
+  },
+  {
+    "cliente_id": "C036",
+    "segmento": "Varejo",
+    "porte": "Medio",
+    "plano": "Avancado",
+    "valor_mensal": 8765,
+    "sla_contratado_h": 12,
+    "inicio_contrato": "2023-10-01"
+  },
+  {
+    "cliente_id": "C037",
+    "segmento": "Saude",
+    "porte": "Medio",
+    "plano": "Avancado",
+    "valor_mensal": 8381,
+    "sla_contratado_h": 12,
+    "inicio_contrato": "2022-01-01"
+  },
+  {
+    "cliente_id": "C038",
+    "segmento": "Varejo",
+    "porte": "Medio",
+    "plano": "Avancado",
+    "valor_mensal": 7399,
+    "sla_contratado_h": 12,
+    "inicio_contrato": "2021-01-01"
+  },
+  {
+    "cliente_id": "C039",
+    "segmento": "Saude",
+    "porte": "Medio",
+    "plano": "Avancado",
+    "valor_mensal": 13092,
+    "sla_contratado_h": 12,
+    "inicio_contrato": "2024-05-01"
+  },
+  {
+    "cliente_id": "C040",
+    "segmento": "Logistica",
+    "porte": "Medio",
+    "plano": "Avancado",
+    "valor_mensal": 10388,
+    "sla_contratado_h": 12,
+    "inicio_contrato": "2024-07-01"
+  },
+  {
+    "cliente_id": "C041",
+    "segmento": "Logistica",
+    "porte": "Medio",
+    "plano": "Avancado",
+    "valor_mensal": 11985,
+    "sla_contratado_h": 12,
+    "inicio_contrato": "2024-06-01"
+  },
+  {
+    "cliente_id": "C042",
+    "segmento": "Saude",
+    "porte": "Pequeno",
+    "plano": "Essencial",
+    "valor_mensal": 2908,
+    "sla_contratado_h": 24,
+    "inicio_contrato": "2022-10-01"
+  },
+  {
+    "cliente_id": "C043",
+    "segmento": "Industria",
+    "porte": "Pequeno",
+    "plano": "Essencial",
+    "valor_mensal": 2479,
+    "sla_contratado_h": 24,
+    "inicio_contrato": "2024-03-01"
+  },
+  {
+    "cliente_id": "C044",
+    "segmento": "Educacao",
+    "porte": "Pequeno",
+    "plano": "Essencial",
+    "valor_mensal": 3594,
+    "sla_contratado_h": 24,
+    "inicio_contrato": "2023-01-01"
+  },
+  {
+    "cliente_id": "C045",
+    "segmento": "Industria",
+    "porte": "Pequeno",
+    "plano": "Essencial",
+    "valor_mensal": 3121,
+    "sla_contratado_h": 24,
+    "inicio_contrato": "2022-01-01"
+  },
+  {
+    "cliente_id": "C046",
+    "segmento": "Educacao",
+    "porte": "Medio",
+    "plano": "Avancado",
+    "valor_mensal": 9978,
+    "sla_contratado_h": 12,
+    "inicio_contrato": "2021-01-01"
+  },
+  {
+    "cliente_id": "C047",
+    "segmento": "Servicos",
+    "porte": "Grande",
+    "plano": "Enterprise",
+    "valor_mensal": 33196,
+    "sla_contratado_h": 6,
+    "inicio_contrato": "2024-05-01"
+  },
+  {
+    "cliente_id": "C048",
+    "segmento": "Servicos",
+    "porte": "Medio",
+    "plano": "Avancado",
+    "valor_mensal": 8238,
+    "sla_contratado_h": 12,
+    "inicio_contrato": "2020-12-01"
+  },
+  {
+    "cliente_id": "C049",
+    "segmento": "Educacao",
+    "porte": "Pequeno",
+    "plano": "Essencial",
+    "valor_mensal": 3264,
+    "sla_contratado_h": 24,
+    "inicio_contrato": "2020-05-01"
+  },
+  {
+    "cliente_id": "C050",
+    "segmento": "Educacao",
+    "porte": "Medio",
+    "plano": "Avancado",
+    "valor_mensal": 12312,
+    "sla_contratado_h": 12,
+    "inicio_contrato": "2024-02-01"
+  },
+  {
+    "cliente_id": "C051",
+    "segmento": "Varejo",
+    "porte": "Grande",
+    "plano": "Enterprise",
+    "valor_mensal": 24045,
+    "sla_contratado_h": 6,
+    "inicio_contrato": "2022-10-01"
+  },
+  {
+    "cliente_id": "C052",
+    "segmento": "Saude",
+    "porte": "Grande",
+    "plano": "Enterprise",
+    "valor_mensal": 28195,
+    "sla_contratado_h": 6,
+    "inicio_contrato": "2023-05-01"
+  },
+  {
+    "cliente_id": "C053",
+    "segmento": "Educacao",
+    "porte": "Medio",
+    "plano": "Avancado",
+    "valor_mensal": 7601,
+    "sla_contratado_h": 12,
+    "inicio_contrato": "2020-05-01"
+  },
+  {
+    "cliente_id": "C054",
+    "segmento": "Saude",
+    "porte": "Pequeno",
+    "plano": "Essencial",
+    "valor_mensal": 3440,
+    "sla_contratado_h": 24,
+    "inicio_contrato": "2024-09-01"
+  },
+  {
+    "cliente_id": "C055",
+    "segmento": "Servicos",
+    "porte": "Grande",
+    "plano": "Enterprise",
+    "valor_mensal": 31660,
+    "sla_contratado_h": 6,
+    "inicio_contrato": "2020-04-01"
+  },
+  {
+    "cliente_id": "C056",
+    "segmento": "Varejo",
+    "porte": "Grande",
+    "plano": "Enterprise",
+    "valor_mensal": 33786,
+    "sla_contratado_h": 6,
+    "inicio_contrato": "2022-12-01"
+  },
+  {
+    "cliente_id": "C057",
+    "segmento": "Logistica",
+    "porte": "Pequeno",
+    "plano": "Essencial",
+    "valor_mensal": 3436,
+    "sla_contratado_h": 24,
+    "inicio_contrato": "2024-09-01"
+  },
+  {
+    "cliente_id": "C058",
+    "segmento": "Servicos",
+    "porte": "Grande",
+    "plano": "Enterprise",
+    "valor_mensal": 34194,
+    "sla_contratado_h": 6,
+    "inicio_contrato": "2020-05-01"
+  },
+  {
+    "cliente_id": "C059",
+    "segmento": "Educacao",
+    "porte": "Pequeno",
+    "plano": "Essencial",
+    "valor_mensal": 2450,
+    "sla_contratado_h": 24,
+    "inicio_contrato": "2022-09-01"
+  },
+  {
+    "cliente_id": "C060",
+    "segmento": "Servicos",
+    "porte": "Pequeno",
+    "plano": "Essencial",
+    "valor_mensal": 2677,
+    "sla_contratado_h": 24,
+    "inicio_contrato": "2021-02-01"
+  },
+  {
+    "cliente_id": "C061",
+    "segmento": "Varejo",
+    "porte": "Grande",
+    "plano": "Enterprise",
+    "valor_mensal": 36148,
+    "sla_contratado_h": 6,
+    "inicio_contrato": "2020-05-01"
+  },
+  {
+    "cliente_id": "C062",
+    "segmento": "Servicos",
+    "porte": "Grande",
+    "plano": "Enterprise",
+    "valor_mensal": 24603,
+    "sla_contratado_h": 6,
+    "inicio_contrato": "2021-12-01"
+  },
+  {
+    "cliente_id": "C063",
+    "segmento": "Servicos",
+    "porte": "Pequeno",
+    "plano": "Essencial",
+    "valor_mensal": 3330,
+    "sla_contratado_h": 24,
+    "inicio_contrato": "2021-12-01"
+  },
+  {
+    "cliente_id": "C064",
+    "segmento": "Logistica",
+    "porte": "Pequeno",
+    "plano": "Essencial",
+    "valor_mensal": 4226,
+    "sla_contratado_h": 24,
+    "inicio_contrato": "2020-09-01"
+  },
+  {
+    "cliente_id": "C065",
+    "segmento": "Varejo",
+    "porte": "Pequeno",
+    "plano": "Essencial",
+    "valor_mensal": 3805,
+    "sla_contratado_h": 24,
+    "inicio_contrato": "2023-06-01"
+  },
+  {
+    "cliente_id": "C066",
+    "segmento": "Saude",
+    "porte": "Medio",
+    "plano": "Avancado",
+    "valor_mensal": 12375,
+    "sla_contratado_h": 12,
+    "inicio_contrato": "2020-03-01"
+  },
+  {
+    "cliente_id": "C067",
+    "segmento": "Logistica",
+    "porte": "Medio",
+    "plano": "Avancado",
+    "valor_mensal": 8672,
+    "sla_contratado_h": 12,
+    "inicio_contrato": "2022-08-01"
+  },
+  {
+    "cliente_id": "C068",
+    "segmento": "Industria",
+    "porte": "Pequeno",
+    "plano": "Essencial",
+    "valor_mensal": 2650,
+    "sla_contratado_h": 24,
+    "inicio_contrato": "2020-02-01"
+  },
+  {
+    "cliente_id": "C069",
+    "segmento": "Logistica",
+    "porte": "Medio",
+    "plano": "Avancado",
+    "valor_mensal": 9736,
+    "sla_contratado_h": 12,
+    "inicio_contrato": "2020-04-01"
+  },
+  {
+    "cliente_id": "C070",
+    "segmento": "Logistica",
+    "porte": "Medio",
+    "plano": "Avancado",
+    "valor_mensal": 12064,
+    "sla_contratado_h": 12,
+    "inicio_contrato": "2024-03-01"
+  },
+  {
+    "cliente_id": "C071",
+    "segmento": "Varejo",
+    "porte": "Grande",
+    "plano": "Enterprise",
+    "valor_mensal": 33881,
+    "sla_contratado_h": 6,
+    "inicio_contrato": "2022-11-01"
+  },
+  {
+    "cliente_id": "C072",
+    "segmento": "Industria",
+    "porte": "Pequeno",
+    "plano": "Essencial",
+    "valor_mensal": 2678,
+    "sla_contratado_h": 24,
+    "inicio_contrato": "2024-08-01"
+  },
+  {
+    "cliente_id": "C073",
+    "segmento": "Educacao",
+    "porte": "Pequeno",
+    "plano": "Essencial",
+    "valor_mensal": 3664,
+    "sla_contratado_h": 24,
+    "inicio_contrato": "2020-07-01"
+  },
+  {
+    "cliente_id": "C074",
+    "segmento": "Saude",
+    "porte": "Medio",
+    "plano": "Avancado",
+    "valor_mensal": 9171,
+    "sla_contratado_h": 12,
+    "inicio_contrato": "2021-04-01"
+  },
+  {
+    "cliente_id": "C075",
+    "segmento": "Industria",
+    "porte": "Pequeno",
+    "plano": "Essencial",
+    "valor_mensal": 2680,
+    "sla_contratado_h": 24,
+    "inicio_contrato": "2022-04-01"
+  },
+  {
+    "cliente_id": "C076",
+    "segmento": "Educacao",
+    "porte": "Grande",
+    "plano": "Enterprise",
+    "valor_mensal": 29057,
+    "sla_contratado_h": 6,
+    "inicio_contrato": "2022-02-01"
+  },
+  {
+    "cliente_id": "C077",
+    "segmento": "Industria",
+    "porte": "Pequeno",
+    "plano": "Essencial",
+    "valor_mensal": 2403,
+    "sla_contratado_h": 24,
+    "inicio_contrato": "2021-03-01"
+  },
+  {
+    "cliente_id": "C078",
+    "segmento": "Educacao",
+    "porte": "Pequeno",
+    "plano": "Essencial",
+    "valor_mensal": 3023,
+    "sla_contratado_h": 24,
+    "inicio_contrato": "2024-01-01"
+  },
+  {
+    "cliente_id": "C079",
+    "segmento": "Logistica",
+    "porte": "Pequeno",
+    "plano": "Essencial",
+    "valor_mensal": 2958,
+    "sla_contratado_h": 24,
+    "inicio_contrato": "2020-12-01"
+  },
+  {
+    "cliente_id": "C080",
+    "segmento": "Varejo",
+    "porte": "Grande",
+    "plano": "Enterprise",
+    "valor_mensal": 20924,
+    "sla_contratado_h": 6,
+    "inicio_contrato": "2022-10-01"
+  }
+]

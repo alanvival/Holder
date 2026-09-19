@@ -23,7 +23,18 @@ import {
   camposCadastrados,
 } from '../data/mockDatabase.js';
 import { extractPerson, extractPeriod, extractDate } from './entities.js';
-import { dateResponse, listResponse, locationResponse, notFoundResponse, formatDatePt } from './responseFormat.js';
+import { dateResponse, listResponse, locationResponse, notFoundResponse, formatDatePt, formatMesPt } from './responseFormat.js';
+import {
+  extrairClienteId,
+  buscarCliente,
+  buscarSituacao,
+  atendimentosDoCliente,
+  ultimoNpsRespondido,
+  calcularRisco,
+  clientesAtivos,
+  situacaoClientes,
+  clientesComRisco,
+} from '../data/inovaappsDatabase.js';
 
 function ultimoAcompanhamento(entidades) {
   const { pessoa } = entidades;
@@ -119,12 +130,98 @@ function datasSemAcompanhamento(entidades) {
   );
 }
 
+// --- Resolvers da base real do Desafio INOVAAPPS (carteira de clientes) ---
+
+function situacaoRiscoCliente(entidades) {
+  const { clienteId } = entidades;
+  if (!clienteId) return notFoundResponse();
+  const situacao = buscarSituacao(clienteId);
+  if (!situacao) return notFoundResponse();
+
+  const itens = [{ label: `Situação: ${situacao.situacao}` }];
+  if (situacao.situacao === 'Cancelado' && situacao.mes_cancelamento) {
+    itens.push({ label: `Cancelou em: ${formatMesPt(situacao.mes_cancelamento)}` });
+  }
+
+  const risco = calcularRisco(clienteId);
+  if (risco) {
+    itens.push({ label: `Risco atual: ${risco.nivel} (${formatMesPt(risco.mesRef)})` });
+    if (risco.sinais.length > 0) {
+      itens.push(...risco.sinais.map((s) => ({ label: `Sinal: ${s}` })));
+    }
+  }
+
+  return listResponse(`Situação do cliente ${clienteId}:`, itens);
+}
+
+function dadosCadastraisCliente(entidades) {
+  const { clienteId } = entidades;
+  if (!clienteId) return notFoundResponse();
+  const cliente = buscarCliente(clienteId);
+  if (!cliente) return notFoundResponse();
+
+  return listResponse(`Dados cadastrais do cliente ${clienteId}:`, [
+    { label: `Segmento: ${cliente.segmento}` },
+    { label: `Porte: ${cliente.porte}` },
+    { label: `Plano: ${cliente.plano}` },
+    { label: `Valor mensal: R$ ${cliente.valor_mensal.toLocaleString('pt-BR')}` },
+    { label: `SLA contratado: ${cliente.sla_contratado_h}h` },
+    { label: `Início do contrato: ${formatDatePt(cliente.inicio_contrato)}` },
+  ]);
+}
+
+function indicadoresRecentesCliente(entidades) {
+  const { clienteId } = entidades;
+  if (!clienteId) return notFoundResponse();
+  const historico = atendimentosDoCliente(clienteId);
+  if (historico.length === 0) return notFoundResponse();
+  const atual = historico[historico.length - 1];
+
+  return listResponse(`Indicadores do cliente ${clienteId} em ${formatMesPt(atual.mes_ref)}:`, [
+    { label: `SLA cumprido: ${atual.pct_sla_cumprido ?? '—'}%` },
+    { label: `Uso da plataforma: ${atual.uso_plataforma_pct}%` },
+    { label: `Atraso de pagamento: ${atual.dias_atraso_pagamento} dia(s)` },
+    { label: `Chamados críticos: ${atual.chamados_criticos}` },
+    { label: `Chamados reabertos: ${atual.chamados_reabertos}` },
+  ]);
+}
+
+function ultimoNpsCliente(entidades) {
+  const { clienteId } = entidades;
+  if (!clienteId) return notFoundResponse();
+  const nps = ultimoNpsRespondido(clienteId);
+  if (!nps) return notFoundResponse();
+  return listResponse(`Último NPS respondido pelo cliente ${clienteId}:`, [
+    { label: `Nota: ${nps.nota_nps}` },
+    { label: `Classificação: ${nps.classificacao_nps}` },
+    { label: `Mês da pesquisa: ${formatMesPt(nps.mes_ref)}` },
+  ]);
+}
+
+function contagemCarteira() {
+  const total = situacaoClientes.length;
+  const cancelados = situacaoClientes.filter((s) => s.situacao === 'Cancelado').length;
+  const ativos = clientesAtivos().length;
+  return listResponse('Situação geral da carteira:', [
+    { label: `Total de clientes: ${total}` },
+    { label: `Ativos: ${ativos}` },
+    { label: `Cancelados: ${cancelados}` },
+  ]);
+}
+
+function clientesEmRiscoAlto() {
+  const lista = clientesComRisco('Alto');
+  if (lista.length === 0) return notFoundResponse();
+  return listResponse(`${lista.length} cliente(s) ativo(s) em risco alto agora:`, lista.map((c) => ({ label: c.clienteId })));
+}
+
 // Extrator de entidades comum a todas as intenções — roda antes do resolver.
 export function extrairEntidades(texto, hoje) {
   return {
     pessoa: extractPerson(texto, pessoas),
     periodo: extractPeriod(texto, hoje),
     data: extractDate(texto, hoje),
+    clienteId: extrairClienteId(texto),
     termoLivre: texto,
     hoje,
     diasLimite: (() => {
@@ -243,6 +340,95 @@ export const intentRegistry = [
     requerEntidade: (e) => Boolean(e.periodo),
     resolver: datasSemAcompanhamento,
     criadaEm: '2026-01-10',
+    ativa: true,
+  },
+
+  // --- Carteira de clientes do Desafio INOVAAPPS (Pulso) ---
+  {
+    id: 'situacao_risco_cliente',
+    rotulo: 'Situação e risco de um cliente',
+    exemplos: [
+      'Qual a situação do cliente C007?',
+      'O cliente C030 está em risco?',
+      'O cliente C012 cancelou?',
+      'Qual o risco do cliente C045 agora?',
+    ],
+    parametros: ['clienteId'],
+    requerEntidade: (e) => Boolean(e.clienteId),
+    resolver: situacaoRiscoCliente,
+    criadaEm: '2026-09-19',
+    ativa: true,
+  },
+  {
+    id: 'dados_cadastrais_cliente',
+    rotulo: 'Dados cadastrais de um cliente',
+    exemplos: [
+      'Quais os dados cadastrais do cliente C007?',
+      'Qual o plano do cliente C020?',
+      'Qual o valor mensal do cliente C011?',
+      'Qual o segmento do cliente C055?',
+    ],
+    parametros: ['clienteId'],
+    requerEntidade: (e) => Boolean(e.clienteId),
+    resolver: dadosCadastraisCliente,
+    criadaEm: '2026-09-19',
+    ativa: true,
+  },
+  {
+    id: 'indicadores_recentes_cliente',
+    rotulo: 'Indicadores recentes de um cliente',
+    exemplos: [
+      'Como está o SLA do cliente C007?',
+      'Qual o uso da plataforma do cliente C030 no último mês?',
+      'O cliente C012 está com pagamento atrasado?',
+      'Quantos chamados críticos o cliente C045 teve?',
+    ],
+    parametros: ['clienteId'],
+    requerEntidade: (e) => Boolean(e.clienteId),
+    resolver: indicadoresRecentesCliente,
+    criadaEm: '2026-09-19',
+    ativa: true,
+  },
+  {
+    id: 'ultimo_nps_cliente',
+    rotulo: 'Último NPS de um cliente',
+    exemplos: [
+      'Qual foi o último NPS do cliente C007?',
+      'Qual a nota do cliente C020 na última pesquisa?',
+      'O cliente C012 é promotor ou detrator?',
+    ],
+    parametros: ['clienteId'],
+    requerEntidade: (e) => Boolean(e.clienteId),
+    resolver: ultimoNpsCliente,
+    criadaEm: '2026-09-19',
+    ativa: true,
+  },
+  {
+    id: 'contagem_carteira',
+    rotulo: 'Quantos clientes ativos/cancelados',
+    exemplos: [
+      'Quantos clientes cancelaram?',
+      'Quantos clientes estão ativos?',
+      'Qual o tamanho da carteira?',
+    ],
+    parametros: [],
+    requerEntidade: () => true,
+    resolver: contagemCarteira,
+    criadaEm: '2026-09-19',
+    ativa: true,
+  },
+  {
+    id: 'clientes_risco_alto',
+    rotulo: 'Quais clientes estão em risco alto',
+    exemplos: [
+      'Quais clientes estão em risco alto?',
+      'Quem eu deveria ligar primeiro hoje?',
+      'Quais clientes ativos estão em risco alto agora?',
+    ],
+    parametros: [],
+    requerEntidade: () => true,
+    resolver: clientesEmRiscoAlto,
+    criadaEm: '2026-09-19',
     ativa: true,
   },
 ];

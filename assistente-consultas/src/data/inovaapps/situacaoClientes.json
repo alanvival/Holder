@@ -1,0 +1,402 @@
+[
+  {
+    "cliente_id": "C001",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C002",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C003",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C004",
+    "situacao": "Cancelado",
+    "mes_cancelamento": "2026-05"
+  },
+  {
+    "cliente_id": "C005",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C006",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C007",
+    "situacao": "Cancelado",
+    "mes_cancelamento": "2026-03"
+  },
+  {
+    "cliente_id": "C008",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C009",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C010",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C011",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C012",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C013",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C014",
+    "situacao": "Cancelado",
+    "mes_cancelamento": "2025-12"
+  },
+  {
+    "cliente_id": "C015",
+    "situacao": "Cancelado",
+    "mes_cancelamento": "2025-06"
+  },
+  {
+    "cliente_id": "C016",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C017",
+    "situacao": "Cancelado",
+    "mes_cancelamento": "2025-06"
+  },
+  {
+    "cliente_id": "C018",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C019",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C020",
+    "situacao": "Cancelado",
+    "mes_cancelamento": "2025-11"
+  },
+  {
+    "cliente_id": "C021",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C022",
+    "situacao": "Cancelado",
+    "mes_cancelamento": "2025-05"
+  },
+  {
+    "cliente_id": "C023",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C024",
+    "situacao": "Cancelado",
+    "mes_cancelamento": "2026-06"
+  },
+  {
+    "cliente_id": "C025",
+    "situacao": "Cancelado",
+    "mes_cancelamento": "2026-02"
+  },
+  {
+    "cliente_id": "C026",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C027",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C028",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C029",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C030",
+    "situacao": "Cancelado",
+    "mes_cancelamento": "2026-01"
+  },
+  {
+    "cliente_id": "C031",
+    "situacao": "Cancelado",
+    "mes_cancelamento": "2026-05"
+  },
+  {
+    "cliente_id": "C032",
+    "situacao": "Cancelado",
+    "mes_cancelamento": "2025-09"
+  },
+  {
+    "cliente_id": "C033",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C034",
+    "situacao": "Cancelado",
+    "mes_cancelamento": "2026-04"
+  },
+  {
+    "cliente_id": "C035",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C036",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C037",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C038",
+    "situacao": "Cancelado",
+    "mes_cancelamento": "2025-10"
+  },
+  {
+    "cliente_id": "C039",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C040",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C041",
+    "situacao": "Cancelado",
+    "mes_cancelamento": "2025-08"
+  },
+  {
+    "cliente_id": "C042",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C043",
+    "situacao": "Cancelado",
+    "mes_cancelamento": "2025-05"
+  },
+  {
+    "cliente_id": "C044",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C045",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C046",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C047",
+    "situacao": "Cancelado",
+    "mes_cancelamento": "2026-06"
+  },
+  {
+    "cliente_id": "C048",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C049",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C050",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C051",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C052",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C053",
+    "situacao": "Cancelado",
+    "mes_cancelamento": "2026-02"
+  },
+  {
+    "cliente_id": "C054",
+    "situacao": "Cancelado",
+    "mes_cancelamento": "2026-05"
+  },
+  {
+    "cliente_id": "C055",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C056",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C057",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C058",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C059",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C060",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C061",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C062",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C063",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C064",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C065",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C066",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C067",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C068",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C069",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C070",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C071",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C072",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C073",
+    "situacao": "Cancelado",
+    "mes_cancelamento": "2026-06"
+  },
+  {
+    "cliente_id": "C074",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C075",
+    "situacao": "Cancelado",
+    "mes_cancelamento": "2026-03"
+  },
+  {
+    "cliente_id": "C076",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C077",
+    "situacao": "Cancelado",
+    "mes_cancelamento": "2025-09"
+  },
+  {
+    "cliente_id": "C078",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C079",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  },
+  {
+    "cliente_id": "C080",
+    "situacao": "Ativo",
+    "mes_cancelamento": null
+  }
+]

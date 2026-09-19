@@ -1,0 +1,2956 @@
+[
+  {
+    "cliente_id": "C001",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 10,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C001",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C001",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C001",
+    "mes_ref": "2025-12",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C001",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C001",
+    "mes_ref": "2026-06",
+    "respondeu": 1,
+    "nota_nps": 5,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C002",
+    "mes_ref": "2025-03",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C002",
+    "mes_ref": "2025-06",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C002",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 4,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C002",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C002",
+    "mes_ref": "2026-03",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C002",
+    "mes_ref": "2026-06",
+    "respondeu": 1,
+    "nota_nps": 3,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C003",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 10,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C003",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C003",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 10,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C003",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 10,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C003",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C003",
+    "mes_ref": "2026-06",
+    "respondeu": 1,
+    "nota_nps": 10,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C004",
+    "mes_ref": "2025-03",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C004",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 4,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C004",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C004",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C004",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 1,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C005",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C005",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 5,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C005",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C005",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C005",
+    "mes_ref": "2026-03",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C005",
+    "mes_ref": "2026-06",
+    "respondeu": 1,
+    "nota_nps": 10,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C006",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C006",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 10,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C006",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 10,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C006",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 10,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C006",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 10,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C006",
+    "mes_ref": "2026-06",
+    "respondeu": 1,
+    "nota_nps": 10,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C007",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 5,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C007",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 5,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C007",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C007",
+    "mes_ref": "2025-12",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C008",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C008",
+    "mes_ref": "2025-06",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C008",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C008",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C008",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 10,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C008",
+    "mes_ref": "2026-06",
+    "respondeu": 1,
+    "nota_nps": 10,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C009",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C009",
+    "mes_ref": "2025-06",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C009",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C009",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C009",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C009",
+    "mes_ref": "2026-06",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C010",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C010",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C010",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 10,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C010",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C010",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C010",
+    "mes_ref": "2026-06",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C011",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C011",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C011",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C011",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C011",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C011",
+    "mes_ref": "2026-06",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C012",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C012",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C012",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 4,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C012",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C012",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C012",
+    "mes_ref": "2026-06",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C013",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C013",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C013",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C013",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C013",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C013",
+    "mes_ref": "2026-06",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C014",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C014",
+    "mes_ref": "2025-06",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C014",
+    "mes_ref": "2025-09",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C015",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 3,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C016",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 5,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C016",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C016",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 4,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C016",
+    "mes_ref": "2025-12",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C016",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 4,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C016",
+    "mes_ref": "2026-06",
+    "respondeu": 1,
+    "nota_nps": 2,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C017",
+    "mes_ref": "2025-03",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C018",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C018",
+    "mes_ref": "2025-06",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C018",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C018",
+    "mes_ref": "2025-12",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C018",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C018",
+    "mes_ref": "2026-06",
+    "respondeu": 1,
+    "nota_nps": 10,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C019",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C019",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 5,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C019",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C019",
+    "mes_ref": "2025-12",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C019",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C019",
+    "mes_ref": "2026-06",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C020",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C020",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C020",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 5,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C021",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 4,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C021",
+    "mes_ref": "2025-06",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C021",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 4,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C021",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 4,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C021",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C021",
+    "mes_ref": "2026-06",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C022",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 3,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C023",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C023",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 5,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C023",
+    "mes_ref": "2025-09",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C023",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C023",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C023",
+    "mes_ref": "2026-06",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C024",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C024",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C024",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C024",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C024",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 3,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C025",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C025",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C025",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 5,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C025",
+    "mes_ref": "2025-12",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C026",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C026",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C026",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C026",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 0,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C026",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 3,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C026",
+    "mes_ref": "2026-06",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C027",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 10,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C027",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C027",
+    "mes_ref": "2025-09",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C027",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C027",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C027",
+    "mes_ref": "2026-06",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C028",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 5,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C028",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 10,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C028",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C028",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C028",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C028",
+    "mes_ref": "2026-06",
+    "respondeu": 1,
+    "nota_nps": 10,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C029",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C029",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C029",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C029",
+    "mes_ref": "2025-12",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C029",
+    "mes_ref": "2026-03",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C029",
+    "mes_ref": "2026-06",
+    "respondeu": 1,
+    "nota_nps": 5,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C030",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C030",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 5,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C030",
+    "mes_ref": "2025-09",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C030",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 2,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C031",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C031",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C031",
+    "mes_ref": "2025-09",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C031",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 5,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C031",
+    "mes_ref": "2026-03",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C032",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 10,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C032",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 3,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C033",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 10,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C033",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C033",
+    "mes_ref": "2025-09",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C033",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C033",
+    "mes_ref": "2026-03",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C033",
+    "mes_ref": "2026-06",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C034",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 10,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C034",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C034",
+    "mes_ref": "2025-09",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C034",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 5,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C034",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 0,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C035",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 5,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C035",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 10,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C035",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C035",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C035",
+    "mes_ref": "2026-03",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C035",
+    "mes_ref": "2026-06",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C036",
+    "mes_ref": "2025-03",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C036",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C036",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C036",
+    "mes_ref": "2025-12",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C036",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C036",
+    "mes_ref": "2026-06",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C037",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C037",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C037",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C037",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C037",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C037",
+    "mes_ref": "2026-06",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C038",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C038",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C038",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 1,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C039",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C039",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C039",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C039",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C039",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C039",
+    "mes_ref": "2026-06",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C040",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C040",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 5,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C040",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C040",
+    "mes_ref": "2025-12",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C040",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C040",
+    "mes_ref": "2026-06",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C041",
+    "mes_ref": "2025-03",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C041",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 0,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C042",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C042",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 10,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C042",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C042",
+    "mes_ref": "2025-12",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C042",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 10,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C042",
+    "mes_ref": "2026-06",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C043",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 4,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C044",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C044",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C044",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 10,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C044",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C044",
+    "mes_ref": "2026-03",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C044",
+    "mes_ref": "2026-06",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C045",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C045",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C045",
+    "mes_ref": "2025-09",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C045",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C045",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C045",
+    "mes_ref": "2026-06",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C046",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C046",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C046",
+    "mes_ref": "2025-09",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C046",
+    "mes_ref": "2025-12",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C046",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 5,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C046",
+    "mes_ref": "2026-06",
+    "respondeu": 1,
+    "nota_nps": 10,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C047",
+    "mes_ref": "2025-03",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C047",
+    "mes_ref": "2025-06",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C047",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C047",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C047",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 5,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C048",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C048",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 10,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C048",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C048",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C048",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C048",
+    "mes_ref": "2026-06",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C049",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 5,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C049",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C049",
+    "mes_ref": "2025-09",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C049",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C049",
+    "mes_ref": "2026-03",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C049",
+    "mes_ref": "2026-06",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C050",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 5,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C050",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 2,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C050",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C050",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 4,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C050",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 5,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C050",
+    "mes_ref": "2026-06",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C051",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C051",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 10,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C051",
+    "mes_ref": "2025-09",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C051",
+    "mes_ref": "2025-12",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C051",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 10,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C051",
+    "mes_ref": "2026-06",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C052",
+    "mes_ref": "2025-03",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C052",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C052",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C052",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 10,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C052",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C052",
+    "mes_ref": "2026-06",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C053",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C053",
+    "mes_ref": "2025-06",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C053",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C053",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 5,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C054",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 10,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C054",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C054",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C054",
+    "mes_ref": "2025-12",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C054",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 2,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C055",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C055",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C055",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C055",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C055",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C055",
+    "mes_ref": "2026-06",
+    "respondeu": 1,
+    "nota_nps": 10,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C056",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 5,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C056",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 5,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C056",
+    "mes_ref": "2025-09",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C056",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C056",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C056",
+    "mes_ref": "2026-06",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C057",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C057",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 10,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C057",
+    "mes_ref": "2025-09",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C057",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 10,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C057",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C057",
+    "mes_ref": "2026-06",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C058",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 10,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C058",
+    "mes_ref": "2025-06",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C058",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C058",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C058",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C058",
+    "mes_ref": "2026-06",
+    "respondeu": 1,
+    "nota_nps": 10,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C059",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C059",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 5,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C059",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C059",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C059",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 10,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C059",
+    "mes_ref": "2026-06",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C060",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C060",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C060",
+    "mes_ref": "2025-09",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C060",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C060",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C060",
+    "mes_ref": "2026-06",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C061",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C061",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C061",
+    "mes_ref": "2025-09",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C061",
+    "mes_ref": "2025-12",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C061",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C061",
+    "mes_ref": "2026-06",
+    "respondeu": 1,
+    "nota_nps": 10,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C062",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 5,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C062",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C062",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C062",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 4,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C062",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C062",
+    "mes_ref": "2026-06",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C063",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C063",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C063",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 3,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C063",
+    "mes_ref": "2025-12",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C063",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 10,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C063",
+    "mes_ref": "2026-06",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C064",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C064",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C064",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 3,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C064",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C064",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 10,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C064",
+    "mes_ref": "2026-06",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C065",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C065",
+    "mes_ref": "2025-06",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C065",
+    "mes_ref": "2025-09",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C065",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 5,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C065",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C065",
+    "mes_ref": "2026-06",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C066",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C066",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C066",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C066",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C066",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C066",
+    "mes_ref": "2026-06",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C067",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C067",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C067",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 4,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C067",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 5,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C067",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 4,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C067",
+    "mes_ref": "2026-06",
+    "respondeu": 1,
+    "nota_nps": 2,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C068",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C068",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C068",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 5,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C068",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C068",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C068",
+    "mes_ref": "2026-06",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C069",
+    "mes_ref": "2025-03",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C069",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C069",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C069",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C069",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 4,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C069",
+    "mes_ref": "2026-06",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C070",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C070",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 10,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C070",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C070",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C070",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 10,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C070",
+    "mes_ref": "2026-06",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C071",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C071",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C071",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C071",
+    "mes_ref": "2025-12",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C071",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C071",
+    "mes_ref": "2026-06",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C072",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C072",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 10,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C072",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C072",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 10,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C072",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C072",
+    "mes_ref": "2026-06",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C073",
+    "mes_ref": "2025-03",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C073",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 5,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C073",
+    "mes_ref": "2025-09",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C073",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C073",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 2,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C074",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C074",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C074",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C074",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C074",
+    "mes_ref": "2026-03",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C074",
+    "mes_ref": "2026-06",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C075",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 5,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C075",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C075",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 5,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C075",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 2,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C076",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C076",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C076",
+    "mes_ref": "2025-09",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C076",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C076",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C076",
+    "mes_ref": "2026-06",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C077",
+    "mes_ref": "2025-03",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C077",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 5,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C078",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 10,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C078",
+    "mes_ref": "2025-06",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C078",
+    "mes_ref": "2025-09",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C078",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C078",
+    "mes_ref": "2026-03",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C078",
+    "mes_ref": "2026-06",
+    "respondeu": 1,
+    "nota_nps": 5,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C079",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C079",
+    "mes_ref": "2025-06",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C079",
+    "mes_ref": "2025-09",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C079",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 8,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C079",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 4,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C079",
+    "mes_ref": "2026-06",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C080",
+    "mes_ref": "2025-03",
+    "respondeu": 1,
+    "nota_nps": 6,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C080",
+    "mes_ref": "2025-06",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  },
+  {
+    "cliente_id": "C080",
+    "mes_ref": "2025-09",
+    "respondeu": 1,
+    "nota_nps": 7,
+    "classificacao_nps": "Neutro"
+  },
+  {
+    "cliente_id": "C080",
+    "mes_ref": "2025-12",
+    "respondeu": 1,
+    "nota_nps": 9,
+    "classificacao_nps": "Promotor"
+  },
+  {
+    "cliente_id": "C080",
+    "mes_ref": "2026-03",
+    "respondeu": 1,
+    "nota_nps": 3,
+    "classificacao_nps": "Detrator"
+  },
+  {
+    "cliente_id": "C080",
+    "mes_ref": "2026-06",
+    "respondeu": 0,
+    "nota_nps": null,
+    "classificacao_nps": "Sem resposta"
+  }
+]
