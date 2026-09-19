@@ -1,12 +1,15 @@
 """
-Backend do fallback de IA do Assistente de Consultas.
+Backend do Assistente de Consultas.
 
-O catálogo determinístico (assistente-consultas/src/engine/*.js) continua
-rodando 100% no navegador — rápido, sem custo, sem chamar isto. Este
-servidor só existe pra guardar a ANTHROPIC_API_KEY fora do bundle do front:
-quando o catálogo local não reconhece uma pergunta, o widget chama
-POST /api/fallback-ia, que roda o fluxo de tool use descrito no prompt de
-fallback (fallback_ia/claude_fallback.py).
+Duas responsabilidades:
+1. Fallback de IA — o catálogo determinístico (assistente-consultas/src/
+   engine/*.js) continua rodando 100% no navegador; só quando ele não
+   reconhece uma pergunta o widget chama POST /api/fallback-ia, que roda o
+   fluxo de tool use (fallback_ia/claude_fallback.py). Existe só pra manter
+   a ANTHROPIC_API_KEY fora do bundle do front.
+2. Persistência das perguntas cadastradas pelo admin e das sugestões dos
+   usuários (fallback_ia/armazenamento.py, SQLite) — antes viviam só em
+   memória no navegador e sumiam a cada refresh.
 
 Rodar:
     cp .env.example .env   # preencher ANTHROPIC_API_KEY
@@ -24,6 +27,7 @@ load_dotenv()
 
 from fallback_ia.claude_fallback import responder_com_fallback_ia  # noqa: E402
 from fallback_ia.guardrails import limite_excedido  # noqa: E402
+from fallback_ia import armazenamento  # noqa: E402
 
 app = Flask(__name__)
 CORS(app, origins=[os.environ.get("FRONTEND_ORIGIN", "http://localhost:5183")])
@@ -48,6 +52,73 @@ def fallback_ia():
 @app.get("/api/health")
 def health():
     return jsonify({"status": "ok", "chave_configurada": bool(os.environ.get("ANTHROPIC_API_KEY"))})
+
+
+# --- Perguntas cadastradas pelo admin -------------------------------------
+
+@app.get("/api/perguntas")
+def listar_perguntas():
+    return jsonify(armazenamento.listar_perguntas_admin())
+
+
+@app.post("/api/perguntas")
+def criar_pergunta():
+    corpo = request.get_json(silent=True) or {}
+    rotulo = (corpo.get("rotulo") or "").strip()
+    exemplos = [e.strip() for e in (corpo.get("exemplos") or []) if e and e.strip()]
+    resposta_texto = (corpo.get("respostaTexto") or "").strip()
+
+    if not rotulo or not exemplos or not resposta_texto:
+        return jsonify({"erro": "rotulo, exemplos (não vazio) e respostaTexto são obrigatórios."}), 400
+
+    pergunta = armazenamento.criar_pergunta_admin(rotulo, exemplos, resposta_texto)
+    return jsonify(pergunta), 201
+
+
+@app.patch("/api/perguntas/<pergunta_id>")
+def atualizar_pergunta(pergunta_id):
+    corpo = request.get_json(silent=True) or {}
+    if corpo.get("ativa") is False:
+        encontrada = armazenamento.desativar_pergunta_admin(pergunta_id)
+        if not encontrada:
+            return jsonify({"erro": "Pergunta não encontrada."}), 404
+        return jsonify({"id": pergunta_id, "ativa": False})
+    return jsonify({"erro": "Só suporta desativar (ativa: false) por enquanto."}), 400
+
+
+# --- Sugestões dos usuários -------------------------------------------------
+
+@app.get("/api/sugestoes")
+def listar_sugestoes():
+    status = request.args.get("status")
+    return jsonify(armazenamento.listar_sugestoes(status))
+
+
+@app.post("/api/sugestoes")
+def criar_sugestao():
+    corpo = request.get_json(silent=True) or {}
+    pergunta_original = (corpo.get("perguntaOriginal") or "").strip()
+    if not pergunta_original:
+        return jsonify({"erro": "Campo 'perguntaOriginal' é obrigatório."}), 400
+    return jsonify(armazenamento.criar_sugestao(pergunta_original)), 201
+
+
+@app.post("/api/sugestoes/<sugestao_id>/aprovar")
+def aprovar_sugestao(sugestao_id):
+    corpo = request.get_json(silent=True) or {}
+    resposta_texto = corpo.get("respostaTexto")
+    pergunta_criada = armazenamento.aprovar_sugestao(sugestao_id, resposta_texto)
+    if pergunta_criada is None:
+        return jsonify({"erro": "Sugestão não encontrada ou já processada."}), 404
+    return jsonify(pergunta_criada)
+
+
+@app.post("/api/sugestoes/<sugestao_id>/rejeitar")
+def rejeitar_sugestao(sugestao_id):
+    encontrada = armazenamento.rejeitar_sugestao(sugestao_id)
+    if not encontrada:
+        return jsonify({"erro": "Sugestão não encontrada ou já processada."}), 404
+    return jsonify({"id": sugestao_id, "status": "rejeitada"})
 
 
 if __name__ == "__main__":

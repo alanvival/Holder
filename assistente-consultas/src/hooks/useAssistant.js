@@ -1,5 +1,5 @@
-import { useCallback, useState } from 'react';
-import { consultarPergunta, registrarSugestaoUsuario } from '../services/assistenteApi.js';
+import { useCallback, useEffect, useState } from 'react';
+import { consultarPergunta, registrarSugestaoUsuario, hidratarCatalogoAdmin } from '../services/assistenteApi.js';
 import { useTenant } from '../context/TenantContext.jsx';
 
 // Histórico de conversa — estrutura pronta para persistir por usuário depois:
@@ -31,6 +31,13 @@ export function useAssistant() {
   const [bolhaSaudacaoVisivel, setBolhaSaudacaoVisivel] = useState(true);
   const [mensagens, setMensagens] = useState([SAUDACAO_INICIAL]);
   const [status, setStatus] = useState('idle'); // idle | loading | erro
+
+  // Sincroniza as perguntas cadastradas pelo admin (persistidas no
+  // backend) pro motor local de matching, uma vez ao montar — assim elas
+  // ficam respondíveis mesmo que o usuário nunca abra a tela de Admin.
+  useEffect(() => {
+    hidratarCatalogoAdmin();
+  }, []);
 
   const abrir = useCallback(() => {
     setAberto(true);

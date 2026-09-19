@@ -1,9 +1,14 @@
 // Camada de serviço — único ponto de contato entre a UI/hook e a lógica de
-// dados. Hoje tudo aqui é síncrono/mock por baixo (engine/), mas a
-// assinatura de cada função já é async e recebe { empresaAtual, usuarioAtual }
-// como toda chamada real de backend vai precisar. Quando o backend existir,
-// TROCAR SÓ O CORPO destas funções por fetch/await pro endpoint — nada fora
-// deste arquivo deveria precisar mudar.
+// dados. Perguntas cadastradas pelo admin e sugestões dos usuários agora
+// persistem de verdade no backend (server.py + fallback_ia/armazenamento.py,
+// SQLite) em vez de só em memória no navegador. O catálogo "de sistema"
+// (intenções com resolver em código — consulta de registro, métricas)
+// continua definido em engine/intentRegistry.js e engine/metricas.js; só o
+// que o admin cria em runtime é que precisa de persistência real.
+//
+// Sempre que o backend não responde (fora do ar, CORS, rede), cada função
+// cai de volta pro motor local em memória — o widget nunca quebra por
+// causa disso, só perde a persistência entre sessões até o backend voltar.
 
 import { interpretarPergunta } from '../engine/matchIntent.js';
 import { listarIntents, registrarIntentPersonalizada, desativarIntent } from '../engine/intentRegistry.js';
@@ -15,56 +20,47 @@ import {
 } from '../engine/suggestionsStore.js';
 import { textResponse, notFoundResponse } from '../engine/responseFormat.js';
 
-// Latência artificial pra simular round-trip de rede em todas as chamadas —
-// remove quando isso virar fetch de verdade (a latência real já existe).
-const LATENCIA_MOCK_MS = 250;
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:8000/api';
 
-function comLatencia(valor) {
-  return new Promise((resolve) => setTimeout(() => resolve(valor), LATENCIA_MOCK_MS));
-}
-
-// Backend do fallback de IA (server.py) — só existe pra guardar a
-// ANTHROPIC_API_KEY fora do bundle do front. Roda em processo/porta
-// separada do Vite; ver server.py e .env.example na raiz do repo.
-const FALLBACK_IA_URL = import.meta.env.VITE_FALLBACK_IA_URL ?? 'http://localhost:8000/api/fallback-ia';
-
-// Um id por sessão de aba, só pro rate limit do backend saber agrupar
+// Um id por sessão de aba, só pro rate limit do fallback de IA agrupar
 // chamadas da mesma sessão — não é autenticação nem identifica a pessoa.
 const SESSAO_ID = `sessao-${Math.random().toString(36).slice(2)}-${Date.now()}`;
 
-async function tentarFallbackIa(texto) {
+async function chamarBackend(caminho, opcoes) {
   try {
     const controlador = new AbortController();
-    const timeoutId = setTimeout(() => controlador.abort(), 9000);
-    const resposta = await fetch(FALLBACK_IA_URL, {
-      method: 'POST',
+    const timeoutId = setTimeout(() => controlador.abort(), 8000);
+    const resposta = await fetch(`${BACKEND_URL}${caminho}`, {
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pergunta: texto, sessaoId: SESSAO_ID }),
       signal: controlador.signal,
+      ...opcoes,
     });
     clearTimeout(timeoutId);
-    if (!resposta.ok) return null;
-    return await resposta.json();
+    const corpo = await resposta.json().catch(() => null);
+    return { ok: resposta.ok, status: resposta.status, dados: corpo };
   } catch {
-    // Backend fora do ar, CORS não configurado, rede caiu, etc. — o
-    // catálogo local já tratou como "não encontrado"; o front não deve
-    // quebrar só porque o fallback opcional não respondeu.
+    // Backend fora do ar, CORS não configurado, rede caiu, etc.
     return null;
   }
+}
+
+async function tentarFallbackIa(texto) {
+  const resultado = await chamarBackend('/fallback-ia', {
+    method: 'POST',
+    body: JSON.stringify({ pergunta: texto, sessaoId: SESSAO_ID }),
+  });
+  return resultado?.ok ? resultado.dados : null;
 }
 
 /**
  * Envia a pergunta do usuário pro motor de interpretação. Primeiro tenta o
  * catálogo determinístico local (rápido, sem custo); só se ele não
  * reconhecer é que chama o fallback de IA no backend — nunca ao contrário.
- * PONTO DE INTEGRAÇÃO: quando o catálogo também virar uma API real, o
- * corpo daqui vira um único fetch pro endpoint de consultas, que decide
- * catálogo-vs-IA do lado do servidor.
  */
-export async function consultarPergunta(texto, { empresaAtual } = {}) {
+export async function consultarPergunta(texto) {
   const resultadoCatalogo = interpretarPergunta(texto);
   if (resultadoCatalogo.payload.kind !== 'not_found') {
-    return comLatencia({ ...resultadoCatalogo, origem: 'catalogo' });
+    return { ...resultadoCatalogo, origem: 'catalogo' };
   }
 
   const respostaIa = await tentarFallbackIa(texto);
@@ -77,56 +73,90 @@ export async function consultarPergunta(texto, { empresaAtual } = {}) {
   return { payload: notFoundResponse(), intentId: null, origem: respostaIa ? 'ia' : 'catalogo' };
 }
 
-/**
- * PONTO DE INTEGRAÇÃO: GET /api/{empresaId}/assistente/intencoes
- */
-export async function listarPerguntasCadastradas({ empresaAtual } = {}) {
-  return comLatencia(listarIntents());
+// Injeta uma pergunta vinda do backend no motor local de matching, usando o
+// MESMO id do backend — assim um refetch (ex: reabrir a tela de admin) não
+// duplica a intenção já registrada nesta sessão.
+function hidratarLocal(pergunta) {
+  if (!pergunta.ativa) return; // inativa não deve casar com novas perguntas
+  registrarIntentPersonalizada({
+    id: pergunta.id,
+    rotulo: pergunta.rotulo,
+    exemplos: pergunta.exemplos,
+    respostaTexto: pergunta.respostaTexto,
+    ativa: pergunta.ativa,
+    criadaEm: pergunta.criadaEm,
+  });
 }
 
 /**
- * PONTO DE INTEGRAÇÃO: POST /api/{empresaId}/assistente/intencoes
+ * Busca as perguntas cadastradas pelo admin no backend e sincroniza no
+ * motor local de matching, pra ficarem respondíveis nesta sessão mesmo que
+ * o usuário nunca abra a tela de Administração. Chamado uma vez ao montar
+ * o widget (ver useAssistant.js) — idempotente, seguro de repetir.
  */
-export async function cadastrarPergunta({ rotulo, exemplos, respostaTexto }, { empresaAtual, usuarioAtual } = {}) {
-  const intent = registrarIntentPersonalizada({ rotulo, exemplos, respostaTexto });
-  return comLatencia(intent);
+export async function hidratarCatalogoAdmin() {
+  const resultado = await chamarBackend('/perguntas');
+  if (!resultado?.ok) return;
+  resultado.dados.forEach(hidratarLocal);
 }
 
-/**
- * PONTO DE INTEGRAÇÃO: PATCH /api/{empresaId}/assistente/intencoes/{id} { ativa: false }
- */
-export async function desativarPergunta(id, { empresaAtual } = {}) {
-  desativarIntent(id);
-  return comLatencia({ id, ativa: false });
+export async function listarPerguntasCadastradas() {
+  await hidratarCatalogoAdmin();
+  return listarIntents();
 }
 
-/**
- * PONTO DE INTEGRAÇÃO: POST /api/{empresaId}/assistente/sugestoes
- */
-export async function registrarSugestaoUsuario(perguntaOriginal, { empresaAtual, usuarioAtual } = {}) {
-  const sugestao = registrarSugestao(perguntaOriginal);
-  return comLatencia(sugestao);
+export async function cadastrarPergunta({ rotulo, exemplos, respostaTexto }) {
+  const resultado = await chamarBackend('/perguntas', {
+    method: 'POST',
+    body: JSON.stringify({ rotulo, exemplos, respostaTexto }),
+  });
+  if (resultado?.ok) {
+    hidratarLocal(resultado.dados);
+    return resultado.dados;
+  }
+  // Backend indisponível — cadastra só localmente (não sobrevive a um
+  // refresh, mas mantém o widget usável offline/em demo).
+  return registrarIntentPersonalizada({ rotulo, exemplos, respostaTexto });
 }
 
-/**
- * PONTO DE INTEGRAÇÃO: GET /api/{empresaId}/assistente/sugestoes
- */
-export async function listarSugestoes({ empresaAtual } = {}) {
-  return comLatencia(listarTodasSugestoes());
+export async function desativarPergunta(id) {
+  await chamarBackend(`/perguntas/${id}`, { method: 'PATCH', body: JSON.stringify({ ativa: false }) });
+  desativarIntent(id); // efeito local sempre, backend ou não
+  return { id, ativa: false };
 }
 
-/**
- * PONTO DE INTEGRAÇÃO: POST /api/{empresaId}/assistente/sugestoes/{id}/aprovar
- */
-export async function aprovarSugestaoUsuario(id, opcoes, { empresaAtual } = {}) {
-  const intent = aprovarSugestao(id, opcoes);
-  return comLatencia(intent);
+export async function registrarSugestaoUsuario(perguntaOriginal) {
+  const resultado = await chamarBackend('/sugestoes', {
+    method: 'POST',
+    body: JSON.stringify({ perguntaOriginal }),
+  });
+  if (resultado?.ok) return resultado.dados;
+  return registrarSugestao(perguntaOriginal);
 }
 
-/**
- * PONTO DE INTEGRAÇÃO: POST /api/{empresaId}/assistente/sugestoes/{id}/rejeitar
- */
-export async function rejeitarSugestaoUsuario(id, { empresaAtual } = {}) {
+export async function listarSugestoes() {
+  const resultado = await chamarBackend('/sugestoes');
+  if (resultado?.ok) return resultado.dados;
+  return listarTodasSugestoes();
+}
+
+export async function aprovarSugestaoUsuario(id, opcoes) {
+  const resultado = await chamarBackend(`/sugestoes/${id}/aprovar`, {
+    method: 'POST',
+    body: JSON.stringify({ respostaTexto: opcoes?.respostaTexto }),
+  });
+  if (resultado?.ok) {
+    hidratarLocal(resultado.dados);
+    return resultado.dados;
+  }
+  // Sugestão não existe no backend (ex: foi criada localmente enquanto o
+  // backend estava fora do ar) — tenta resolver no store local.
+  return aprovarSugestao(id, opcoes);
+}
+
+export async function rejeitarSugestaoUsuario(id) {
+  const resultado = await chamarBackend(`/sugestoes/${id}/rejeitar`, { method: 'POST' });
+  if (resultado?.ok) return resultado.dados;
   rejeitarSugestao(id);
-  return comLatencia({ id, status: 'rejeitada' });
+  return { id, status: 'rejeitada' };
 }

@@ -11,3 +11,6 @@ venv/
 # Logs
 *.log
 logs/
+
+# Banco local (estado de runtime, não código-fonte)
+*.sqlite3
