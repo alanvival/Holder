@@ -1,23 +1,37 @@
+import os
+import urllib.parse
+
 import pandas as pd
+import pyodbc
 from sqlalchemy import create_engine
-import urllib
 
 # ==============================================================================
 # CONFIGURAÇÕES DE CONEXÃO - SQL SERVER
 # ==============================================================================
-# Geralmente o SQL Express local é acessado desta forma:
-SERVER = r'localhost' 
+# O SQL Express local é uma instância nomeada: localhost\SQLEXPRESS.
+# Pode ser sobrescrito pela variável de ambiente SQLSERVER_HOST.
+SERVER = os.getenv("SQLSERVER_HOST", r"localhost\SQLEXPRESS")
 DATABASE = 'holder'
 
-# Cria a string ODBC utilizando a Autenticação Nativa do Windows (Trusted_Connection)
-params = urllib.parse.quote_plus(
-    f"DRIVER={{ODBC Driver 17 for SQL Server}};"
-    f"SERVER={SERVER};"
-    f"DATABASE={DATABASE};"
-    f"Trusted_Connection=yes;"
-)
+
+def _odbc(database: str) -> str:
+    """String ODBC com Autenticação Nativa do Windows (Trusted_Connection)."""
+    return (
+        f"DRIVER={{ODBC Driver 17 for SQL Server}};"
+        f"SERVER={SERVER};"
+        f"DATABASE={database};"
+        f"Trusted_Connection=yes;"
+    )
+
+
+def garantir_banco() -> None:
+    """Cria o banco de dados se ele ainda não existir (CREATE DATABASE exige autocommit)."""
+    with pyodbc.connect(_odbc("master"), autocommit=True) as conexao:
+        conexao.execute(f"IF DB_ID(N'{DATABASE}') IS NULL CREATE DATABASE [{DATABASE}]")
+
 
 # Inicializa o motor de conexão
+params = urllib.parse.quote_plus(_odbc(DATABASE))
 engine = create_engine(f"mssql+pyodbc:///?odbc_connect={params}")
 
 # ==============================================================================
@@ -35,6 +49,8 @@ def main():
     }
     
     print("Iniciando pipeline de ingestão via Pandas/SQLAlchemy...\n")
+    garantir_banco()
+    print(f"Banco '{DATABASE}' pronto em {SERVER}.\n")
     
     for sheet, table_name in pipeline_tables.items():
         print(f"-> Processando aba '{sheet}'...")
