@@ -291,6 +291,58 @@ def calcular_metrica(metrica_id: str, filtros: dict | None = None) -> dict:
     return resultado
 
 
+# Categorias que dá pra comparar de uma vez (mesmo shape de plano/porte/
+# segmento — os únicos valores de categoria fixos e enumeráveis da base).
+_CATEGORIAS_VALIDAS = {"plano": dados.PLANOS, "porte": dados.PORTES, "segmento": dados.SEGMENTOS}
+
+
+def comparar_metrica_por_categoria(metrica_id: str, categoria: str, filtros: dict | None = None) -> dict:
+    """
+    Calcula a mesma métrica pra CADA valor de uma categoria (plano, porte ou
+    segmento) numa única chamada — pra perguntas tipo 'ticket médio por
+    segmento' ou 'compare o SLA entre os planos'. Existe porque perguntas
+    "por categoria" via encadeamento manual (listar categorias + chamar
+    consultar_metrica uma vez por valor) estouravam MAX_TURNOS_TOOL — a
+    tool faz o encadeamento internamente, sem gastar turno de conversa por
+    valor de categoria.
+    """
+    if categoria not in _CATEGORIAS_VALIDAS:
+        return {"erro": f"Categoria inválida: '{categoria}'. Use plano, porte ou segmento."}
+
+    filtros = dict(filtros or {})
+    filtros.pop("cliente_id", None)
+    filtros.pop(categoria, None)  # a categoria é o que vai variar, não um filtro fixo
+
+    if metrica_id not in METRICAS:
+        return {"erro": f"Métrica desconhecida: {metrica_id}"}
+
+    comparacao = []
+    for valor_categoria in _CATEGORIAS_VALIDAS[categoria]:
+        resultado = calcular_metrica(metrica_id, {**filtros, categoria: valor_categoria})
+        valor = resultado.get("valor", resultado.get("nota_media"))
+        if valor is None:
+            continue
+        rotulo_categoria = (
+            PLANO_LABELS.get(valor_categoria, valor_categoria) if categoria == "plano"
+            else PORTE_LABELS.get(valor_categoria, valor_categoria) if categoria == "porte"
+            else valor_categoria
+        )
+        comparacao.append({categoria: rotulo_categoria, "valor": valor})
+
+    if not comparacao:
+        return {"erro": "Sem amostra suficiente pra comparar essas categorias."}
+
+    comparacao.sort(key=lambda c: c["valor"], reverse=True)
+    return {
+        "metrica": metrica_id,
+        "rotulo": METRICAS[metrica_id]["rotulo"],
+        "formato": METRICAS[metrica_id]["formato"],
+        "categoria": categoria,
+        "comparacao": comparacao,
+        "tabela": {"colunas": [categoria, "valor"], "linhas": comparacao},
+    }
+
+
 # Métricas comparáveis entre os dois grupos (Ativo/Cancelado) — exclui NPS
 # (estrutura diferente, tratado à parte) e churn (é a própria coisa que
 # estamos comparando, não faria sentido comparar "churn" contra si mesmo).

@@ -23,7 +23,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from . import ia_fallback
-from .metricas import calcular_metrica, analisar_fatores_churn, clientes_em_risco
+from .metricas import calcular_metrica, comparar_metrica_por_categoria, analisar_fatores_churn, clientes_em_risco
 from .tools_genericas import listar_clientes, buscar_campo_cliente, comparar_clientes, evolucao_temporal
 
 
@@ -108,6 +108,26 @@ def caso_clientes_em_risco():
     obtido_ids = {c["cliente_id"] for c in resultado["resultado"]["clientes"]}
     assert obtido_ids == esperado_ids
     print("OK   clientes_em_risco:", resultado["resposta"])
+
+
+def caso_metrica_agrupada_por_categoria():
+    """Reproduz o bug reportado ao vivo: 'ticket médio por segmento'
+    estourava MAX_TURNOS_TOOL porque o modelo tentava listar segmentos +
+    chamar consultar_metrica uma vez por valor (6 chamadas, mais que o
+    orçamento). consultar_metrica com agrupar_por resolve numa chamada só."""
+    tool_call = FakeToolCall("call_20", "consultar_metrica", {"metrica": "ticket_medio", "agrupar_por": "segmento"})
+    sequencia = [
+        _resposta(FakeMessage(tool_calls=[tool_call])),
+        _resposta(FakeMessage(content="Ticket médio por segmento: Varejo R$ 17.488,50, Serviços R$ 16.266,08...")),
+    ]
+    with patch.object(ia_fallback, "_chamar_modelo", side_effect=sequencia):
+        resultado = ia_fallback.responder_com_fallback_ia("Qual o ticket médio por segmento?")
+
+    assert resultado["encontrado"] is True
+    assert resultado["tool"] == "consultar_metrica"
+    esperado = comparar_metrica_por_categoria("ticket_medio", "segmento")
+    assert resultado["resultado"]["comparacao"] == esperado["comparacao"]
+    print("OK   métrica agrupada por categoria (1 chamada, sem estourar turnos):", resultado["resposta"])
 
 
 # --- Os 4 casos originais do prompt de refatoração (via listar_clientes) --
@@ -393,6 +413,7 @@ if __name__ == "__main__":
     caso_consultar_metrica()
     caso_analisar_fatores_churn()
     caso_clientes_em_risco()
+    caso_metrica_agrupada_por_categoria()
     caso_maior_cliente()
     caso_clientes_por_segmento()
     caso_cancelamentos_por_periodo()

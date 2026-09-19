@@ -23,7 +23,7 @@ import { textResponse, tableResponse, notFoundResponse } from '../engine/respons
 // Tools cujo resultado é naturalmente tabular — quando o backend devolve um
 // bloco `tabela` (colunas + linhas), a UI renderiza como tabela em vez de
 // só texto corrido, mesmo a IA continuando a escrever o texto de contexto.
-const TOOLS_COM_TABELA = new Set(['listar_clientes', 'comparar_clientes', 'evolucao_temporal']);
+const TOOLS_COM_TABELA = new Set(['listar_clientes', 'comparar_clientes', 'evolucao_temporal', 'consultar_metrica']);
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:8000/api';
 

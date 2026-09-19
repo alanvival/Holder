@@ -31,7 +31,10 @@ TOOLS = [
             "(ticket médio, antiguidade de contrato, SLA contratado, tempo "
             "de resolução, reclamações, atraso de pagamento, SLA cumprido, "
             "NPS, churn, uso da plataforma, reuniões, chamados críticos, "
-            "taxa de reabertura), com filtros opcionais."
+            "taxa de reabertura), com filtros opcionais. Use 'agrupar_por' "
+            "pra perguntas tipo 'ticket médio POR segmento' ou 'compare o "
+            "SLA entre os planos' — calcula a métrica pra cada valor da "
+            "categoria numa chamada só, em vez de uma chamada por valor."
         ),
         "input_schema": {
             "type": "object",
@@ -45,6 +48,11 @@ TOOLS = [
                         "reunioes_realizadas", "chamados_criticos", "taxa_reabertura",
                     ],
                     "description": "Qual métrica calcular. 'antiguidade_contrato' = dias desde o início do contrato.",
+                },
+                "agrupar_por": {
+                    "type": "string",
+                    "enum": ["plano", "porte", "segmento"],
+                    "description": "Opcional — quando presente, devolve a métrica comparada entre todos os valores dessa categoria, não um número só.",
                 },
                 "filtros": {
                     "type": "object",
@@ -273,6 +281,10 @@ def executar_tool(nome: str, entrada: dict) -> dict:
     livre — sempre um dict estruturado que a Claude só pode reformatar."""
     entrada = _normalizar_entrada(entrada)
     if nome == "consultar_metrica":
+        if entrada.get("agrupar_por"):
+            return metricas.comparar_metrica_por_categoria(
+                entrada.get("metrica"), entrada.get("agrupar_por"), entrada.get("filtros") or {},
+            )
         return metricas.calcular_metrica(entrada.get("metrica"), entrada.get("filtros") or {})
     if nome == "analisar_fatores_churn":
         return metricas.analisar_fatores_churn()
