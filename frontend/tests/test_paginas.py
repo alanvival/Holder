@@ -167,6 +167,21 @@ def test_sessao_expirada_desloga_e_avisa(api_falsa):
     assert "token" not in at.session_state
 
 
+def test_dashboard_reprocessar_analise_aciona_endpoint(api_falsa):
+    api_falsa.responder("GET", "/dashboard/resumo", 200, RESUMO)
+    api_falsa.responder("GET", "/dashboard/fila", 200, [ITEM_FILA])
+    api_falsa.responder("POST", "/analise/executar", 200, {"executado_em": "2026-09-19T12:00:00"})
+
+    at = _logado(DASHBOARD).run()
+    at = at.button(key="botao_reprocessar").click().run()
+
+    assert not at.exception
+    assert any(
+        req.method == "POST" and req.url.path.endswith("/analise/executar")
+        for req in api_falsa.requisicoes
+    )
+
+
 def test_clientes_lista_e_detalhe(api_falsa):
     api_falsa.responder(
         "GET", "/clientes", 200, {"itens": [CLIENTE_RESUMO], "total": 1, "pagina": 1, "tamanho": 20}
@@ -191,6 +206,44 @@ def test_clientes_sem_resultado(api_falsa):
 
     assert not at.exception
     assert "Nenhum cliente" in at.info[0].value
+
+
+CLIENTE_CANCELADO = {
+    "cliente_id": "C099",
+    "segmento": "Varejo",
+    "porte": "PEQUENO",
+    "plano": "ESSENCIAL",
+    "valor_mensal": 500.0,
+    "sla_contratado_h": 24,
+    "inicio_contrato": "2020-01-01",
+    "situacao": "CANCELADO",
+    "mes_cancelamento": "2026-01-01",
+    "score_risco": None,
+    "faixa": None,
+    "receita_em_risco": None,
+    "posicao_fila": None,
+}
+DETALHE_CANCELADO = {**CLIENTE_CANCELADO, "avaliacao": None}
+HISTORICO_VAZIO = {"cliente_id": "C099", "atendimento": [], "nps": []}
+
+
+def test_clientes_cancelado_sem_avaliacao_nao_gera_nan(api_falsa):
+    api_falsa.responder(
+        "GET",
+        "/clientes",
+        200,
+        {"itens": [CLIENTE_CANCELADO], "total": 1, "pagina": 1, "tamanho": 20},
+    )
+    api_falsa.responder("GET", "/clientes/C099", 200, DETALHE_CANCELADO)
+    api_falsa.responder("GET", "/clientes/C099/historico", 200, HISTORICO_VAZIO)
+
+    at = _logado(CLIENTES).run()
+
+    assert not at.exception
+    assert "Cliente sem avaliação de risco" in at.info[0].value
+    tabela = at.dataframe[0].value
+    assert tabela.loc[0, "Score"] == "—"
+    assert tabela.loc[0, "Posição na fila"] == "—"
 
 
 def test_analise_mensal(api_falsa):

@@ -90,9 +90,9 @@ st.dataframe(
                 "Valor mensal": brl(c["valor_mensal"]),
                 "Situação": (c["situacao"] or "—").title(),
                 "Faixa": ROTULO_FAIXA.get(c["faixa"] or "", "—"),
-                "Score": c["score_risco"],
+                "Score": f"{c['score_risco']:.2f}" if c["score_risco"] is not None else "—",
                 "Receita em risco": brl(c["receita_em_risco"]),
-                "Posição na fila": c["posicao_fila"],
+                "Posição na fila": c["posicao_fila"] if c["posicao_fila"] is not None else "—",
             }
             for c in resultado["itens"]
         ]
