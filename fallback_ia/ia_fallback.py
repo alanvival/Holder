@@ -8,7 +8,15 @@ formata a resposta final em cima do resultado real.
 Provedor: Groq (API compatível com OpenAI — chat.completions + tool
 calling). A arquitetura é a mesma pensada originalmente pra Claude API;
 trocar de provedor de novo (ex: voltar pra Anthropic) significa reescrever
-só _chamar_modelo/_chamar_modelo_com_resultado, não o resto do fluxo.
+só _chamar_modelo, não o resto do fluxo.
+
+O loop é MULTI-TURNO (até MAX_TURNOS_TOOL rodadas): pra perguntas mais
+abertas ("diagnóstico geral considerando todos os indicadores"), o modelo
+pode legitimamente querer chamar uma tool, olhar o resultado, e decidir
+chamar outra antes de escrever a resposta final — um fluxo de 1 turno só
+trata isso como sucesso com texto vazio (bug observado em teste manual: a
+pergunta batia em consultar_metrica, mas o segundo turno voltava com OUTRA
+tool_call em vez de texto, e o content ficava None).
 
 tool_choice fica sempre "auto" — nunca "required"/força uma tool: forçar
 faz o modelo "inventar" parâmetros pra uma tool que não faz sentido pra
@@ -25,8 +33,16 @@ from groq import Groq
 from .guardrails import FallbackTimeoutError, com_timeout, registrar_chamada
 from .tools import executar_tool, tools_formato_openai
 
-MODEL = "llama-3.3-70b-versatile"
-MAX_TOKENS = 1024
+MODEL = "openai/gpt-oss-120b"
+# gpt-oss é um "reasoning model" — gasta uma parte do orçamento de tokens
+# pensando antes de responder, então precisa de mais margem que um modelo
+# comum pra sobrar espaço pro texto final (testado: 300 tokens já cortava
+# respostas curtas pela metade).
+MAX_TOKENS = 2048
+
+# Guardrail contra loop de tool use: no máximo N idas e vindas antes de
+# desistir e cair em "não encontrei" — perguntas legítimas resolvem em 1-2.
+MAX_TURNOS_TOOL = 4
 
 SYSTEM_PROMPT = (
     "Você é o mecanismo de resposta de um assistente de consultas sobre uma "
@@ -56,92 +72,103 @@ def _get_client():
     return _client
 
 
-def _chamar_modelo(pergunta: str):
+def _chamar_modelo(mensagens: list[dict]):
     client = _get_client()
     return client.chat.completions.create(
         model=MODEL,
         max_tokens=MAX_TOKENS,
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": pergunta},
-        ],
+        messages=mensagens,
         tools=tools_formato_openai(),
         tool_choice="auto",
-    )
-
-
-def _chamar_modelo_com_resultado(pergunta: str, mensagem_bruta, tool_call, resultado_real):
-    client = _get_client()
-    return client.chat.completions.create(
-        model=MODEL,
-        max_tokens=MAX_TOKENS,
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": pergunta},
-            mensagem_bruta.model_dump(exclude_none=True),
-            {
-                "role": "tool",
-                "tool_call_id": tool_call.id,
-                "content": json.dumps(resultado_real, ensure_ascii=False),
-            },
-        ],
-        tools=tools_formato_openai(),
     )
 
 
 def responder_com_fallback_ia(pergunta: str) -> dict:
     """
     Retorna sempre um dict com "origem": "ia" e:
-      - {"encontrado": False} quando o modelo não achou tool pra pergunta
-        (cai no mesmo fluxo de "não encontrei" do catálogo);
+      - {"encontrado": False} quando o modelo não achou tool pra pergunta,
+        ou esgotou as rodadas sem escrever uma resposta final (cai no
+        mesmo fluxo de "não encontrei" do catálogo);
       - {"encontrado": True, "resposta": str, "tool": str} quando resolveu.
-    Nunca deixa o modelo devolver texto livre sem ter passado por uma tool.
+    Nunca deixa o modelo devolver texto livre sem ter passado por tool.
     """
     inicio = time.monotonic()
-    tool_escolhida = None
+    mensagens: list[dict] = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": pergunta},
+    ]
+    tools_usadas: list[str] = []
+    ultimo_resultado = None
+
     try:
-        resposta = com_timeout(_chamar_modelo, pergunta)
-        mensagem = resposta.choices[0].message
+        for turno in range(MAX_TURNOS_TOOL):
+            resposta = com_timeout(_chamar_modelo, mensagens)
+            mensagem = resposta.choices[0].message
 
-        if not mensagem.tool_calls:
-            registrar_chamada(
-                pergunta=pergunta, tool_escolhida=None, sucesso=True,
-                tempo_ms=int((time.monotonic() - inicio) * 1000),
-            )
-            return {"origem": "ia", "encontrado": False}
+            if not mensagem.tool_calls:
+                tempo_ms = int((time.monotonic() - inicio) * 1000)
 
-        tool_call = mensagem.tool_calls[0]
-        tool_escolhida = tool_call.function.name
-        argumentos = json.loads(tool_call.function.arguments)
-        resultado_real = executar_tool(tool_escolhida, argumentos)
+                # Nenhuma tool foi chamada em turno nenhum — mesmo que o
+                # modelo tenha escrito algo em `content`, é texto livre não
+                # fundamentado em dado real. Nunca aceitar isso como
+                # resposta: é exatamente o "não invente número" do prompt.
+                if not tools_usadas:
+                    registrar_chamada(
+                        pergunta=pergunta, tool_escolhida=None, sucesso=True, tempo_ms=tempo_ms,
+                    )
+                    return {"origem": "ia", "encontrado": False}
 
-        resposta_final = com_timeout(
-            _chamar_modelo_com_resultado, pergunta, mensagem, tool_call, resultado_real,
-        )
-        texto = resposta_final.choices[0].message.content
+                texto = (mensagem.content or "").strip()
+                if not texto:
+                    # Tool(s) já rodaram, mas o modelo voltou sem tool_call
+                    # e sem texto — falha real dele, não um "fora do escopo".
+                    registrar_chamada(
+                        pergunta=pergunta, tool_escolhida=",".join(tools_usadas), sucesso=False,
+                        tempo_ms=tempo_ms, origem_erro="resposta_vazia_apos_tool",
+                    )
+                    return {"origem": "ia", "encontrado": False}
 
+                registrar_chamada(
+                    pergunta=pergunta, tool_escolhida=",".join(tools_usadas), sucesso=True, tempo_ms=tempo_ms,
+                )
+                return {
+                    "origem": "ia",
+                    "encontrado": True,
+                    "resposta": texto,
+                    "tool": tools_usadas[-1],
+                    "resultado": ultimo_resultado,
+                }
+
+            mensagens.append(mensagem.model_dump(exclude_none=True))
+            for tool_call in mensagem.tool_calls:
+                nome = tool_call.function.name
+                tools_usadas.append(nome)
+                argumentos = json.loads(tool_call.function.arguments)
+                ultimo_resultado = executar_tool(nome, argumentos)
+                mensagens.append({
+                    "role": "tool",
+                    "tool_call_id": tool_call.id,
+                    "content": json.dumps(ultimo_resultado, ensure_ascii=False),
+                })
+
+        # Esgotou MAX_TURNOS_TOOL sem chegar a uma resposta em texto.
         registrar_chamada(
-            pergunta=pergunta, tool_escolhida=tool_escolhida, sucesso=True,
-            tempo_ms=int((time.monotonic() - inicio) * 1000),
+            pergunta=pergunta, tool_escolhida=",".join(tools_usadas) or None,
+            sucesso=False, tempo_ms=int((time.monotonic() - inicio) * 1000),
+            origem_erro="max_turnos_excedido",
         )
-        return {
-            "origem": "ia",
-            "encontrado": True,
-            "resposta": texto,
-            "tool": tool_escolhida,
-            "resultado": resultado_real,
-        }
+        return {"origem": "ia", "encontrado": False}
 
     except FallbackTimeoutError:
         registrar_chamada(
-            pergunta=pergunta, tool_escolhida=tool_escolhida, sucesso=False,
+            pergunta=pergunta, tool_escolhida=",".join(tools_usadas) or None, sucesso=False,
             tempo_ms=int((time.monotonic() - inicio) * 1000), origem_erro="timeout",
         )
         return {"origem": "ia", "encontrado": False, "erro": "timeout"}
 
     except Exception as exc:  # nunca deixa o backend cair por erro da API
         registrar_chamada(
-            pergunta=pergunta, tool_escolhida=tool_escolhida, sucesso=False,
+            pergunta=pergunta, tool_escolhida=",".join(tools_usadas) or None, sucesso=False,
             tempo_ms=int((time.monotonic() - inicio) * 1000), origem_erro=str(exc),
         )
         return {"origem": "ia", "encontrado": False, "erro": str(exc)}
