@@ -8,11 +8,14 @@ from app.core.config import Settings
 from app.core.exceptions import TokenInvalidoError
 from app.core.security import GerenciadorToken, HasherSenha
 from app.models import Usuario
+from app.repositories.avaliacao_repository import AvaliacaoRepository
+from app.repositories.execucao_repository import ExecucaoRepository
 from app.repositories.health_repository import HealthRepository
 from app.repositories.usuario_repository import UsuarioRepository
 from app.services.analise_service import AnaliseService
 from app.services.auth_service import AuthService
 from app.services.catalogo_service import CatalogoService
+from app.services.dashboard_service import DashboardService
 from app.services.fabrica import (
     criar_analise_service,
     criar_catalogo_service,
@@ -91,3 +94,7 @@ def get_analise_service(
     db: Session = Depends(get_db), settings: Settings = Depends(get_settings_dep)
 ) -> AnaliseService:
     return criar_analise_service(db, settings)
+
+
+def get_dashboard_service(db: Session = Depends(get_db)) -> DashboardService:
+    return DashboardService(ExecucaoRepository(db), AvaliacaoRepository(db))

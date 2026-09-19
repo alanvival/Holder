@@ -6,12 +6,15 @@ import app.models  # noqa: F401  (registra os models no metadata)
 from app.controllers import (
     analise_controller,
     auth_controller,
+    catalogo_controller,
+    dashboard_controller,
     health_controller,
     importacao_controller,
 )
 from app.core.config import Settings, get_settings
 from app.core.database import Base, criar_engine
 from app.core.handlers import registrar_handlers
+from app.services.fabrica import criar_catalogo_service
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -25,6 +28,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.engine = engine
     app.state.session_factory = sessionmaker(bind=engine, expire_on_commit=False)
 
+    with app.state.session_factory() as session:
+        criar_catalogo_service(session, settings).garantir_seeds()
+
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.lista_cors,
@@ -37,4 +43,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(auth_controller.router, prefix="/api")
     app.include_router(importacao_controller.router, prefix="/api")
     app.include_router(analise_controller.router, prefix="/api")
+    app.include_router(dashboard_controller.router, prefix="/api")
+    app.include_router(catalogo_controller.router, prefix="/api")
     return app
