@@ -8,6 +8,7 @@ filtros — quem soma e divide é este módulo.
 """
 from __future__ import annotations
 
+import datetime as dt
 import math
 
 from . import dados
@@ -21,6 +22,25 @@ def _media(serie):
     if len(serie) == 0:
         return None
     return float(serie.mean())
+
+
+def _antiguidade_dias(df):
+    """Dias desde inicio_contrato até hoje — usado pela métrica
+    'antiguidade_contrato' (não é campo numérico direto, precisa parsear a
+    data primeiro). Datas inválidas/vazias são ignoradas, não zeradas."""
+    if len(df) == 0:
+        return None
+    hoje = dt.date.today()
+    dias = []
+    for valor in df["inicio_contrato"]:
+        try:
+            inicio = dt.date.fromisoformat(str(valor)[:10])
+        except (ValueError, TypeError):
+            continue
+        dias.append((hoje - inicio).days)
+    if not dias:
+        return None
+    return sum(dias) / len(dias)
 
 
 def _media_ponderada(df, campo, campo_peso):
@@ -64,6 +84,23 @@ METRICAS = {
         "aba": "clientes",
         "formato": "moeda",
         "calcular": lambda df: _media(df["valor_mensal"]),
+    },
+    "antiguidade_contrato": {
+        "rotulo": "Antiguidade do contrato",
+        "aba": "clientes",
+        "formato": "dias",
+        # Ranking por "maior" = contrato mais VELHO (mais dias desde o
+        # início) = cliente mais antigo; "menor" = cliente mais novo.
+        "calcular": _antiguidade_dias,
+    },
+    "sla_contratado": {
+        # Diferente de "sla_cumprido" (% de chamados dentro do prazo, mês a
+        # mês) — este é o PRAZO em horas que consta no contrato, fixo por
+        # cliente (6h Enterprise / 12h Avançado / 24h Essencial nesta base).
+        "rotulo": "SLA contratado",
+        "aba": "clientes",
+        "formato": "horas",
+        "calcular": lambda df: _media(df["sla_contratado_h"]),
     },
     "tempo_medio_resolucao": {
         "rotulo": "Tempo médio de resolução",
@@ -389,14 +426,32 @@ def ranking_clientes(metrica_id: str, direcao: str = "maior", quantidade: int = 
     posicoes.sort(key=lambda p: p["valor"], reverse=(direcao != "menor"))
     quantidade = max(1, min(quantidade or 5, len(posicoes)))
 
-    return {
+    topo = posicoes[:quantidade]
+    # Empate no valor de corte: "o cliente mais antigo" não pode escolher
+    # arbitrariamente 1 entre 2 clientes com a mesma data — inclui todo
+    # mundo empatado com o último valor que entrou no topo, mesmo que
+    # isso estoure a `quantidade` pedida.
+    valor_corte = topo[-1]["valor"]
+    indice = quantidade
+    while indice < len(posicoes) and posicoes[indice]["valor"] == valor_corte:
+        topo.append(posicoes[indice])
+        indice += 1
+
+    resultado = {
         "metrica": metrica_id,
         "rotulo": definicao["rotulo"],
         "formato": definicao["formato"],
         "direcao": direcao,
         "universo": _descrever_universo(definicao["aba"], filtros, df) + f" Ranking entre {len(posicoes)} cliente(s) com dado disponível.",
-        "ranking": posicoes[:quantidade],
+        "ranking": topo,
+        "houve_empate_no_corte": len(topo) > quantidade,
     }
+    if resultado["houve_empate_no_corte"]:
+        resultado["nota"] = (
+            f"Havia {len(topo)} clientes empatados no valor de corte — "
+            "a resposta deve mencionar todos, não escolher só um."
+        )
+    return resultado
 
 
 # --- Tool: contar_clientes ------------------------------------------------
@@ -418,7 +473,7 @@ def contar_clientes(filtros: dict | None = None) -> dict:
 # Métricas sem sentido "mês a mês": ticket_medio é atributo fixo do cliente
 # (aba clientes, sem mes_ref); churn é um evento pontual, não uma taxa
 # recalculada todo mês nesta base; nps tem estrutura própria (score+nota).
-_METRICAS_SEM_EVOLUCAO = {"ticket_medio", "churn", "nps"}
+_METRICAS_SEM_EVOLUCAO = {"ticket_medio", "antiguidade_contrato", "churn", "nps"}
 
 
 def evolucao_metrica(metrica_id: str, filtros: dict | None = None) -> dict:
@@ -583,4 +638,56 @@ def clientes_em_risco(nivel: str = "Alto") -> dict:
         "total_clientes_ativos": len(ativos),
         "clientes_encontrados": len(encontrados),
         "clientes": encontrados,
+    }
+
+
+# --- Tool: listar_clientes ---------------------------------------------
+# Diferente de contar_clientes (só o número) e ranking_clientes (ordenado
+# por uma métrica): aqui é uma lista simples de cliente_id que batem com
+# filtros — inclui dois filtros que não existem em mais nenhum lugar:
+# classificação de NPS (usa a ÚLTIMA pesquisa respondida de cada cliente) e
+# período de cancelamento (mes_cancelamento, que fica em situacao_clientes,
+# não em atendimento_mensal — os filtros normais de período não alcançam).
+
+_LIMITE_PADRAO_LISTAGEM = 20
+
+
+def _ultima_classificacao_nps_por_cliente() -> dict:
+    respondidas = dados.pesquisas_nps[dados.pesquisas_nps["respondeu"] == 1].sort_values("mes_ref")
+    ultima = respondidas.groupby("cliente_id").tail(1)
+    return dict(zip(ultima["cliente_id"], ultima["classificacao_nps"]))
+
+
+def listar_clientes(filtros: dict | None = None, limite: int = _LIMITE_PADRAO_LISTAGEM) -> dict:
+    """Lista (não conta, não ranqueia) os clientes que batem com os
+    filtros — pra perguntas tipo 'quais clientes são do segmento Varejo',
+    'quais clientes são detratores', 'quais clientes cancelaram em 2026'."""
+    filtros = dict(filtros or {})
+    filtros.pop("cliente_id", None)
+    nps_classificacao = filtros.pop("nps_classificacao", None)
+    cancelamento_inicio = filtros.pop("cancelamento_inicio", None)
+    cancelamento_fim = filtros.pop("cancelamento_fim", None)
+
+    df = _filtrar("clientes", {k: v for k, v in filtros.items() if k not in ("periodo_inicio", "periodo_fim")})
+    encontrados = set(df["cliente_id"])
+
+    if cancelamento_inicio or cancelamento_fim:
+        cancelados = dados.situacao_clientes[dados.situacao_clientes["situacao"] == "Cancelado"].copy()
+        if cancelamento_inicio:
+            cancelados = cancelados[cancelados["mes_cancelamento"] >= cancelamento_inicio]
+        if cancelamento_fim:
+            cancelados = cancelados[cancelados["mes_cancelamento"] <= cancelamento_fim]
+        encontrados &= set(cancelados["cliente_id"])
+
+    if nps_classificacao:
+        mapa_nps = _ultima_classificacao_nps_por_cliente()
+        encontrados = {cid for cid in encontrados if mapa_nps.get(cid) == nps_classificacao}
+
+    lista_ordenada = sorted(encontrados)
+    limite = max(1, limite or _LIMITE_PADRAO_LISTAGEM)
+
+    return {
+        "total_encontrado": len(lista_ordenada),
+        "clientes": lista_ordenada[:limite],
+        "truncado": len(lista_ordenada) > limite,
     }

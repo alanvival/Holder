@@ -10,7 +10,7 @@ diferente.
 """
 from __future__ import annotations
 
-from . import metricas, registro_cliente
+from . import dados, metricas, registro_cliente
 
 # Reaproveitado em várias tools — mesmo shape de recorte em todo lugar.
 _FILTROS_SCHEMA = {
@@ -30,9 +30,10 @@ TOOLS = [
         "name": "consultar_metrica",
         "description": (
             "Calcula uma métrica agregada sobre a base de clientes "
-            "(ticket médio, tempo de resolução, reclamações, atraso de "
-            "pagamento, SLA, NPS, churn, uso da plataforma, reuniões, "
-            "chamados críticos, taxa de reabertura), com filtros opcionais."
+            "(ticket médio, antiguidade de contrato, tempo de resolução, "
+            "reclamações, atraso de pagamento, SLA, NPS, churn, uso da "
+            "plataforma, reuniões, chamados críticos, taxa de reabertura), "
+            "com filtros opcionais."
         ),
         "input_schema": {
             "type": "object",
@@ -40,12 +41,12 @@ TOOLS = [
                 "metrica": {
                     "type": "string",
                     "enum": [
-                        "ticket_medio", "tempo_medio_resolucao", "media_reclamacoes",
-                        "atraso_pagamento", "sla_cumprido", "nps", "churn",
+                        "ticket_medio", "antiguidade_contrato", "tempo_medio_resolucao",
+                        "media_reclamacoes", "atraso_pagamento", "sla_cumprido", "nps", "churn",
                         "uso_plataforma", "reunioes_realizadas", "chamados_criticos",
                         "taxa_reabertura",
                     ],
-                    "description": "Qual métrica calcular.",
+                    "description": "Qual métrica calcular. 'antiguidade_contrato' = dias desde o início do contrato.",
                 },
                 "filtros": {
                     "type": "object",
@@ -83,7 +84,9 @@ TOOLS = [
             "Lista os clientes com maior ou menor valor numa métrica "
             "específica — use pra perguntas tipo 'qual cliente tem o maior "
             "ticket', 'quais clientes têm o pior SLA', 'quem tem mais "
-            "chamados críticos', 'top 5 clientes por uso da plataforma'. "
+            "chamados críticos', 'top 5 clientes por uso da plataforma', "
+            "'qual cliente é o mais antigo' (use 'antiguidade_contrato' com "
+            "direcao 'maior'), 'qual cliente é mais novo' (direcao 'menor'). "
             "Diferente de consultar_metrica (que devolve UM número agregado "
             "de toda a carteira), esta tool devolve uma LISTA de clientes "
             "individuais ordenada. Não suporta as métricas 'churn' nem "
@@ -95,8 +98,8 @@ TOOLS = [
                 "metrica": {
                     "type": "string",
                     "enum": [
-                        "ticket_medio", "tempo_medio_resolucao", "media_reclamacoes",
-                        "atraso_pagamento", "sla_cumprido", "uso_plataforma",
+                        "ticket_medio", "antiguidade_contrato", "tempo_medio_resolucao",
+                        "media_reclamacoes", "atraso_pagamento", "sla_cumprido", "uso_plataforma",
                         "reunioes_realizadas", "chamados_criticos", "taxa_reabertura",
                     ],
                     "description": "Qual métrica usar pra ordenar os clientes.",
@@ -163,9 +166,9 @@ TOOLS = [
                 "metrica": {
                     "type": "string",
                     "enum": [
-                        "ticket_medio", "tempo_medio_resolucao", "media_reclamacoes",
-                        "atraso_pagamento", "sla_cumprido", "churn", "uso_plataforma",
-                        "reunioes_realizadas", "chamados_criticos", "taxa_reabertura",
+                        "ticket_medio", "antiguidade_contrato", "tempo_medio_resolucao",
+                        "media_reclamacoes", "atraso_pagamento", "sla_cumprido", "churn",
+                        "uso_plataforma", "reunioes_realizadas", "chamados_criticos", "taxa_reabertura",
                     ],
                 },
                 "categoria": {"type": "string", "enum": ["plano", "porte", "segmento"]},
@@ -196,11 +199,46 @@ TOOLS = [
         },
     },
     {
+        "name": "listar_clientes",
+        "description": (
+            "Lista (não conta, não ranqueia por valor) os clientes que "
+            "batem com um conjunto de filtros — use pra perguntas tipo "
+            "'quais clientes são do segmento Varejo', 'quais clientes são "
+            "detratores' (filtros.nps_classificacao = 'Detrator'), 'quais "
+            "clientes cancelaram em 2026' (filtros.cancelamento_inicio = "
+            "'2026-01', filtros.cancelamento_fim = '2026-12'). Devolve até "
+            "'limite' cliente_id (padrão 20)."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "filtros": {
+                    "type": "object",
+                    "properties": {
+                        "plano": {"type": "string", "enum": ["Essencial", "Avancado", "Enterprise"]},
+                        "porte": {"type": "string", "enum": ["Pequeno", "Medio", "Grande"]},
+                        "segmento": {"type": "string"},
+                        "situacao": {"type": "string", "enum": ["Ativo", "Cancelado"]},
+                        "nps_classificacao": {"type": "string", "enum": ["Promotor", "Neutro", "Detrator"]},
+                        "cancelamento_inicio": {"type": "string", "description": "AAAA-MM — só clientes cancelados a partir desse mês."},
+                        "cancelamento_fim": {"type": "string", "description": "AAAA-MM — só clientes cancelados até esse mês."},
+                    },
+                },
+                "limite": {"type": "integer", "description": "Máximo de clientes a listar (padrão 20)."},
+            },
+        },
+    },
+    {
         "name": "buscar_registro_cliente",
         "description": (
-            "Busca informações pontuais de um cliente específico: último "
-            "acompanhamento, situação do contrato, plano atual, histórico "
-            "recente de chamados ou NPS."
+            "Busca informações pontuais de um cliente específico. Use "
+            "campo='plano' pra perguntas sobre plano, porte, segmento, "
+            "valor mensal, SLA contratado E DATA DE INÍCIO DO CONTRATO "
+            "(ex: 'quando o cliente C002 entrou', 'qual dia começou o "
+            "contrato do cliente X', 'desde quando é cliente'); "
+            "campo='situacao' pra saber se está ativo ou cancelado (e "
+            "quando cancelou); campo='historico_chamados' ou "
+            "'historico_nps' pro histórico recente."
         ),
         "input_schema": {
             "type": "object",
@@ -237,9 +275,25 @@ def tools_formato_openai() -> list[dict]:
     ]
 
 
+def _normalizar_entrada(entrada: dict) -> dict:
+    """Corrige erros de digitação comuns no cliente_id (ex: 'CO02' -> 'C002')
+    antes de rodar qualquer tool — tanto no parâmetro direto quanto dentro
+    de filtros aninhados."""
+    entrada = dict(entrada or {})
+    if "cliente_id" in entrada:
+        entrada["cliente_id"] = dados.normalizar_cliente_id(entrada["cliente_id"])
+    filtros = entrada.get("filtros")
+    if isinstance(filtros, dict) and "cliente_id" in filtros:
+        filtros = dict(filtros)
+        filtros["cliente_id"] = dados.normalizar_cliente_id(filtros["cliente_id"])
+        entrada["filtros"] = filtros
+    return entrada
+
+
 def executar_tool(nome: str, entrada: dict) -> dict:
     """Roda a consulta de verdade contra os dados reais. Nunca retorna texto
     livre — sempre um dict estruturado que a Claude só pode reformatar."""
+    entrada = _normalizar_entrada(entrada)
     if nome == "consultar_metrica":
         return metricas.calcular_metrica(entrada.get("metrica"), entrada.get("filtros") or {})
     if nome == "analisar_fatores_churn":
@@ -257,6 +311,8 @@ def executar_tool(nome: str, entrada: dict) -> dict:
         return metricas.comparar_por_categoria(entrada.get("metrica"), entrada.get("categoria"), entrada.get("filtros") or {})
     if nome == "clientes_em_risco":
         return metricas.clientes_em_risco(entrada.get("nivel", "Alto"))
+    if nome == "listar_clientes":
+        return metricas.listar_clientes(entrada.get("filtros") or {}, entrada.get("limite", 20))
     if nome == "buscar_registro_cliente":
         return registro_cliente.buscar_registro_cliente(entrada.get("cliente_id"), entrada.get("campo"))
     return {"erro": f"Tool desconhecida: {nome}"}

@@ -68,6 +68,8 @@ def buscar_registro_cliente(cliente_id: str, campo: str) -> dict:
             "porte": cliente["porte"],
             "segmento": cliente["segmento"],
             "valor_mensal": float(cliente["valor_mensal"]),
+            "sla_contratado_h": int(cliente["sla_contratado_h"]),
+            "inicio_contrato": cliente["inicio_contrato"],
         }
 
     if campo == "historico_chamados":

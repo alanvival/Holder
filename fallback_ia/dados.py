@@ -67,3 +67,15 @@ def situacao_do_cliente(cliente_id):
 
 def cliente_existe(cliente_id):
     return cliente_id in _clientes_por_id.index
+
+
+def normalizar_cliente_id(cliente_id):
+    """A IA (ou o usuário, na hora de digitar pra IA) às vezes troca "0" por
+    letra "O" no id (ex: 'CO02' em vez de 'C002') — normaliza pra aceitar
+    esse erro de digitação comum em vez de simplesmente não achar o cliente."""
+    if not cliente_id or not isinstance(cliente_id, str):
+        return cliente_id
+    cid = cliente_id.strip().upper()
+    if cid.startswith("C") and len(cid) > 1:
+        cid = "C" + cid[1:].replace("O", "0")
+    return cid

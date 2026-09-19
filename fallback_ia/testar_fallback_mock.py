@@ -17,7 +17,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from . import ia_fallback
-from .metricas import calcular_metrica, analisar_fatores_churn, contar_clientes, ranking_clientes, clientes_em_risco
+from .metricas import calcular_metrica, analisar_fatores_churn, contar_clientes, ranking_clientes, clientes_em_risco, listar_clientes
 
 
 class FakeFunction:
@@ -128,6 +128,25 @@ def caso_ranking_clientes():
     print("OK   ranking_clientes:", resultado["resposta"])
 
 
+def caso_ranking_por_antiguidade():
+    """Pergunta tipo 'qual cliente mais antigo' — métrica não numérica
+    direta (precisa parsear inicio_contrato), achada em teste manual como
+    outra lacuna real de tool."""
+    tool_call = FakeToolCall("call_10", "ranking_clientes", {"metrica": "antiguidade_contrato", "direcao": "maior", "quantidade": 1})
+    sequencia = [
+        _resposta(FakeMessage(tool_calls=[tool_call])),
+        _resposta(FakeMessage(content="O cliente mais antigo é C002, com 2.422 dias de contrato.")),
+    ]
+    with patch.object(ia_fallback, "_chamar_modelo", side_effect=sequencia):
+        resultado = ia_fallback.responder_com_fallback_ia("Qual cliente mais antigo?")
+
+    assert resultado["encontrado"] is True
+    esperado = ranking_clientes("antiguidade_contrato", "maior", 1)
+    assert resultado["resultado"]["ranking"] == esperado["ranking"]
+    assert resultado["resultado"]["ranking"][0]["cliente_id"] == "C002"  # inicio_contrato mais antigo da base
+    print("OK   ranking por antiguidade:", resultado["resposta"])
+
+
 def caso_contar_clientes():
     """Pergunta tipo 'quantos clientes tem o plano Enterprise'."""
     tool_call = FakeToolCall("call_8", "contar_clientes", {"filtros": {"plano": "Enterprise"}})
@@ -158,6 +177,47 @@ def caso_clientes_em_risco():
     obtido_ids = {c["cliente_id"] for c in resultado["resultado"]["clientes"]}
     assert obtido_ids == esperado_ids
     print("OK   clientes_em_risco:", resultado["resposta"])
+
+
+def caso_listar_clientes():
+    """Pergunta tipo 'quais clientes cancelaram em 2026' — lista (não
+    conta, não ranqueia) os clientes que batem com um filtro."""
+    tool_call = FakeToolCall(
+        "call_11", "listar_clientes",
+        {"filtros": {"cancelamento_inicio": "2026-01", "cancelamento_fim": "2026-12"}},
+    )
+    sequencia = [
+        _resposta(FakeMessage(tool_calls=[tool_call])),
+        _resposta(FakeMessage(content="12 clientes cancelaram em 2026: C004, C007, C024, C025, C030, C031, C034, C047, C053, C054, C073, C075.")),
+    ]
+    with patch.object(ia_fallback, "_chamar_modelo", side_effect=sequencia):
+        resultado = ia_fallback.responder_com_fallback_ia("Quais clientes cancelaram em 2026?")
+
+    assert resultado["origem"] == "ia"
+    assert resultado["encontrado"] is True
+    assert resultado["tool"] == "listar_clientes"
+    esperado = listar_clientes({"cancelamento_inicio": "2026-01", "cancelamento_fim": "2026-12"})
+    assert resultado["resultado"]["clientes"] == esperado["clientes"]
+    assert resultado["resultado"]["total_encontrado"] == 12
+    print("OK   listar_clientes:", resultado["resposta"])
+
+
+def caso_normaliza_cliente_id_com_erro_de_digitacao():
+    """Reproduz o bug reportado ao vivo: 'CO02' (letra O) em vez de 'C002'
+    (zero) — a tool tem que normalizar antes de buscar, não devolver 'não
+    encontrado' por causa de um erro de digitação comum."""
+    tool_call = FakeToolCall("call_12", "buscar_registro_cliente", {"cliente_id": "CO02", "campo": "plano"})
+    sequencia = [
+        _resposta(FakeMessage(tool_calls=[tool_call])),
+        _resposta(FakeMessage(content="O cliente C002 iniciou o contrato em 01/02/2020.")),
+    ]
+    with patch.object(ia_fallback, "_chamar_modelo", side_effect=sequencia):
+        resultado = ia_fallback.responder_com_fallback_ia("Qual dia entrou o cliente CO02?")
+
+    assert resultado["encontrado"] is True
+    assert resultado["resultado"]["cliente_id"] == "C002"
+    assert resultado["resultado"]["inicio_contrato"] == "2020-02-01"
+    print("OK   normaliza cliente_id com erro de digitação (CO02 -> C002):", resultado["resposta"])
 
 
 def caso_multi_turno():
@@ -224,8 +284,11 @@ if __name__ == "__main__":
     caso_buscar_registro_cliente()
     caso_analisar_fatores_churn()
     caso_ranking_clientes()
+    caso_ranking_por_antiguidade()
     caso_contar_clientes()
     caso_clientes_em_risco()
+    caso_listar_clientes()
+    caso_normaliza_cliente_id_com_erro_de_digitacao()
     caso_multi_turno()
     caso_max_turnos_excedido()
     caso_fora_do_escopo()

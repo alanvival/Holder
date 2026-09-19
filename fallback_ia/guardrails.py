@@ -17,8 +17,12 @@ from threading import Lock
 # reais em perguntas cujo resultado de tool é mais volumoso (ex:
 # clientes_em_risco devolvendo vários clientes com listas de sinais cada) —
 # gpt-oss é um reasoning model e gasta mais tempo "pensando" sobre payloads
-# maiores antes de escrever a resposta final.
-TIMEOUT_SEGUNDOS = 15
+# maiores antes de escrever a resposta final. Subiu de novo pra 20s depois
+# de observar timeouts intermitentes mesmo em chamadas simples (ex:
+# listar_clientes com filtro único) — variância de latência da API, não bug
+# de lógica: a mesma pergunta que estourou o timeout respondeu certo ao
+# tentar de novo.
+TIMEOUT_SEGUNDOS = 20
 RATE_LIMIT_MAX_CHAMADAS = 5
 RATE_LIMIT_JANELA_SEGUNDOS = 60
 
