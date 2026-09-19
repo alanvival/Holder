@@ -1,4 +1,5 @@
 from collections.abc import Iterator
+from pathlib import Path
 
 import pytest
 from fastapi import FastAPI
@@ -36,6 +37,11 @@ def db_session(app: FastAPI) -> Iterator[Session]:
         yield session
     finally:
         session.close()
+
+
+@pytest.fixture
+def caminho_xlsx() -> Path:
+    return Path(__file__).resolve().parents[2] / "INOVAAPPS_base_de_dados.xlsx"
 
 
 @pytest.fixture
