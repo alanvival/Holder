@@ -31,11 +31,18 @@ FAIXAS = [
 
 
 def _engine():
+    # Encrypt=no evita a negociação de TLS que o driver 17 tenta por padrão
+    # antes de cair pra conexão sem criptografia — desnecessário numa
+    # instância local. Ajuda, mas não foi a causa principal de lentidão
+    # observada: essa era memória livre baixa na máquina (RAM sob pressão
+    # deixa qualquer conexão nova errática) somada a contenção de lock
+    # entre processos concorrentes (ver _garantir_tabela_historico abaixo).
     params = urllib.parse.quote_plus(
         f"DRIVER={{ODBC Driver 17 for SQL Server}};"
         f"SERVER={SERVER};"
         f"DATABASE={DATABASE};"
         f"Trusted_Connection=yes;"
+        f"Encrypt=no;"
     )
     return create_engine(f"mssql+pyodbc:///?odbc_connect={params}")
 
@@ -70,7 +77,22 @@ def carregar_dados():
 # pra v2 (modelo_risco.py, regressão logística) não exigiu mudar isso nem o
 # painel (app.py) que consome.
 
+def _tabela_existe(engine, nome: str) -> bool:
+    with engine.connect() as conn:
+        return conn.execute(text("SELECT 1 FROM sys.tables WHERE name = :nome"), {"nome": nome}).fetchone() is not None
+
+
 def _garantir_tabela_historico(engine):
+    # Só tenta o CREATE TABLE (que precisa de um lock de schema, mesmo com
+    # IF NOT EXISTS) quando a tabela realmente não existe ainda — checar
+    # primeiro com uma leitura simples evita que múltiplos processos
+    # rodando ao mesmo tempo (o Streamlit + um script de terminal, por
+    # exemplo) fiquem serializados esperando esse lock a cada leitura,
+    # depois que a tabela já foi criada uma vez. Era a causa real do
+    # "Running..." que travava por 10-60s: não era lentidão de conexão,
+    # era contenção de lock entre processos concorrentes.
+    if _tabela_existe(engine, "fScoreRisco"):
+        return
     with engine.begin() as conn:
         conn.execute(text("""
             IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'fScoreRisco')
