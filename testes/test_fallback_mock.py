@@ -16,7 +16,7 @@ OpenAI): choices[0].message.tool_calls[i].function.{name,arguments}, e
 message.model_dump() pra reconstruir o turno anterior nas chamadas
 seguintes.
 
-Uso: python -m fallback_ia.testar_fallback_mock
+Uso: pytest testes/test_fallback_mock.py
 """
 import json
 from types import SimpleNamespace
@@ -24,8 +24,8 @@ from unittest.mock import patch
 
 import pytest
 
-from fallback_ia import ia_fallback
-from fallback_ia.tools_genericas import listar_clientes, buscar_campo_cliente, comparar_clientes, evolucao_temporal
+from holder.aplicacao.assistente import ia_fallback
+from holder.aplicacao.assistente.tools_genericas import listar_clientes, buscar_campo_cliente, comparar_clientes, evolucao_temporal
 from holder.dominio.alerta import clientes_em_risco
 from holder.dominio.churn import analisar_fatores_churn
 from holder.dominio.metricas import calcular_metrica, comparar_metrica_por_categoria
@@ -141,7 +141,7 @@ def test_listar_previsao_risco():
     estatístico (regressão logística) via SQL Server, não a heurística de
     strikes. Skippa graciosamente se o SQL Server não estiver acessível
     nesta máquina (ambiente de CI, por exemplo)."""
-    from fallback_ia import previsao_risco
+    from holder.aplicacao.assistente import previsao_risco
     esperado = previsao_risco.listar_previsao_risco({"faixa": "Crítico"}, 5)
     if "erro" in esperado:
         pytest.skip(f"SQL Server indisponível: {esperado['erro']}")
@@ -164,7 +164,7 @@ def test_listar_previsao_risco():
 def test_detalhar_previsao_cliente():
     """Pergunta tipo 'por que o cliente X tem esse risco' — explicabilidade
     do modelo (coeficiente × desvio por sinal) + trajetória histórica."""
-    from fallback_ia import previsao_risco
+    from holder.aplicacao.assistente import previsao_risco
     esperado = previsao_risco.detalhar_previsao_cliente("C071")
     if "erro" in esperado:
         pytest.skip(f"SQL Server indisponível: {esperado['erro']}")
@@ -191,7 +191,7 @@ def test_historico_resolve_referencia():
     em detalhar_previsao_cliente(C071) sem o contexto do turno anterior.
     Confere que o histórico enviado pelo front (useAssistant.js) é
     injetado nas mensagens ANTES da pergunta nova."""
-    from fallback_ia import previsao_risco
+    from holder.aplicacao.assistente import previsao_risco
     esperado = previsao_risco.detalhar_previsao_cliente("C071")
     if "erro" in esperado:
         pytest.skip(f"SQL Server indisponível: {esperado['erro']}")

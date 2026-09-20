@@ -25,20 +25,11 @@ pergunta.
 from __future__ import annotations
 
 import json
-import os
 import time
 
-from groq import Groq
-
+from holder.infra.ia import cliente_groq
 from holder.infra.ia.guardrails import FallbackTimeoutError, com_timeout, registrar_chamada
 from .tools import executar_tool, tools_formato_openai
-
-MODEL = "openai/gpt-oss-120b"
-# gpt-oss é um "reasoning model" — gasta uma parte do orçamento de tokens
-# pensando antes de responder, então precisa de mais margem que um modelo
-# comum pra sobrar espaço pro texto final (testado: 300 tokens já cortava
-# respostas curtas pela metade).
-MAX_TOKENS = 2048
 
 # Guardrail contra loop de tool use: no máximo N idas e vindas antes de
 # desistir e cair em "não encontrei" — perguntas legítimas resolvem em 1-2.
@@ -70,31 +61,13 @@ SYSTEM_PROMPT = (
     "tool — o backend só entende período explícito, nunca texto relativo."
 )
 
-_client = None
-
-
-def _get_client():
-    global _client
-    if _client is None:
-        api_key = os.environ.get("GROQ_API_KEY")
-        if not api_key:
-            raise RuntimeError(
-                "GROQ_API_KEY não configurada — copie .env.example para "
-                ".env e preencha com uma chave real."
-            )
-        _client = Groq(api_key=api_key)
-    return _client
-
-
 def _chamar_modelo(mensagens: list[dict]):
-    client = _get_client()
-    return client.chat.completions.create(
-        model=MODEL,
-        max_tokens=MAX_TOKENS,
-        messages=mensagens,
-        tools=tools_formato_openai(),
-        tool_choice="auto",
-    )
+    """A chave, o endpoint e o nome do modelo moram em
+    holder/infra/ia/cliente_groq.py. Esta função continua existindo aqui,
+    e com este nome, de propósito: é a costura que os 22 casos de teste
+    mockam (`patch.object(ia_fallback, "_chamar_modelo")`) para exercitar o
+    fluxo de tool use inteiro sem rede nem chave."""
+    return cliente_groq.chamar(mensagens, tools_formato_openai())
 
 
 _MAX_MENSAGENS_HISTORICO = 6  # mesmo teto do front (useAssistant.js#MAX_TROCAS_HISTORICO)

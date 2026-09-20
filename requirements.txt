@@ -1,5 +1,6 @@
-# Dashboard (app.py) — lê do SQL Server local (banco "holder", populado por
-# ingestao.py), não mais do .xlsx direto. Instância esperada: localhost\SQLEXPRESS
+# Dashboard (streamlit run holder/interfaces/dashboard/app.py) — lê do SQL
+# Server local (banco "holder", populado por `python -m holder.infra.etl.ingestao`),
+# não do .xlsx direto. Instância esperada: localhost\SQLEXPRESS
 # (SQL Server Express + "ODBC Driver 17 for SQL Server", autenticação Windows).
 streamlit
 pandas
@@ -9,8 +10,9 @@ sqlalchemy
 pyodbc
 matplotlib
 
-# Score de risco de cancelamento (modelo_risco.py) — regressão logística
-# treinada/validada contra a base real (ver testar_modelo_risco.py)
+# Score de risco de cancelamento (python -m holder.aplicacao.treino) —
+# regressão logística treinada/validada contra a base real
+# (ver testes/test_modelo_risco.py)
 scikit-learn
 numpy
 
@@ -18,7 +20,7 @@ numpy
 # exige pytest >= 7
 pytest>=7
 
-# Backend do fallback de IA do Assistente de Consultas (server.py)
+# API do assistente (python -m holder.interfaces.api)
 Flask>=3.1
 flask-cors>=6.0
 groq>=1.7

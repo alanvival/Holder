@@ -33,7 +33,7 @@ def test_importar_o_pacote_nao_le_a_planilha():
     previsao_risco. Nenhum deles deve ter tocado o Excel."""
     _rodar(
         """
-        import fallback_ia.tools  # noqa: F401
+        import holder.aplicacao.assistente.tools  # noqa: F401
         from holder.infra.dados import carteira as dados
         from holder.infra.dados import adaptador_excel
 
@@ -50,7 +50,7 @@ def test_importar_o_pacote_nao_le_a_planilha():
 def test_importar_o_pacote_nao_configura_log_em_disco():
     _rodar(
         """
-        import fallback_ia.ia_fallback  # noqa: F401
+        import holder.aplicacao.assistente.ia_fallback  # noqa: F401
         from holder.infra.ia import guardrails
 
         assert guardrails.logger.handlers == [], (

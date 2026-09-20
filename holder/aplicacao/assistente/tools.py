@@ -5,8 +5,8 @@ converte pro formato usado pela Groq/OpenAI (`function.parameters`), sem
 duplicar o schema — um só lugar descreve as tools, cada provedor só lê num
 formato diferente.
 
-Refatorado pra tools GENÉRICAS (ver fallback_ia/campos.py e
-fallback_ia/tools_genericas.py): antes, cada pergunta nova exigia uma tool
+Refatorado pra tools GENÉRICAS (ver campos.py e
+tools_genericas.py): antes, cada pergunta nova exigia uma tool
 nova e estreita (ranking_clientes, contar_clientes, evolucao_metrica,
 comparar_por_categoria, listar_clientes antigo, buscar_registro_cliente) —
 isso não escala, o número de perguntas possíveis é infinito. Agora
