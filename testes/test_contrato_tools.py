@@ -29,6 +29,13 @@ FOLLOW_UPS_JS = RAIZ / "interface-web" / "src" / "data" / "followUpQuestions.js"
 
 NOMES = {t["name"] for t in TOOLS}
 
+# Intents que resolvem SEM passar pela IA (atalho determinístico no front —
+# ver interface-web/src/engine/riscoDireto.js) e por isso não têm tool
+# correspondente no schema, mas são `intentId` válidos e legítimos pra
+# indexar follow-up. Listados explicitamente pra que o teste continue
+# pegando chave digitada errada, que é o bug que ele existe pra evitar.
+INTENTS_SEM_IA = {"risco_direto"}
+
 
 def test_ha_tools_registradas():
     assert len(NOMES) == len(TOOLS), "nome de tool duplicado no schema"
@@ -81,8 +88,9 @@ def test_chaves_de_follow_up_do_front_sao_tools_reais():
     chaves = set(re.findall(r"^\s{2}([a-z_][a-z0-9_]*):\s*\[", bloco, re.MULTILINE))
 
     assert chaves, "não consegui extrair as chaves de FOLLOW_UPS_POR_TOOL"
-    orfas = chaves - NOMES
+    orfas = chaves - NOMES - INTENTS_SEM_IA
     assert not orfas, (
-        f"chaves de follow-up que não são tools: {sorted(orfas)}. "
-        f"Tools reais: {sorted(NOMES)}"
+        f"chaves de follow-up que não são tools nem intents determinísticos: "
+        f"{sorted(orfas)}. Tools reais: {sorted(NOMES)}. "
+        f"Intents sem IA: {sorted(INTENTS_SEM_IA)}"
     )
