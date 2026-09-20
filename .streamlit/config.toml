@@ -1,12 +1,15 @@
 # Tema do dashboard (app.py) alinhado à identidade visual da Globalsys —
 # ver design-tokens.md na raiz do repo (fonte da verdade dos tokens).
-# Isso cobre os widgets nativos do Streamlit (abas, botões, inputs); os
-# ajustes de fonte/raio que o Streamlit não expõe via tema (Space Grotesk
-# nos títulos, radius 20px nos cards) ficam no bloco de CSS injetado em
-# app.py.
+#
+# `font`/`headingFont` aqui (não só CSS injetado em app.py) porque
+# st.dataframe renderiza a grade em canvas (glide-data-grid), não HTML —
+# CSS de página não alcança o texto das células/cabeçalhos de tabela; só a
+# fonte configurada no tema nativo do Streamlit se propaga pra lá também.
 [theme]
 primaryColor = "#0156FC"
 backgroundColor = "#FFFFFF"
 secondaryBackgroundColor = "#FAF9F5"
 textColor = "#000A1E"
-font = "sans serif"
+font = "'Montserrat':https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600&display=swap"
+headingFont = "'Space Grotesk':https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&display=swap"
+codeFont = "monospace"

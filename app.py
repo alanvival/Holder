@@ -9,36 +9,23 @@ from sqlalchemy import create_engine # <- NOVA IMPORTAÇÃO PARA O BANCO DE DADO
 st.set_page_config(page_title="Dashboard Executivo CS", layout="wide")
 
 # Identidade visual da Globalsys (ver design-tokens.md na raiz do repo —
-# fonte da verdade dos tokens) — o que o tema nativo do Streamlit
-# (.streamlit/config.toml) não cobre: fontes de marca (Space Grotesk nos
-# títulos, Montserrat no corpo) e raio de borda 20px nos "cards".
+# fonte da verdade dos tokens). As fontes (Space Grotesk nos títulos,
+# Montserrat no corpo) e as cores já vêm do tema nativo do Streamlit
+# (.streamlit/config.toml, chaves font/headingFont/primaryColor) — isso é
+# necessário porque st.dataframe renderiza a grade em canvas
+# (glide-data-grid), não HTML, então CSS de página não alcança o texto das
+# células/cabeçalhos de tabela; só a fonte do tema nativo se propaga lá.
+# Este bloco cobre só o que o tema não tem: raio de borda dos cards/tabelas
+# e formato de pílula nos botões.
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600&family=Space+Grotesk:wght@600;700&display=swap');
-
-    html, body, [class*="css"] {
-        font-family: 'Montserrat', sans-serif;
-    }
-
-    h1, h2, h3, .stTabs [data-baseweb="tab"] p,
-    div[data-testid="stMetricValue"], div[data-testid="stMetricLabel"] {
-        font-family: 'Space Grotesk', sans-serif !important;
-        font-weight: 700 !important;
-        color: #000A1E;
-    }
-
     div[data-testid="stMetricValue"] {
         white-space: normal !important;
         word-wrap: break-word !important;
         font-size: 1.7rem !important;
         line-height: 1.2 !important;
-    }
-
-    .stTabs [aria-selected="true"] p {
-        color: #0156FC !important;
-    }
-    .stTabs [data-baseweb="tab-highlight"] {
-        background-color: #0156FC !important;
+        font-family: 'Space Grotesk', sans-serif !important;
+        font-weight: 700 !important;
     }
 
     div[data-testid="stDataFrame"],
@@ -49,8 +36,6 @@ st.markdown("""
 
     .stButton > button, .stDownloadButton > button {
         border-radius: 50px !important;
-        font-family: 'Space Grotesk', sans-serif !important;
-        font-weight: 600 !important;
     }
     </style>
 """, unsafe_allow_html=True)
