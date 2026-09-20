@@ -13,5 +13,12 @@ export default defineConfig({
     // reclamar de nada.
     port: 5173,
     strictPort: true,
+    fs: {
+      // O catálogo de métricas é lido de
+      // holder/dominio/metricas/definicoes_metricas.json, a fonte única
+      // compartilhada com o resolvedor em Python, que fica FORA da raiz
+      // deste projeto. Sem isso o dev server recusa servir o arquivo.
+      allow: ['..'],
+    },
   },
 });

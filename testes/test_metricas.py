@@ -10,10 +10,8 @@ esperado nem uma tolerância.
 
 Uso: pytest testes/test_metricas.py
 
-Nota: os ids usados aqui (`atraso_pagamento`, `churn`, `uso_plataforma`,
-`nps`) são os atuais do lado Python. A fase 7 os converge para os ids do
-JavaScript (`atraso_medio_pagamento`, `taxa_cancelamento`,
-`uso_medio_plataforma`, `nps_carteira`), e este arquivo acompanha.
+Os ids vêm de `holder/dominio/metricas/definicoes_metricas.json`, que é a
+fonte única lida pelos dois resolvedores.
 """
 import pytest
 
@@ -28,10 +26,10 @@ CASOS = [
     ("ticket médio — Enterprise", "ticket_medio", {"plano": "Enterprise"}, 31111.32, 0.05),
     ("tempo médio de resolução — ponderado", "tempo_medio_resolucao", None, 23.21, 0.1),
     ("média de reclamações", "media_reclamacoes", None, 0.402, 0.005),
-    ("atraso médio de pagamento", "atraso_pagamento", None, 3.18, 0.05),
+    ("atraso médio de pagamento", "atraso_medio_pagamento", None, 3.18, 0.05),
     ("SLA cumprido — ponderado", "sla_cumprido", None, 75.96, 0.2),
-    ("taxa de cancelamento", "churn", None, 27.5, 0.1),
-    ("uso médio da plataforma", "uso_plataforma", None, 79.81, 0.1),
+    ("taxa de cancelamento", "taxa_cancelamento", None, 27.5, 0.1),
+    ("uso médio da plataforma", "uso_medio_plataforma", None, 79.81, 0.1),
     ("reuniões realizadas", "reunioes_realizadas", None, 76.9, 0.1),
     ("chamados críticos — total", "chamados_criticos", None, 1016, 0.5),
     ("taxa de reabertura", "taxa_reabertura", None, 12.23, 0.1),
@@ -55,7 +53,7 @@ def test_valor_da_metrica(metrica, filtros, esperado, tolerancia):
 def test_nps_da_carteira():
     """O NPS devolve um dicionário, não um `valor` — score e nota média são
     conferidos separadamente."""
-    nps = calcular_metrica("nps")
+    nps = calcular_metrica("nps_carteira")
 
     assert nps.get("score") is not None, "NPS sem score"
     assert abs(nps["score"] - (-6.8)) <= 0.3, f"NPS score: obtido {nps['score']}, esperado -6.8"

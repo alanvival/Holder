@@ -102,7 +102,7 @@ def calcular_metrica(metrica_id: str, filtros: dict | None = None) -> dict:
         "universo": descrever_universo(definicao["aba"], filtros, df),
     }
 
-    if metrica_id == "nps":
+    if definicao["agregacao"] == "nps":
         resultado.update(valor)  # já é um dict {score, nota_media, respondidas, convites}
     else:
         escalado = valor * 100 if definicao.get("escala100") else valor

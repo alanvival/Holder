@@ -27,7 +27,7 @@ from ..metricas.resolvedor import calcular_metrica, filtrar
 # usa soma (faz sentido pra "quantos no total"), então aqui ele entra à
 # parte, calculado como média.
 METRICAS_PARA_ANALISE = [
-    "sla_cumprido", "uso_plataforma", "media_reclamacoes", "atraso_pagamento",
+    "sla_cumprido", "uso_medio_plataforma", "media_reclamacoes", "atraso_medio_pagamento",
     "tempo_medio_resolucao", "taxa_reabertura", "ticket_medio", "reunioes_realizadas",
 ]
 
@@ -90,14 +90,14 @@ def analisar_fatores_churn() -> dict:
         })
 
     # NPS tem estrutura própria (score + nota_media) — compara pela nota média.
-    nps_ativos = calcular_metrica("nps", {"situacao": "Ativo"})
-    nps_cancelados = calcular_metrica("nps", {"situacao": "Cancelado"})
+    nps_ativos = calcular_metrica("nps_carteira", {"situacao": "Ativo"})
+    nps_cancelados = calcular_metrica("nps_carteira", {"situacao": "Cancelado"})
     if "nota_media" in nps_ativos and "nota_media" in nps_cancelados:
         v_ativos = nps_ativos["nota_media"]
         v_cancelados = nps_cancelados["nota_media"]
         base = abs(v_ativos) if v_ativos else 1
         ranking.append({
-            "metrica": "nps",
+            "metrica": "nps_carteira",
             "rotulo": "NPS (nota média)",
             "valor_clientes_ativos": round(v_ativos, 2),
             "valor_clientes_cancelados": round(v_cancelados, 2),

@@ -48,9 +48,10 @@ TOOLS = [
                     "type": "string",
                     "enum": [
                         "ticket_medio", "antiguidade_contrato", "sla_contratado",
-                        "tempo_medio_resolucao", "media_reclamacoes", "atraso_pagamento",
-                        "sla_cumprido", "nps", "churn", "uso_plataforma",
-                        "reunioes_realizadas", "chamados_criticos", "taxa_reabertura",
+                        "tempo_medio_resolucao", "media_reclamacoes", "atraso_medio_pagamento",
+                        "sla_cumprido", "nps_carteira", "taxa_cancelamento",
+                        "uso_medio_plataforma", "reunioes_realizadas", "chamados_criticos",
+                        "taxa_reabertura",
                     ],
                     "description": "Qual métrica calcular. 'antiguidade_contrato' = dias desde o início do contrato.",
                 },

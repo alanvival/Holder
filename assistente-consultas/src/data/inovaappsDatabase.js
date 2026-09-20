@@ -8,6 +8,7 @@ import clientesRaw from './inovaapps/clientes.json' with { type: 'json' };
 import atendimentoMensalRaw from './inovaapps/atendimentoMensal.json' with { type: 'json' };
 import pesquisasNpsRaw from './inovaapps/pesquisasNps.json' with { type: 'json' };
 import situacaoClientesRaw from './inovaapps/situacaoClientes.json' with { type: 'json' };
+import pesosAlerta from './pesosAlerta.json' with { type: 'json' };
 
 export const clientes = clientesRaw;
 export const atendimentoMensal = atendimentoMensalRaw;
@@ -121,24 +122,17 @@ function media(valores) {
   return validos.reduce((soma, v) => soma + v, 0) / validos.length;
 }
 
-// Pontuação ponderada estilo credit score (soma de pesos dos sinais que
-// dispararam, não contagem simples) — pesos calibrados por
-// fallback_ia/metricas.py::analisar_fatores_churn() (o quanto cada sinal
-// realmente diferencia clientes ativos de cancelados na base real, não um
-// chute). Mesma fonte de dados dos dois lados (a planilha do desafio), por
-// isso os números batem entre o catálogo determinístico (aqui) e a tool de
-// IA (Python) — mantidos em sincronia manualmente já que os dois motores
-// já são portados um do outro no resto do projeto.
-const PESOS_SINAIS_RISCO = {
-  'Mais chamados críticos': 83,
-  'Reclamação formal recente': 70,
-  'Atraso de pagamento crescente': 48,
-  'NPS detrator': 24,
-  'Mais chamados reabertos': 22,
-  'Queda no SLA cumprido': 14,
-  'Queda no uso da plataforma': 10,
-  'Reunião prevista não realizada': 12,
-};
+// Pontuação ponderada estilo credit score (soma dos pesos dos sinais que
+// dispararam, não contagem simples). Os pesos são GERADOS por
+// scripts/gerar_pesos_alerta.py a partir de holder/dominio/alerta/pesos.py —
+// saem dos fatores de cancelamento calculados sobre a base real, não de um
+// chute.
+//
+// Antes estavam escritos à mão aqui, com um comentário admitindo que a
+// sincronia com o lado Python era manual. Enquanto os números batessem,
+// ninguém notaria; no dia em que a base mudasse, o dashboard e o assistente
+// passariam a discordar em silêncio.
+const PESOS_SINAIS_RISCO = pesosAlerta.pesos;
 const PONTUACAO_MAXIMA_RISCO = Object.values(PESOS_SINAIS_RISCO).reduce((a, b) => a + b, 0);
 
 /**

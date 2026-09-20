@@ -11,6 +11,7 @@
 // similaridade que já resolve as intenções de registro (intentRegistry.js),
 // reaproveitando 100% da extração de cliente_id e do matching por texto.
 
+import definicoesMetricas from '../../../holder/dominio/metricas/definicoes_metricas.json' with { type: 'json' };
 import {
   clientes,
   atendimentoMensal,
@@ -259,6 +260,20 @@ function agregar(def, linhasBrutas) {
       const valores = linhas.map((r) => r[def.campo]).filter((v) => v !== null && v !== undefined);
       return valores.reduce((s, v) => s + v, 0);
     }
+    // Dias desde o início do contrato. Implementada aqui também pra que os
+    // dois resolvedores cubram as 13 métricas da fonte única — antes existia
+    // só no lado Python.
+    case 'antiguidade_dias': {
+      const hoje = Date.now();
+      const dias = [];
+      for (const r of linhas) {
+        const inicio = Date.parse(String(r[def.campo]).slice(0, 10));
+        if (Number.isNaN(inicio)) continue;
+        dias.push((hoje - inicio) / 86400000);
+      }
+      if (dias.length === 0) return null;
+      return dias.reduce((s, v) => s + v, 0) / dias.length;
+    }
     default:
       return null;
   }
@@ -311,69 +326,49 @@ function categoriasDe(dimensao) {
 // formatar; médias de campos que já são 0-100 (pct_sla_cumprido,
 // uso_plataforma_pct) não.
 
-export const METRICAS = [
-  {
-    id: 'ticket_medio',
-    rotulo: 'Ticket médio',
+// --- Definições vindas da FONTE ÚNICA -------------------------------------
+// A parte declarativa de cada métrica (tabela, agregação, campos, filtro de
+// linha, escala) vem de holder/dominio/metricas/definicoes_metricas.json —
+// o MESMO arquivo lido pelo resolvedor em Python. Antes, o catálogo estava
+// escrito duas vezes e quatro ids divergiam entre os lados.
+//
+// O que continua aqui é o que é só do navegador: as frases de exemplo que
+// alimentam o casamento por similaridade, e o texto de contexto extra.
+// Ver docs/adr/0003-resolvedor-de-metricas-duplicado-de-proposito.md.
+const EXTRAS = {
+  ticket_medio: {
     sinonimos: [
       'Qual o ticket médio da carteira?',
       'Qual o ticket médio dos clientes?',
       'Qual o valor médio dos contratos?',
       'Qual o ticket médio por plano?',
     ],
-    aba: 'clientes',
-    agregacao: 'media',
-    campo: 'valor_mensal',
-    formato: 'moeda',
   },
-  {
-    id: 'tempo_medio_resolucao',
-    rotulo: 'Tempo médio de resolução',
+  tempo_medio_resolucao: {
     sinonimos: [
       'Qual o tempo médio de resolução dos chamados?',
       'Quanto tempo leva pra resolver um chamado em média?',
       'Qual o tempo médio de resolução da carteira?',
     ],
-    aba: 'atendimento_mensal',
-    agregacao: 'media_ponderada',
-    campo: 'tempo_medio_resolucao_h',
-    campoPeso: 'chamados_abertos',
-    // Linhas sem chamado (chamados_abertos = 0) carregam um valor residual
-    // de tempo que não representa nada real — excluir antes de agregar.
-    filtroLinha: (r) => r.chamados_abertos > 0,
-    formato: 'horas',
-    leituraAlternativa: { agregacao: 'media', rotulo: 'média simples (sem ponderar pelo volume de chamados)' },
   },
-  {
-    id: 'media_reclamacoes',
-    rotulo: 'Média de reclamações',
+  media_reclamacoes: {
     sinonimos: [
       'Qual a média de reclamações por mês?',
       'Quantas reclamações formais em média os clientes fazem?',
       'Qual a média de reclamações da carteira?',
     ],
-    aba: 'atendimento_mensal',
-    agregacao: 'media',
-    campo: 'reclamacoes_formais',
-    formato: 'numero',
     contextoExtra: (linhas) => {
       const total = linhas.reduce((s, r) => s + (r.reclamacoes_formais ?? 0), 0);
       const comAlguma = linhas.filter((r) => r.reclamacoes_formais > 0).length;
       return `Total no período: ${formatInteiro(total)} reclamação(ões), em ${comAlguma} de ${linhas.length} meses.`;
     },
   },
-  {
-    id: 'atraso_medio_pagamento',
-    rotulo: 'Atraso médio de pagamento',
+  atraso_medio_pagamento: {
     sinonimos: [
       'Qual o atraso médio de pagamento?',
       'Em média quantos dias os clientes atrasam o pagamento?',
       'Qual o atraso médio de pagamento da carteira?',
     ],
-    aba: 'atendimento_mensal',
-    agregacao: 'media',
-    campo: 'dias_atraso_pagamento',
-    formato: 'dias',
     contextoExtra: (linhas) => {
       const comAtraso = linhas.filter((r) => r.dias_atraso_pagamento > 0);
       const pct = linhas.length > 0 ? (comAtraso.length / linhas.length) * 100 : 0;
@@ -385,108 +380,114 @@ export const METRICAS = [
       return `${texto}. O campo é o maior atraso do mês, não um acumulado.`;
     },
   },
-  {
-    id: 'sla_cumprido',
-    rotulo: 'SLA cumprido',
+  sla_cumprido: {
     sinonimos: [
       'Qual o SLA cumprido da carteira?',
       'Qual o percentual de SLA cumprido?',
       'Qual a taxa de SLA da carteira?',
     ],
-    aba: 'atendimento_mensal',
-    agregacao: 'razao_soma',
-    campoNumerador: 'chamados_dentro_sla',
-    campoDenominador: 'chamados_abertos',
-    filtroLinha: (r) => r.chamados_abertos > 0,
-    escala100: true,
-    formato: 'percentual',
-    leituraAlternativa: { agregacao: 'media', campo: 'pct_sla_cumprido', rotulo: 'média simples do percentual mensal já calculado' },
   },
-  {
-    id: 'taxa_cancelamento',
-    rotulo: 'Taxa de cancelamento (churn)',
+  taxa_cancelamento: {
     sinonimos: [
       'Qual a taxa de cancelamento?',
       'Qual o churn da carteira?',
       'Quantos por cento dos clientes cancelaram?',
     ],
-    aba: 'situacao_clientes',
-    agregacao: 'proporcao_linhas',
-    predicado: (r) => r.situacao === 'Cancelado',
-    escala100: true,
-    formato: 'percentual',
   },
-  {
-    id: 'uso_medio_plataforma',
-    rotulo: 'Uso médio da plataforma',
+  uso_medio_plataforma: {
     sinonimos: [
       'Qual o uso médio da plataforma?',
       'Qual o percentual médio de uso da plataforma?',
     ],
-    aba: 'atendimento_mensal',
-    agregacao: 'media',
-    campo: 'uso_plataforma_pct',
-    formato: 'percentual',
   },
-  {
-    id: 'reunioes_realizadas',
-    rotulo: 'Reuniões realizadas',
+  reunioes_realizadas: {
     sinonimos: [
       'Qual o percentual de reuniões realizadas?',
       'Quantas reuniões previstas foram realizadas?',
     ],
-    aba: 'atendimento_mensal',
-    agregacao: 'razao_soma',
-    campoNumerador: 'reunioes_realizadas',
-    campoDenominador: 'reunioes_previstas',
-    escala100: true,
-    formato: 'percentual',
   },
-  {
-    id: 'chamados_criticos',
-    rotulo: 'Chamados críticos',
+  chamados_criticos: {
     sinonimos: [
       'Quantos chamados críticos no total?',
       'Qual a média de chamados críticos por cliente?',
     ],
-    aba: 'atendimento_mensal',
-    agregacao: 'soma',
-    campo: 'chamados_criticos',
-    formato: 'inteiro',
     contextoExtra: (linhas) => {
       const total = linhas.reduce((s, r) => s + (r.chamados_criticos ?? 0), 0);
       const media = linhas.length > 0 ? total / linhas.length : 0;
       return `Média de ${formatNumeroDecimal(media)} por cliente-mês.`;
     },
   },
-  {
-    id: 'taxa_reabertura',
-    rotulo: 'Taxa de reabertura',
+  taxa_reabertura: {
     sinonimos: [
       'Qual a taxa de reabertura de chamados?',
       'Qual o percentual de chamados reabertos?',
     ],
-    aba: 'atendimento_mensal',
-    agregacao: 'razao_soma',
-    campoNumerador: 'chamados_reabertos',
-    campoDenominador: 'chamados_abertos',
-    filtroLinha: (r) => r.chamados_abertos > 0,
-    escala100: true,
-    formato: 'percentual',
   },
-  {
-    id: 'nps_carteira',
-    rotulo: 'NPS',
+  nps_carteira: {
     sinonimos: [
       'Qual o NPS da carteira?',
       'Qual o score de NPS?',
       'Qual a nota média de NPS?',
     ],
-    aba: 'pesquisas_nps',
-    agregacao: 'nps',
-    formato: 'nps',
   },
-];
+  antiguidade_contrato: {
+    sinonimos: [
+      'Qual a antiguidade média dos contratos?',
+      'Há quanto tempo os clientes estão na base em média?',
+    ],
+  },
+  sla_contratado: {
+    sinonimos: [
+      'Qual o SLA contratado médio?',
+      'Quantas horas de SLA os contratos preveem em média?',
+    ],
+  },
+};
+
+const OPERADORES_DE_FILTRO = {
+  '>': (valor, alvo) => valor > alvo,
+  '>=': (valor, alvo) => valor >= alvo,
+  '<': (valor, alvo) => valor < alvo,
+  '<=': (valor, alvo) => valor <= alvo,
+  '==': (valor, alvo) => valor === alvo,
+};
+
+function montarFiltroLinha(spec) {
+  const comparar = OPERADORES_DE_FILTRO[spec.operador];
+  return (r) => comparar(r[spec.campo], spec.valor);
+}
+
+function montarDefinicao(entrada) {
+  const extras = EXTRAS[entrada.id] ?? {};
+  const def = {
+    id: entrada.id,
+    rotulo: entrada.rotulo,
+    aba: entrada.aba,
+    agregacao: entrada.agregacao,
+    formato: entrada.formato,
+    sinonimos: extras.sinonimos ?? [],
+  };
+  if (entrada.campo) def.campo = entrada.campo;
+  if (entrada.campo_peso) def.campoPeso = entrada.campo_peso;
+  if (entrada.campo_numerador) def.campoNumerador = entrada.campo_numerador;
+  if (entrada.campo_denominador) def.campoDenominador = entrada.campo_denominador;
+  if (entrada.escala100) def.escala100 = true;
+  if (entrada.filtro_linha) def.filtroLinha = montarFiltroLinha(entrada.filtro_linha);
+  if (entrada.agregacao === 'proporcao_linhas') {
+    def.predicado = (r) => r[entrada.campo] === entrada.valor;
+  }
+  if (entrada.leitura_alternativa) {
+    def.leituraAlternativa = {
+      agregacao: entrada.leitura_alternativa.agregacao,
+      campo: entrada.leitura_alternativa.campo,
+      rotulo: entrada.leitura_alternativa.rotulo,
+    };
+  }
+  if (extras.contextoExtra) def.contextoExtra = extras.contextoExtra;
+  return def;
+}
+
+export const METRICAS = definicoesMetricas.metricas.map(montarDefinicao);
 
 const METRICAS_POR_ID = new Map(METRICAS.map((m) => [m.id, m]));
 

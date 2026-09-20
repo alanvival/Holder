@@ -25,15 +25,24 @@ def pesos_dos_sinais() -> dict[str, int]:
     }
 
     def peso(chave: str, minimo: int = 1) -> int:
-        return max(minimo, round(fatores.get(chave, minimo)))
+        # Guarda deliberada: se um id de métrica mudar e esta chave deixar
+        # de existir, o peso cairia pro mínimo em SILÊNCIO e o índice de
+        # alerta inteiro mudaria de valor sem ninguém notar. Melhor falhar.
+        if chave not in fatores:
+            raise KeyError(
+                f"Fator de cancelamento '{chave}' não existe no ranking — "
+                f"algum id de métrica mudou sem atualizar os pesos. "
+                f"Disponíveis: {sorted(fatores)}"
+            )
+        return max(minimo, round(fatores[chave]))
 
     return {
         "Mais chamados críticos": peso("chamados_criticos_media"),
         "Reclamação formal recente": peso("media_reclamacoes"),
-        "Atraso de pagamento crescente": peso("atraso_pagamento"),
-        "NPS detrator": peso("nps"),
+        "Atraso de pagamento crescente": peso("atraso_medio_pagamento"),
+        "NPS detrator": peso("nps_carteira"),
         "Mais chamados reabertos": peso("taxa_reabertura"),
         "Queda no SLA cumprido": peso("sla_cumprido"),
-        "Queda no uso da plataforma": peso("uso_plataforma"),
+        "Queda no uso da plataforma": peso("uso_medio_plataforma"),
         "Reunião prevista não realizada": peso("reunioes_realizadas"),
     }
