@@ -17,6 +17,18 @@ FAIXAS = [
 
 NOMES = [nome for _, _, nome in FAIXAS]
 
+# Ação sugerida por faixa — texto fixo e auditável, não a IA "decidindo"
+# sozinha o que recomendar a cada resposta. Única fonte: era duplicado em
+# holder/aplicacao/assistente/previsao_risco.py (a IA) e precisa aparecer
+# igual no dashboard, senão as duas telas recomendam coisas diferentes pro
+# mesmo cliente na mesma faixa.
+ACAO_POR_FAIXA = {
+    "Saudável": "Nenhuma ação necessária — monitoramento passivo.",
+    "Atenção": "Sinalizar no radar do CS responsável, sem alerta ativo ainda — acompanhar a tendência do próximo mês.",
+    "Em risco": "Alerta ativo: o CS deve investigar a causa e agendar contato proativo com o cliente.",
+    "Crítico": "Alerta prioritário — ação imediata: contato executivo, plano de retenção e revisão do relacionamento nos próximos dias.",
+}
+
 
 def faixa_de(risco_percentual: float) -> str:
     for lo, hi, nome in FAIXAS:

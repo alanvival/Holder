@@ -40,7 +40,7 @@ def configurar_log():
     qualquer um que importasse o pacote, inclusive a suíte de testes."""
     if logger.handlers:
         return
-    LOG_DIR.mkdir(exist_ok=True)
+    LOG_DIR.mkdir(parents=True, exist_ok=True)
     logger.setLevel(logging.INFO)
     handler = logging.FileHandler(LOG_DIR / "fallback_ia.log", encoding="utf-8")
     handler.setFormatter(logging.Formatter("%(asctime)s %(message)s"))

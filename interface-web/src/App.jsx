@@ -24,17 +24,45 @@ export function App() {
         <header
           style={{
             background: 'var(--gs-gradient-brand)',
-            height: 64,
+            height: 72,
             padding: '0 40px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            color: 'var(--gs-white)',
-            fontFamily: 'var(--gs-font-heading)',
-            fontWeight: 600,
+            boxShadow: '0 4px 16px rgba(0, 10, 44, 0.18)',
+            position: 'relative',
+            zIndex: 1,
           }}
         >
-          <span>Holder</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div
+              aria-hidden="true"
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 10,
+                background: 'var(--gs-gradient-cta)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontFamily: 'var(--gs-font-heading)',
+                fontWeight: 700,
+                fontSize: 17,
+                color: 'var(--gs-white)',
+                flexShrink: 0,
+              }}
+            >
+              H
+            </div>
+            <div>
+              <div style={{ fontFamily: 'var(--gs-font-heading)', fontWeight: 700, fontSize: 17, color: 'var(--gs-white)', lineHeight: 1.15 }}>
+                Holder
+              </div>
+              <div style={{ fontFamily: 'var(--gs-font-body)', fontWeight: 400, fontSize: 12, color: 'rgba(255,255,255,0.65)', marginTop: 1 }}>
+                Customer Success
+              </div>
+            </div>
+          </div>
           <nav style={{ display: 'flex', gap: 8 }}>
             <button type="button" onClick={() => setTela('dashboard')} style={navButtonStyle(tela === 'dashboard')}>
               Dashboard
@@ -46,7 +74,7 @@ export function App() {
         </header>
 
         {tela === 'dashboard' ? (
-          <main style={{ height: 'calc(100vh - 64px)' }}>
+          <main style={{ height: 'calc(100vh - 72px)' }}>
             <iframe
               src={DASHBOARD_URL}
               title="Dashboard Executivo CS"
@@ -66,13 +94,14 @@ export function App() {
 function navButtonStyle(ativo) {
   return {
     background: ativo ? 'rgba(255,255,255,0.18)' : 'transparent',
-    border: 'none',
+    border: ativo ? '1px solid rgba(255,255,255,0.3)' : '1px solid transparent',
     borderRadius: 'var(--gs-radius-pill)',
-    padding: '8px 16px',
+    padding: '8px 18px',
     color: 'var(--gs-white)',
     fontFamily: 'var(--gs-font-heading)',
     fontWeight: 600,
     fontSize: 13,
     cursor: 'pointer',
+    transition: 'background 0.15s ease',
   };
 }

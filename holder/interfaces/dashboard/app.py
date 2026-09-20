@@ -23,9 +23,10 @@ from holder.dominio.carteira import calcular_rfv, carregar_e_preparar
 # outros módulos do dashboard podem usar import relativo à vontade — eles
 # são importados como parte do pacote. Só este, que é o ponto de entrada,
 # não pode.
-from holder.interfaces.dashboard import estilo, matriz, monitor, score
+from holder.interfaces.dashboard import estilo, matriz, monitor, quem_contatar, score
 
 ABAS = [
+    "Quem Contatar",
     "Matriz Estratégica (Visão Geral)",
     "Monitor Individual (Análise de Risco)",
     "Score de Risco (Preditivo)",
@@ -59,8 +60,10 @@ def main() -> None:
      linhas_risco, padroes_churn, strikes, taxa_falso_alarme) = carregar_dados()
 
     st.title("Dashboard Integrado de Customer Success")
-    tab1, tab2, tab3 = st.tabs(ABAS)
+    tab0, tab1, tab2, tab3 = st.tabs(ABAS)
 
+    with tab0:
+        quem_contatar.renderizar(df_cli, df_sit)
     with tab1:
         meses_periodo = st.selectbox(
             "Período considerado (clientes ativos)",

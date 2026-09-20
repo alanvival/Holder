@@ -31,15 +31,13 @@ from holder.infra.ia import cliente_groq
 from holder.infra.ia.guardrails import FallbackTimeoutError, com_timeout, registrar_chamada
 from .tools import executar_tool, tools_formato_openai
 
-MODEL = "openai/gpt-oss-20b"
-# gpt-oss-120b foi trocado por esse depois de observar ao vivo respostas de
-# 40s a 223s pra perguntas de 1 tool só (reasoning model gasta uma fatia do
-# orçamento de tokens "pensando" antes de responder). Tentativa de trocar
-# pra um modelo sem essa etapa (llama-3.3-70b-versatile) falhou — essa
-# conta Groq só tem acesso à família gpt-oss (ver client.models.list()).
-# gpt-oss-20b é a mesma arquitetura do 120b, só que ~6x menor — ainda
-# "pensa" antes de responder, mas bem mais rápido nisso.
-MAX_TOKENS = 1024
+# O nome do modelo e o max_tokens de verdade moram em
+# holder/infra/ia/cliente_groq.py — MODEL/MAX_TOKENS existiam aqui antes da
+# extração desse módulo e viraram morto: nada neste arquivo os lê, e
+# `_chamar_modelo` não passa nenhum dos dois pra `cliente_groq.chamar`.
+# Removidos pra não parecer que trocar o valor aqui muda alguma coisa (bug
+# observado ao vivo: editar isso aqui não teve nenhum efeito, porque o
+# modelo de verdade continuou sendo o MODELO hardcoded em cliente_groq.py).
 
 # Guardrail contra loop de tool use: no máximo N idas e vindas antes de
 # desistir e cair em "não encontrei" — perguntas legítimas resolvem em 1-2.
