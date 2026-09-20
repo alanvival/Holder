@@ -1,5 +1,5 @@
 """
-Testes de validação do modelo de risco (modelo_risco.py):
+Testes de validação do score de risco (holder/dominio/risco/):
 1. Reproduz a validação cruzada e confere que AUC/Brier não caíram muito
    abaixo do que já foi validado (referência: AUC ≈ 0.948, Brier ≈ 0.085) —
    se cair muito depois de qualquer mudança no pipeline de features,
@@ -18,8 +18,10 @@ import numpy as np
 import pandas as pd
 import pytest
 
-import modelo_risco as mr
-import score_risco as sr
+from holder.dominio.risco import dataset as ds
+from holder.dominio.risco import modelo as mr
+from holder.infra.dados.porta import fonte
+from holder.infra.persistencia import modelo_treinado
 
 AUC_MINIMO_ACEITAVEL = 0.85
 BRIER_MAXIMO_ACEITAVEL = 0.15
@@ -28,7 +30,7 @@ BRIER_MAXIMO_ACEITAVEL = 0.15
 @pytest.mark.sqlserver
 @pytest.mark.lento
 def test_validacao_cruzada():
-    dataset = mr.construir_dataset()
+    dataset = ds.construir_dataset()
     _, _, _, metricas = mr.treinar_modelo(dataset)
 
     print(f"AUC = {metricas['auc']:.3f} (mínimo aceitável: {AUC_MINIMO_ACEITAVEL})")
@@ -43,15 +45,15 @@ def test_validacao_cruzada():
 @pytest.mark.sqlserver
 @pytest.mark.lento
 def test_backtest_retroativo():
-    modelo_pack = mr.carregar_modelo()
-    _, df_atd, df_sit, df_nps = sr.carregar_dados()
+    modelo_pack = modelo_treinado.carregar()
+    _, df_atd, df_sit, df_nps = fonte().carregar_tudo()
     cancelados = df_sit[df_sit["situacao"] == "Cancelado"][["cliente_id", "mes_cancelamento"]]
 
     por_lag = {lag: [] for lag in range(1, 7)}
     for _, r in cancelados.iterrows():
         cid, mes_canc = r["cliente_id"], r["mes_cancelamento"]
         for lag in range(1, 7):
-            mes_alvo = mr._mes_mais(mes_canc, -lag)
+            mes_alvo = ds.mes_mais(mes_canc, -lag)
             resultado = mr.calcular_score_cliente(cid, mes_alvo, df_atd, df_nps, modelo_pack)
             if resultado:
                 por_lag[lag].append(resultado["risco_percentual"])

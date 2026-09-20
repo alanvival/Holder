@@ -5,8 +5,9 @@ import plotly.express as px
 import textwrap
 import json
 
-import score_risco as sr  # infra compartilhada: conexão, faixas, histórico (fScoreRisco)
-import modelo_risco as mr  # motor de verdade: regressão logística treinada/validada (AUC~0.95, Brier~0.085)
+from holder.dominio.carteira import carregar_e_preparar
+from holder.dominio.risco import faixas
+from holder.infra.persistencia import historico_score, log_treinos
 
 st.set_page_config(page_title="Dashboard Executivo CS", layout="wide")
 
@@ -91,112 +92,10 @@ def _cores_por_corte(serie, cortes):
 # ==============================================================================
 @st.cache_data
 def carregar_dados():
-    # As quatro tabelas vêm da porta de dados (holder/infra/dados/), não de
-    # uma conexão montada aqui. A string ODBC estava escrita três vezes no
-    # repo — neste arquivo, em score_risco.py e na ingestão — e só uma delas
-    # tinha `Encrypt=no`; essa venceu, então o dashboard passa a conectar
-    # sem negociação de TLS. Mesmo resultado, conexão mais rápida.
-    df_cli, df_atd, df_sit, df_nps = sr.carregar_dados()
+    """O cálculo mora em holder/dominio/carteira/preparacao.py — aqui fica
+    só o cache, que é detalhe do Streamlit e não regra de negócio."""
+    return carregar_e_preparar()
 
-    # --- O RESTANTE DO CÓDIGO CONTINUA INTACTO A PARTIR DAQUI ---
-    df_atd['mes_ref_dt'] = pd.to_datetime(df_atd['mes_ref'], format='%Y-%m')
-    df_nps['mes_ref_dt'] = pd.to_datetime(df_nps['mes_ref'], format='%Y-%m')
-    
-    # Criação da métrica de abandono e limpeza
-    df_atd['reunioes_ausentes'] = df_atd['reunioes_previstas'] - df_atd['reunioes_realizadas']
-    df_atd = df_atd.drop(columns=['reunioes_previstas', 'reunioes_realizadas'])
-    
-    df_atd = df_atd.merge(df_sit[['cliente_id', 'situacao', 'mes_cancelamento']], on='cliente_id', how='left')
-    
-    df_master = df_cli.merge(df_sit, on='cliente_id', how='inner')
-    df_ativos = df_master[df_master['situacao'] == 'Ativo'].copy()
-    df_cancelados = df_master[df_master['situacao'] == 'Cancelado'].copy()
-    
-    df_atd_ativos = df_atd[df_atd['cliente_id'].isin(df_ativos['cliente_id'])].copy()
-    df_atd_ativos['quebra_sla'] = df_atd_ativos['pct_sla_cumprido'] < 80.0
-    
-    agrupamento = df_atd_ativos.groupby('cliente_id').agg(
-        meses_abaixo_sla=('quebra_sla', 'sum'),
-        total_reclamacoes=('reclamacoes_formais', 'sum'),
-        uso_medio=('uso_plataforma_pct', 'mean')
-    ).reset_index()
-
-    df_rfv = df_ativos[['cliente_id', 'valor_mensal', 'segmento']].merge(agrupamento, on='cliente_id', how='left')
-    df_rfv['V_Score'] = pd.qcut(df_rfv['valor_mensal'], 5, labels=[1, 2, 3, 4, 5]).astype(int)
-    df_rfv['Fator_Risco'] = df_rfv['meses_abaixo_sla'] + df_rfv['total_reclamacoes']
-    df_rfv['R_Rank'] = df_rfv['Fator_Risco'].rank(method='first', ascending=False)
-    df_rfv['R_Score'] = pd.qcut(df_rfv['R_Rank'], 5, labels=[1, 2, 3, 4, 5]).astype(int)
-
-    def categorizar(row):
-        if row['V_Score'] >= 4 and row['R_Score'] <= 2: return 'Ação Imediata'
-        elif row['V_Score'] >= 4 and row['R_Score'] >= 3: return 'Proteger e Expandir'
-        elif row['V_Score'] <= 3 and row['R_Score'] <= 2: return 'Avaliar Fit'
-        else: return 'Fluxo Normal'
-    df_rfv['Categoria_Saude'] = df_rfv.apply(categorizar, axis=1)
-
-    # --------------------------------------------------------------------------
-    # PADRÃO DOS CANCELADOS (AGORA DINÂMICO)
-    # --------------------------------------------------------------------------
-    df_atd_canc = df_atd[df_atd['situacao'] == 'Cancelado'].copy()
-    
-    # Varre todas as colunas numéricas da aba de atendimento, excluindo IDs/Datas se houver
-    colunas_excluidas = ['cliente_id', 'mes_ref', 'mes_ref_dt', 'mes_cancelamento']
-    colunas_numericas = [col for col in df_atd.select_dtypes(include='number').columns if col not in colunas_excluidas]
-    
-    linhas_risco = {}
-    for col in colunas_numericas:
-        if col in ['reclamacoes_formais', 'reunioes_ausentes']:
-            linhas_risco[col] = df_atd_canc[col].mean()
-        else:
-            linhas_risco[col] = df_atd_canc[col].median()
-    
-    # Assinatura de Churn (Últimos meses antes da saída)
-    df_atd_canc['mes_canc_dt'] = pd.to_datetime(df_atd_canc['mes_cancelamento'], format='%Y-%m')
-    df_atd_canc['meses_para_canc'] = (df_atd_canc['mes_canc_dt'].dt.year - df_atd_canc['mes_ref_dt'].dt.year) * 12 + (df_atd_canc['mes_canc_dt'].dt.month - df_atd_canc['mes_ref_dt'].dt.month)
-    ultimos_meses_canc = df_atd_canc[(df_atd_canc['meses_para_canc'] > 0) & (df_atd_canc['meses_para_canc'] <= 4)]
-    
-    total_canc = len(df_cancelados)
-    pct_canc_sla = len(ultimos_meses_canc[ultimos_meses_canc['pct_sla_cumprido'] <= linhas_risco.get('pct_sla_cumprido', 80.0)]['cliente_id'].unique()) / total_canc if total_canc > 0 else 0
-    pct_canc_rec = len(ultimos_meses_canc[ultimos_meses_canc['reclamacoes_formais'] > 0]['cliente_id'].unique()) / total_canc if total_canc > 0 else 0
-    
-    df_nps_canc = df_nps.merge(df_sit[['cliente_id', 'situacao', 'mes_cancelamento']], on='cliente_id', how='inner')
-    df_nps_canc = df_nps_canc[df_nps_canc['situacao'] == 'Cancelado']
-    df_nps_canc['mes_canc_dt'] = pd.to_datetime(df_nps_canc['mes_cancelamento'], format='%Y-%m')
-    df_nps_canc['meses_para_canc'] = (df_nps_canc['mes_canc_dt'].dt.year - df_nps_canc['mes_ref_dt'].dt.year) * 12 + (df_nps_canc['mes_canc_dt'].dt.month - df_nps_canc['mes_ref_dt'].dt.month)
-    ultimos_meses_nps = df_nps_canc[(df_nps_canc['meses_para_canc'] > 0) & (df_nps_canc['meses_para_canc'] <= 6)]
-    pct_canc_detrator = len(ultimos_meses_nps[ultimos_meses_nps['classificacao_nps'] == 'Detrator']['cliente_id'].unique()) / total_canc if total_canc > 0 else 0
-
-    padroes_churn = {'SLA': pct_canc_sla, 'Reclamacao': pct_canc_rec, 'NPS': pct_canc_detrator}
-
-    # --------------------------------------------------------------------------
-    # NOVO SISTEMA DE STRIKES (Focado na Realidade ATUAL / Sem memória longa)
-    # --------------------------------------------------------------------------
-    df_atd_ativos = df_atd_ativos.sort_values(by=['cliente_id', 'mes_ref_dt'])
-    df_nps_ativos = df_nps[df_nps['cliente_id'].isin(df_ativos['cliente_id'])].sort_values(by=['cliente_id', 'mes_ref_dt'])
-    
-    ultimo_atd = df_atd_ativos.groupby('cliente_id').tail(1).set_index('cliente_id')
-    ultimo_nps = df_nps_ativos.groupby('cliente_id').tail(1).set_index('cliente_id')
-    
-    max_mes_ativos = df_atd_ativos['mes_ref_dt'].max()
-    reclamacoes_recentes = df_atd_ativos[df_atd_ativos['mes_ref_dt'] >= (max_mes_ativos - pd.DateOffset(months=1))].groupby('cliente_id')['reclamacoes_formais'].sum()
-
-    strikes = pd.DataFrame(index=df_ativos['cliente_id'])
-    
-    strikes['Strike 1 (SLA Crítico Atual)'] = (ultimo_atd['pct_sla_cumprido'] <= linhas_risco.get('pct_sla_cumprido', 80.0)).astype(int)
-    strikes['Strike 2 (Lentidão Atual)'] = (ultimo_atd['tempo_medio_resolucao_h'] >= linhas_risco.get('tempo_medio_resolucao_h', 24.0)).astype(int)
-    strikes['Strike 3 (Reclamação Recente)'] = (reclamacoes_recentes > 0).astype(int).reindex(strikes.index).fillna(0)
-    strikes['Strike 4 (Último NPS Detrator)'] = (ultimo_nps['classificacao_nps'] == 'Detrator').astype(int).reindex(strikes.index).fillna(0)
-
-    colunas_strikes = ['Strike 1 (SLA Crítico Atual)', 'Strike 2 (Lentidão Atual)', 'Strike 3 (Reclamação Recente)', 'Strike 4 (Último NPS Detrator)']
-    strikes['Total_Strikes'] = strikes[colunas_strikes].sum(axis=1)
-    
-    taxa_falso_alarme = {
-        'SLA': strikes['Strike 1 (SLA Crítico Atual)'].mean(),
-        'Reclamacao': strikes['Strike 3 (Reclamação Recente)'].mean(),
-        'NPS': strikes['Strike 4 (Último NPS Detrator)'].mean()
-    }
-    
-    return df_cli, df_atd, df_sit, df_nps, df_rfv, linhas_risco, padroes_churn, strikes, taxa_falso_alarme
 
 df_cli, df_atd, df_sit, df_nps, df_rfv, linhas_risco, padroes_churn, strikes, taxa_falso_alarme = carregar_dados()
 
@@ -409,9 +308,9 @@ with tab2:
 # ------------------------------------------------------------------------------
 # ABA 3: SCORE DE RISCO (PREDITIVO) — regressão logística treinada e
 # validada contra os cancelamentos reais (AUC~0.95, Brier~0.085 — ver
-# testar_modelo_risco.py), não um score de pesos escolhidos à mão.
-# Histórico salvo em SQL Server (fScoreRisco) por modelo_risco.py —
-# rodar `python modelo_risco.py` pra treinar/atualizar antes de abrir esta
+# testes/test_modelo_risco.py), não um score de pesos escolhidos à mão.
+# Histórico salvo em SQL Server (fScoreRisco) pelo job de treino —
+# rodar `python -m holder.aplicacao.treino` pra treinar/atualizar antes de abrir esta
 # aba pela primeira vez (ou depois que houver cancelamentos novos).
 # ------------------------------------------------------------------------------
 with tab3:
@@ -419,8 +318,8 @@ with tab3:
     def _carregar_score_atual():
         # Lê do histórico já salvo (mês mais recente) em vez de recalcular
         # na hora — mais rápido, e é exatamente o valor persistido pelo job
-        # mensal (modelo_risco.salvar_historico_mes), não um recorte à parte.
-        hist = sr.carregar_historico()
+        # mensal (holder.aplicacao.treino), não um recorte à parte.
+        hist = historico_score.carregar_historico()
         if hist.empty:
             return []
         mes_mais_recente = hist["mes_ref"].max()
@@ -439,7 +338,7 @@ with tab3:
 
     @st.cache_data(ttl=600)
     def _carregar_historico_score():
-        return sr.carregar_historico()
+        return historico_score.carregar_historico()
 
     resultados = _carregar_score_atual()
     historico_score = _carregar_historico_score()
@@ -447,7 +346,7 @@ with tab3:
     with st.container(border=True):
         _modulo_header("Score de Risco (Preditivo)", "Regressão logística treinada e validada contra os cancelamentos reais, atualizada mensalmente.")
         if not resultados:
-            st.warning("Sem score calculado ainda. Rode `python score_risco.py` no terminal pra popular o histórico.")
+            st.warning("Sem score calculado ainda. Rode `python -m holder.aplicacao.treino` no terminal pra popular o histórico.")
         else:
             df_score = pd.DataFrame(resultados)
             df_score = df_score.merge(df_cli[['cliente_id', 'plano', 'porte', 'segmento']], on='cliente_id', how='left')
@@ -614,7 +513,7 @@ with tab3:
                         mode='lines+markers+text', text=hist_cliente['risco_percentual'].round(0),
                         textposition='top center', line=dict(width=3, color='#0156FC'), name='Risco %',
                     ))
-                    for lo, hi, nome in sr.FAIXAS:
+                    for lo, hi, nome in faixas.FAIXAS:
                         fig_tl.add_hrect(y0=lo, y1=min(hi, 100), fillcolor=cores_faixa[nome], opacity=0.15, line_width=0)
                     fig_tl.update_layout(
                         xaxis_title='Mês', yaxis_title='Risco de cancelamento (%)', yaxis=dict(range=[0, 100]),
@@ -625,12 +524,12 @@ with tab3:
 
             st.markdown("---")
             with st.expander("Sobre este score (metodologia)"):
-                log_treinos = mr.carregar_log_treinos()
+                log_treinos = log_treinos.carregar()
                 if not log_treinos.empty:
                     ultimo = log_treinos.iloc[0]
                     linha_validacao = f"**AUC = {ultimo['auc']:.3f}** · **Brier = {ultimo['brier']:.3f}** (validação cruzada 5-fold, treinado em {pd.to_datetime(ultimo['treinado_em']).strftime('%d/%m/%Y')}, {int(ultimo['n_amostras'])} amostras)."
                 else:
-                    linha_validacao = "Sem log de treino ainda — rode `python modelo_risco.py`."
+                    linha_validacao = "Sem log de treino ainda — rode `python -m holder.aplicacao.treino`."
                 st.markdown(f"""
                 **Regressão logística treinada e validada** contra os cancelamentos reais da base —
                 não é um score de pesos escolhidos à mão. {linha_validacao}
@@ -646,5 +545,5 @@ with tab3:
                   demais), não um segundo cálculo paralelo.
 
                 Faixas: Saudável (0–29%) · Atenção (30–54%) · Em risco (55–74%) · Crítico (75–100%).
-                Backtest retroativo nos 22 clientes já cancelados: ver `testar_modelo_risco.py`.
+                Backtest retroativo nos 22 clientes já cancelados: ver `testes/test_modelo_risco.py`.
                 """)

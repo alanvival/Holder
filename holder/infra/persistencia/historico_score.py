@@ -53,6 +53,20 @@ def garantir_tabela(engine) -> None:
         """))
 
 
+def salvar_mes(df_linhas: pd.DataFrame, mes_ref: str) -> int:
+    """Substitui o histórico daquele mês: apaga e regrava. É idempotente de
+    propósito — recalcular o mesmo mês duas vezes não duplica linha."""
+    engine = conexao.criar_engine()
+    try:
+        garantir_tabela(engine)
+        with engine.begin() as conn:
+            conn.execute(text(f"DELETE FROM {TABELA} WHERE mes_ref = :mes"), {"mes": mes_ref})
+        df_linhas.to_sql(TABELA, con=engine, if_exists="append", index=False)
+        return len(df_linhas)
+    finally:
+        engine.dispose()
+
+
 def carregar_historico(cliente_id: str | None = None, mes_ref: str | None = None) -> pd.DataFrame:
     engine = conexao.criar_engine()
     try:

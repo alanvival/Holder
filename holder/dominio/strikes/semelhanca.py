@@ -19,6 +19,7 @@ from holder.infra.dados import carteira
 
 from ..metricas.resolvedor import filtrar
 from .benchmark import linhas_de_corte
+from .nps_recente import ultima_classificacao_por_cliente
 from .recencia import meses_recentes
 
 SINAIS = ("SLA crítico atual", "Lentidão de resolução atual", "Reclamação recente", "Último NPS detrator")
@@ -52,7 +53,9 @@ def prever_risco_cancelamento(cliente_id: str | None = None, limite: int = 20) -
     # degenerada (base de 1 cliente) em vez da taxa real da carteira.
     janela = meses_recentes(df_ativos_atd)
 
-    pesquisas = carteira.aba("pesquisas_nps")
+    # Regra única do "Último NPS detrator" (ver nps_recente.py): a pesquisa
+    # mais recente RESPONDIDA de cada cliente.
+    nps_por_cliente = ultima_classificacao_por_cliente(carteira.aba("pesquisas_nps"))
     total_ativos_avaliados = df_ativos_atd["cliente_id"].nunique()
     contagem_por_sinal = {sinal: 0 for sinal in SINAIS}
     resultados = []
@@ -61,10 +64,7 @@ def prever_risco_cancelamento(cliente_id: str | None = None, limite: int = 20) -
         grupo = grupo.sort_values("mes_ref")
         ultima_linha = grupo.iloc[-1]
 
-        ultima_nps = pesquisas[
-            (pesquisas["cliente_id"] == cid) & (pesquisas["respondeu"] == 1)
-        ].sort_values("mes_ref")
-        classificacao_nps_recente = ultima_nps.iloc[-1]["classificacao_nps"] if len(ultima_nps) > 0 else None
+        classificacao_nps_recente = nps_por_cliente.get(cid)
 
         reclamacoes_recentes = grupo[grupo["mes_ref"].isin(janela)]["reclamacoes_formais"].sum()
 

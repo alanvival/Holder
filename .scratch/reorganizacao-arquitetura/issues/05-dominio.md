@@ -1,6 +1,35 @@
 # 05 — `holder/dominio/`
 
-Status: em andamento (5a resolvido, 5b aberto)
+Status: resolvido (5a e 5b)
+
+## Resultado de 5b
+
+`74 passed`. `score_risco.py` e `modelo_risco.py` deixaram de existir; `app.py` caiu de 645
+para 549 linhas. O job de treino virou `python -m holder.aplicacao.treino` — mora em
+`aplicacao/` e não em `dominio/risco/` porque é orquestração (pede o dataset, manda treinar,
+grava pickle, registra log, regrava histórico). Desvio consciente do comando previsto na spec.
+
+### A janela de recência (Q22) não mudou nenhum número nesta base
+
+Medido: a janela nova (`[-2:]` = `['2026-05','2026-06']`) e a antiga (`DateOffset(months=1)`)
+**coincidem**, porque nenhum cliente ativo está sem registro no último mês. A mudança é de
+robustez, não de valor — ela passa a valer se a base ganhar buraco na série.
+
+### Divergência REAL encontrada e corrigida: "Último NPS detrator"
+
+Ao comparar painel e motor, apareceram 40 contra 41 clientes com strike. A causa não era a
+janela: o painel pegava a **última linha** de pesquisa sem filtrar `respondeu`, enquanto o
+motor pegava a última **respondida**. Um cliente que foi detrator e depois ignorou o convite
+seguinte aparecia com classificação vazia e **perdia o strike** — 3 clientes nesta base
+(C012, C069, C080).
+
+Isso contradizia o próprio `CONTEXT.md`, que diz que não-resposta é comportamento observado e
+não dado faltante. A regra passou a ser única (`holder/dominio/strikes/nps_recente.py`): vale a
+pesquisa mais recente respondida. Depois da correção, painel e motor concordam em **71 strikes,
+41 clientes, cliente a cliente, zero divergência**.
+
+Era exatamente o tipo de contradição que a Q8=(b) existia para matar: ninguém veria erro na
+tela, só dois números diferentes para a mesma pergunta.
 Fase: 5 de 10 · Bloqueado por: 04
 
 ## Dividida em duas, por volume

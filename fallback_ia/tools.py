@@ -145,7 +145,7 @@ TOOLS = [
             "cliente', 'quais clientes estão em risco crítico agora', "
             "'me dá o relatório preditivo', 'quais intervenções devo "
             "priorizar'. Fonte: SQL Server (fScoreRisco, atualizado "
-            "mensalmente por modelo_risco.py) — se devolver erro, o banco "
+            "mensalmente pelo job de treino) — se devolver erro, o banco "
             "pode estar fora do ar; nesse caso use prever_risco_cancelamento."
         ),
         "input_schema": {

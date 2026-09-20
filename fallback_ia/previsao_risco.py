@@ -1,11 +1,11 @@
 """
 Ponte entre o fallback de IA (que lê a planilha via dados.py) e o score
-PREDITIVO de cancelamento (modelo_risco.py + score_risco.py, que leem do
+PREDITIVO de cancelamento (holder/dominio/risco/, que lê do
 SQL Server, populados por ingestao.py) — os dois motores de dados do
 projeto ainda são separados (um por arquivo Excel, outro por banco), mas a
 IA precisa conseguir responder sobre os dois. Este módulo só lê o
 histórico já persistido (fScoreRisco, tabela populada pelo job mensal de
-modelo_risco.py) — nunca recalcula o modelo na hora, pra não pagar o custo
+holder/aplicacao/treino.py) — nunca recalcula o modelo na hora, pra não pagar o custo
 de treino/predição a cada pergunta do chat.
 
 Se o SQL Server não estiver acessível (banco fora do ar, driver não
@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from holder.infra.persistencia import historico_score
 
-# Antes havia um sys.path.insert aqui: score_risco.py morava na raiz do
+# Antes havia um sys.path.insert aqui: o módulo de score morava na raiz do
 # repo, fora de qualquer pacote, e o import só resolvia se o processo
 # tivesse sido iniciado a partir da raiz. Com a persistência dentro de
 # `holder/`, o import é direto e não depende de onde o processo subiu.
@@ -34,7 +34,7 @@ def _mes_anterior(mes_ref: str) -> str:
 
 # Ação sugerida por faixa — dado estruturado (não a IA "decidindo" sozinha
 # o que recomendar a cada resposta, texto fixo e auditável por faixa,
-# igual as próprias faixas em score_risco.FAIXAS).
+# igual as próprias faixas em holder.dominio.risco.faixas).
 _ACAO_POR_FAIXA = {
     "Saudável": "Nenhuma ação necessária — monitoramento passivo.",
     "Atenção": "Sinalizar no radar do CS responsável, sem alerta ativo ainda — acompanhar a tendência do próximo mês.",
@@ -47,7 +47,7 @@ def listar_previsao_risco(filtros: dict | None = None, limite: int = 20) -> dict
     """
     Lista clientes ordenados por probabilidade PREVISTA de cancelamento
     (modelo de regressão logística treinado e validado — AUC~0.95, ver
-    testar_modelo_risco.py), não um diagnóstico do histórico passado.
+    testes/test_modelo_risco.py), não um diagnóstico do histórico passado.
     filtros aceita: faixa ('Crítico'/'Em risco'/'Atenção'/'Saudável').
     """
     import json
@@ -57,7 +57,7 @@ def listar_previsao_risco(filtros: dict | None = None, limite: int = 20) -> dict
         return {"erro": f"Não consegui acessar o histórico de previsão de risco (SQL Server indisponível?): {exc}"}
 
     if hist.empty:
-        return {"erro": "Sem histórico de score de risco salvo ainda. Rode `python modelo_risco.py` pra treinar e popular."}
+        return {"erro": "Sem histórico de score de risco salvo ainda. Rode `python -m holder.aplicacao.treino` pra treinar e popular."}
 
     mes_atual = hist["mes_ref"].max()
     mes_ant = _mes_anterior(mes_atual)
