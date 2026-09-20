@@ -67,6 +67,23 @@ export function useAssistant() {
   const fechar = useCallback(() => setAberto(false), []);
   const fecharBolha = useCallback(() => setBolhaSaudacaoVisivel(false), []);
 
+  // A bolha não tinha nenhum jeito de sumir sozinha — ficava flutuando
+  // indefinidamente por cima do que estivesse por baixo (reportado ao vivo
+  // cobrindo a última coluna do Painel de Strikes). Some sozinha depois de
+  // alguns segundos, ou assim que o usuário rolar a página — o que vier
+  // primeiro — sem exigir clique.
+  useEffect(() => {
+    if (!bolhaSaudacaoVisivel) return undefined;
+    const AUTO_DISMISS_MS = 8000;
+    const timer = setTimeout(() => setBolhaSaudacaoVisivel(false), AUTO_DISMISS_MS);
+    const aoRolar = () => setBolhaSaudacaoVisivel(false);
+    window.addEventListener('scroll', aoRolar, { passive: true, capture: true });
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('scroll', aoRolar, { capture: true });
+    };
+  }, [bolhaSaudacaoVisivel]);
+
   const enviarPergunta = useCallback(async (textoBruto) => {
     const texto = textoBruto.trim();
     if (!texto || status === 'loading') return;
