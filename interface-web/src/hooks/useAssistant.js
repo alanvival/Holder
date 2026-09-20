@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { consultarPergunta, registrarSugestaoUsuario, hidratarCatalogoAdmin } from '../services/assistenteApi.js';
 import { useTenant } from '../context/TenantContext.jsx';
 
@@ -48,9 +48,10 @@ const SAUDACAO_INICIAL = {
 export function useAssistant() {
   useTenant();  // placeholder declarado — ver CONTEXT.md, verbete "Tenant"
   const [aberto, setAberto] = useState(false);
-  const [bolhaSaudacaoVisivel, setBolhaSaudacaoVisivel] = useState(true);
+  const [bolhaSaudacaoVisivel, setBolhaSaudacaoVisivel] = useState(false);
   const [mensagens, setMensagens] = useState([SAUDACAO_INICIAL]);
   const [status, setStatus] = useState('idle'); // idle | loading | erro
+  const bolhaTimeoutRef = useRef(null);
 
   // Sincroniza as perguntas cadastradas pelo admin (persistidas no
   // backend) pro motor local de matching, uma vez ao montar — assim elas
@@ -67,22 +68,27 @@ export function useAssistant() {
   const fechar = useCallback(() => setAberto(false), []);
   const fecharBolha = useCallback(() => setBolhaSaudacaoVisivel(false), []);
 
-  // A bolha não tinha nenhum jeito de sumir sozinha — ficava flutuando
-  // indefinidamente por cima do que estivesse por baixo (reportado ao vivo
-  // cobrindo a última coluna do Painel de Strikes). Some sozinha depois de
-  // alguns segundos, ou assim que o usuário rolar a página — o que vier
-  // primeiro — sem exigir clique.
-  useEffect(() => {
-    if (!bolhaSaudacaoVisivel) return undefined;
-    const AUTO_DISMISS_MS = 8000;
-    const timer = setTimeout(() => setBolhaSaudacaoVisivel(false), AUTO_DISMISS_MS);
-    const aoRolar = () => setBolhaSaudacaoVisivel(false);
-    window.addEventListener('scroll', aoRolar, { passive: true, capture: true });
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener('scroll', aoRolar, { capture: true });
-    };
-  }, [bolhaSaudacaoVisivel]);
+  // Tooltip de hover, igual ao widget da Globalsys no site institucional:
+  // aparece assim que o mouse entra no FAB, some sozinha 2s depois que o
+  // mouse sai (sem exigir clique em "fechar"). O timeout fica numa ref pra
+  // um mouseenter cancelar o "sumir" de um mouseleave anterior, se o
+  // usuário voltar o mouse rápido o suficiente.
+  const mostrarBolha = useCallback(() => {
+    if (bolhaTimeoutRef.current) {
+      clearTimeout(bolhaTimeoutRef.current);
+      bolhaTimeoutRef.current = null;
+    }
+    setBolhaSaudacaoVisivel(true);
+  }, []);
+
+  const ocultarBolhaComAtraso = useCallback(() => {
+    const ATRASO_MS = 2000;
+    bolhaTimeoutRef.current = setTimeout(() => setBolhaSaudacaoVisivel(false), ATRASO_MS);
+  }, []);
+
+  useEffect(() => () => {
+    if (bolhaTimeoutRef.current) clearTimeout(bolhaTimeoutRef.current);
+  }, []);
 
   const enviarPergunta = useCallback(async (textoBruto) => {
     const texto = textoBruto.trim();
@@ -163,6 +169,8 @@ export function useAssistant() {
     abrir,
     fechar,
     fecharBolha,
+    mostrarBolha,
+    ocultarBolhaComAtraso,
     enviarPergunta,
     confirmarSugestao,
     dispensarSugestao,
