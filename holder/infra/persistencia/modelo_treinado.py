@@ -9,7 +9,7 @@ from __future__ import annotations
 import pickle
 from pathlib import Path
 
-ARQUIVO = Path(__file__).resolve().parents[3] / "modelo_risco.pkl"
+ARQUIVO = Path(__file__).resolve().parents[3] / "dados" / "gerado" / "modelo_risco.pkl"
 
 COMANDO_DE_TREINO = "python -m holder.aplicacao.treino"
 

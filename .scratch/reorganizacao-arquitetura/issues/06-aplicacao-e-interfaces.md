@@ -22,6 +22,10 @@ contexto. Agora são `df_historico` e `df_log`.
 nome** — é a costura que os 22 casos de teste mockam. Extrair a costura junto com o cliente
 quebraria a suíte inteira por ganho nenhum.
 
+`aplicacao/priorizacao/ordem.py` **não foi criado** — seria código novo, não reorganização, e
+o ranking de priorização já existe na aba 1 do dashboard. Um módulo que ninguém chama é código
+morto.
+
 Lacuna encontrada e deixada visível: `padroes_churn` e `taxa_falso_alarme` são calculados pela
 preparação e **não são exibidos por nenhuma aba** — já era assim antes. Ficam nomeados no
 desempacotamento, com comentário, em vez de descartados em silêncio.

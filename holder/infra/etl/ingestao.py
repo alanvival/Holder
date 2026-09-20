@@ -54,9 +54,9 @@ def main() -> None:
             # if_exists="replace" recria a tabela a cada execução;
             # index=False não insere o índice do pandas como coluna.
             df.to_sql(name=tabela, con=engine, if_exists="replace", index=False)
-            print(f"   ✓ Sucesso! {len(df)} registros gravados na tabela '{tabela}'.")
+            print(f"   OK   {len(df)} registros gravados na tabela '{tabela}'.")
         except Exception as e:
-            print(f"   ❌ Erro ao gravar a tabela '{tabela}': {e}")
+            print(f"   FALHA ao gravar a tabela '{tabela}': {e}")
 
     engine.dispose()
     print("\nPipeline finalizado com sucesso.")

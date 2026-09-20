@@ -13,7 +13,7 @@ from pathlib import Path
 import openpyxl
 
 RAIZ = Path(__file__).resolve().parent.parent
-PLANILHA = RAIZ / "INOVAAPPS_base_de_dados.xlsx"
+PLANILHA = RAIZ / "dados" / "INOVAAPPS_base_de_dados.xlsx"
 DESTINO = RAIZ / "interface-web" / "src" / "data" / "inovaapps"
 
 

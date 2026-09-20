@@ -46,7 +46,7 @@ const SAUDACAO_INICIAL = {
 };
 
 export function useAssistant() {
-  const tenant = useTenant();
+  useTenant();  // placeholder declarado — ver CONTEXT.md, verbete "Tenant"
   const [aberto, setAberto] = useState(false);
   const [bolhaSaudacaoVisivel, setBolhaSaudacaoVisivel] = useState(true);
   const [mensagens, setMensagens] = useState([SAUDACAO_INICIAL]);
@@ -139,11 +139,11 @@ export function useAssistant() {
     // Efeito colateral (chamada de serviço) fica FORA do updater funcional
     // de setState — updaters podem rodar mais de uma vez (StrictMode em
     // dev, ou React reprocessando) e não podem ter side effects impuros.
-    if (perguntaOrigem) await registrarSugestaoUsuario(perguntaOrigem, tenant);
+    if (perguntaOrigem) await registrarSugestaoUsuario(perguntaOrigem);
     setMensagens((atual) =>
       atual.map((m) => (m.id === mensagemId ? { ...m, sugestaoStatus: 'enviada' } : m)),
     );
-  }, [tenant]);
+  }, []);
 
   const dispensarSugestao = useCallback((mensagemId) => {
     setMensagens((atual) =>

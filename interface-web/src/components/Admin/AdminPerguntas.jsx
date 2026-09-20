@@ -13,7 +13,7 @@ import {
 } from '../../services/assistenteApi.js';
 
 function NovaPerguntaForm({ onCriada }) {
-  const tenant = useTenant();
+  useTenant();  // placeholder declarado — ver CONTEXT.md, verbete "Tenant"
   const [rotulo, setRotulo] = useState('');
   const [exemplos, setExemplos] = useState('');
   const [respostaTexto, setRespostaTexto] = useState('');
@@ -29,7 +29,7 @@ function NovaPerguntaForm({ onCriada }) {
 
     setEnviando(true);
     try {
-      await cadastrarPergunta({ rotulo: rotulo.trim(), exemplos: listaExemplos, respostaTexto: respostaTexto.trim() }, tenant);
+      await cadastrarPergunta({ rotulo: rotulo.trim(), exemplos: listaExemplos, respostaTexto: respostaTexto.trim() });
       setRotulo('');
       setExemplos('');
       setRespostaTexto('');
@@ -167,32 +167,32 @@ export function AdminPerguntas() {
 
   const recarregar = useCallback(async () => {
     const [listaPerguntas, listaSugestoes, listaHistorico] = await Promise.all([
-      listarPerguntasCadastradas(tenant),
-      listarSugestoes(tenant),
+      listarPerguntasCadastradas(),
+      listarSugestoes(),
       listarHistorico(),
     ]);
     setPerguntas(listaPerguntas);
     setSugestoesPendentes(listaSugestoes.filter((s) => s.status === 'pendente'));
     setHistorico(listaHistorico);
     setCarregando(false);
-  }, [tenant]);
+  }, []);
 
   useEffect(() => {
     recarregar();
   }, [recarregar]);
 
   const aprovar = async (id, respostaTexto) => {
-    await aprovarSugestaoUsuario(id, { respostaTexto }, tenant);
+    await aprovarSugestaoUsuario(id, { respostaTexto });
     await recarregar();
   };
 
   const rejeitar = async (id) => {
-    await rejeitarSugestaoUsuario(id, tenant);
+    await rejeitarSugestaoUsuario(id);
     await recarregar();
   };
 
   const desativar = async (id) => {
-    await desativarPergunta(id, tenant);
+    await desativarPergunta(id);
     await recarregar();
   };
 

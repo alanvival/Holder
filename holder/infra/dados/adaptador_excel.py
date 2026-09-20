@@ -18,7 +18,7 @@ from pathlib import Path
 import pandas as pd
 
 RAIZ = Path(__file__).resolve().parents[3]
-PLANILHA = RAIZ / "INOVAAPPS_base_de_dados.xlsx"
+PLANILHA = RAIZ / "dados" / "INOVAAPPS_base_de_dados.xlsx"
 
 ABAS = ("clientes", "atendimento_mensal", "situacao_clientes", "pesquisas_nps")
 
