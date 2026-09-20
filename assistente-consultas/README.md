@@ -53,6 +53,28 @@ um `resolver(entidades, hoje)` que consulta os dados e devolve um payload de
 citada na especificação — hoje é código, mas a estrutura de dados já está
 pronta para virar uma tela de admin ligada a um backend real.
 
+## Identidade visual — regras pra não regredir
+
+Toda cor, fonte, raio e sombra vem de `src/styles/tokens.css` (nunca um
+valor solto direto no componente — se falta um token pro que a tela
+precisa, o token é o que falta, não uma exceção). Ver `design-tokens.md`
+na raiz do repo pra fonte da marca. Proibido em qualquer tela nova (tiques
+clássicos de interface gerada por IA sem checar a marca do cliente):
+
+- Gradiente roxo/rosa/magenta (`#8B5CF6`→`#EC4899` ou variantes) — a marca
+  usa `--gs-gradient-brand`/`--gs-gradient-cta`, nunca violeta.
+- Ícone de sparkle/estrelinha (✨) ou robô/cérebro/lâmpada como indicador de
+  "isto é IA" — o widget usa `ChatIcon` (balão de chat), sempre.
+- Fonte Inter, system-ui ou sans-serif genérica renderizando de verdade —
+  só Space Grotesk (`--gs-font-heading`) e Montserrat (`--gs-font-body`).
+- Sombra colorida com efeito "glow" — sombras usam `rgba(0,10,44,α)`
+  neutro (`--ac-shadow-*`), nunca cor saturada.
+- Emoji decorativo em label/título/mensagem de sistema (fora de copy já
+  aprovada) e blob/mancha gradiente de fundo — nenhum dos dois.
+- Border-radius fora de `--gs-radius-card` (20px) / `--gs-radius-pill`
+  (50px) / `--gs-radius-bubble` (18px, só balão de chat) /
+  `--gs-radius-chip` (12px) / `50%`-`100%` (elementos circulares).
+
 ## Pendências conhecidas (fora do escopo deste scaffold)
 
 - Persistência de histórico por usuário (hoje só em memória/sessão).

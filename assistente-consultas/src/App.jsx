@@ -20,18 +20,17 @@ export function App() {
 
   return (
     <TenantProvider>
-      <div style={{ minHeight: '100vh', background: '#FAF9F5' }}>
+      <div style={{ minHeight: '100vh', background: 'var(--gs-bg-alt)' }}>
         <header
           style={{
-            background:
-              'linear-gradient(112.61deg, #041833 0%, #0000AA 24%, #1D1DDB 62%, #0F0FC3 81%, #00083D 100%)',
+            background: 'var(--gs-gradient-brand)',
             height: 64,
             padding: '0 40px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            color: '#FFFFFF',
-            fontFamily: "'Space Grotesk', sans-serif",
+            color: 'var(--gs-white)',
+            fontFamily: 'var(--gs-font-heading)',
             fontWeight: 600,
           }}
         >
@@ -68,10 +67,10 @@ function navButtonStyle(ativo) {
   return {
     background: ativo ? 'rgba(255,255,255,0.18)' : 'transparent',
     border: 'none',
-    borderRadius: 50,
+    borderRadius: 'var(--gs-radius-pill)',
     padding: '8px 16px',
-    color: '#FFFFFF',
-    fontFamily: "'Space Grotesk', sans-serif",
+    color: 'var(--gs-white)',
+    fontFamily: 'var(--gs-font-heading)',
     fontWeight: 600,
     fontSize: 13,
     cursor: 'pointer',

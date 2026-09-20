@@ -1,11 +1,11 @@
-import { SparkleIcon, ChevronDownIcon } from './icons/index.jsx';
+import { ChatIcon, ChevronDownIcon } from './icons/index.jsx';
 
 export function PanelHeader({ onClose }) {
   return (
     <div className="ac-panel__header">
       <div className="ac-panel__header-left">
         <span className="ac-panel__avatar">
-          <SparkleIcon size={18} color="#FFFFFF" />
+          <ChatIcon size={18} color="#FFFFFF" />
         </span>
         <span>
           <div className="ac-panel__title">Assistente de Consultas Preditivo</div>

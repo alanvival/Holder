@@ -60,7 +60,7 @@
   padding: 14px 16px;
   background: var(--gs-bg-alt);
   border: 1px solid var(--gs-border-soft);
-  border-radius: 14px;
+  border-radius: var(--gs-radius-chip);
 }
 
 .admin-row__main {
@@ -86,7 +86,7 @@
   text-transform: uppercase;
   letter-spacing: 0.03em;
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: var(--gs-radius-pill);
   margin-right: 6px;
 }
 
@@ -102,7 +102,7 @@
 
 .admin-badge--inativa {
   background: rgba(180, 35, 24, 0.1);
-  color: #b42318;
+  color: var(--gs-error);
 }
 
 .admin-badge--ia {
@@ -145,7 +145,7 @@
 .admin-btn--danger {
   background: var(--gs-white);
   border: 1px solid rgba(180, 35, 24, 0.3);
-  color: #b42318;
+  color: var(--gs-error);
 }
 
 .admin-empty {
@@ -181,7 +181,7 @@
   font-size: 13.5px;
   color: var(--gs-text);
   border: 1px solid var(--gs-border);
-  border-radius: 12px;
+  border-radius: var(--gs-radius-chip);
   padding: 10px 12px;
   resize: vertical;
 }

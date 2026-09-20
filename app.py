@@ -269,7 +269,7 @@ with tab1:
             hide_index=True
         )
     else:
-        st.success("🎉 Excelente notícia! Após limpar os falsos positivos, nenhum cliente ativo possui múltiplos problemas simultâneos não resolvidos hoje.")
+        st.success("Excelente notícia! Após limpar os falsos positivos, nenhum cliente ativo possui múltiplos problemas simultâneos não resolvidos hoje.")
 
 # ------------------------------------------------------------------------------
 # ABA 2: MONITOR INDIVIDUAL
@@ -342,7 +342,7 @@ with tab2:
     with col_kpi2: st.metric("Linha de Risco (Média de Cancelados)", f"{linhas_risco[metrica_selecionada]:.1f}")
 
     fig2 = go.Figure()
-    fig2.add_trace(go.Scatter(x=df_cli_atd['mes_ref_dt'], y=df_cli_atd[metrica_selecionada], mode='lines+markers+text', name=f'Evolução', text=df_cli_atd[metrica_selecionada].round(1), textposition='top center', line=dict(width=3, color='#2B5B84')))
+    fig2.add_trace(go.Scatter(x=df_cli_atd['mes_ref_dt'], y=df_cli_atd[metrica_selecionada], mode='lines+markers+text', name=f'Evolução', text=df_cli_atd[metrica_selecionada].round(1), textposition='top center', line=dict(width=3, color='#0156FC')))
     fig2.add_trace(go.Scatter(x=[df_cli_atd['mes_ref_dt'].min(), df_cli_atd['mes_ref_dt'].max()], y=[linhas_risco[metrica_selecionada], linhas_risco[metrica_selecionada]], mode='lines', name='Linha de Risco', line=dict(color='red', width=2, dash='dash')))
     fig2.update_layout(xaxis_title='Mês', yaxis_title=opcoes_metricas[metrica_selecionada], template='plotly_white', hovermode="x unified")
     st.plotly_chart(fig2, use_container_width=True)
@@ -457,9 +457,11 @@ with tab3:
         if modo == "Lista ranqueada":
             st.subheader(f"{len(df_filtrado)} cliente(s) — ordenado por risco decrescente")
             for _, r in df_filtrado.iterrows():
-                alerta = " 🔔 cruzou de faixa" if r['cruzou_faixa'] else ""
-                icone_estagio = "👁️" if r['estagio_predominante'] == 'Precoce' else "🚨"
-                with st.expander(f"{icone_estagio} **{r['cliente_id']}** — {r['risco_percentual']:.0f}% · {r['faixa']} · {r['tendencia']}{alerta}"):
+                # Texto, não emoji — consistente com o resto da identidade
+                # visual do projeto (ver auditoria de estilo): nenhum ícone
+                # de UI decorativo além do conjunto svg já definido.
+                alerta = " · cruzou de faixa" if r['cruzou_faixa'] else ""
+                with st.expander(f"[{r['estagio_predominante']}] **{r['cliente_id']}** — {r['risco_percentual']:.0f}% · {r['faixa']} · {r['tendencia']}{alerta}"):
                     col_a, col_b = st.columns([1, 2])
                     with col_a:
                         st.metric("Risco de cancelamento", f"{r['risco_percentual']:.0f}%")

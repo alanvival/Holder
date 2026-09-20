@@ -1,7 +1,23 @@
-export function SparkleIcon({ size = 18, color = '#FFFFFF', ...props }) {
+// Ícone do assistente (avatar + badge "respondido pela IA") — de propósito
+// um balão de chat neutro, não a estrelinha/sparkle clichê de "isto é IA"
+// (ver auditoria de identidade visual: esse ícone é o tique mais comum de
+// interface gerada por IA sem checar a marca do cliente). Consistente com
+// o resto do set: mesmo estilo stroke-only dos outros ícones do projeto.
+export function ChatIcon({ size = 18, color = '#FFFFFF', ...props }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill={color} aria-hidden="true" {...props}>
-      <path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8L12 2z" />
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
     </svg>
   );
 }

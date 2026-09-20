@@ -13,3 +13,10 @@ textColor = "#000A1E"
 font = "'Montserrat':https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600&display=swap"
 headingFont = "'Space Grotesk':https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&display=swap"
 codeFont = "monospace"
+
+# Tamanhos default do Streamlit (h1=2.75rem/44px) são desproporcionais pro
+# resto do produto (nenhuma tela do widget React chega perto disso — ver
+# design-tokens.md, que não define título de tela acima de ~26-28px em
+# lugar nenhum) — reduzidos pra um padrão mais minimalista e consistente
+# com o restante da identidade visual Globalsys.
+headingFontSizes = ["1.75rem", "1.375rem", "1.125rem", "1rem", "0.9375rem", "0.875rem"]

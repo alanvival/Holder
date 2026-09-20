@@ -1,4 +1,4 @@
-import { SparkleIcon, CalendarIcon, CheckIcon, AlertIcon, DownloadIcon } from './icons/index.jsx';
+import { ChatIcon, CalendarIcon, CheckIcon, AlertIcon, DownloadIcon } from './icons/index.jsx';
 import { exportarRespostaComoPdf } from '../../utils/exportarPdf.js';
 
 export function MessageBubble({ mensagem, onConfirmarSugestao, onDispensarSugestao }) {
@@ -15,7 +15,7 @@ export function MessageBubble({ mensagem, onConfirmarSugestao, onDispensarSugest
   return (
     <div className="ac-message-row">
       <span className="ac-message-row__avatar">
-        <SparkleIcon size={13} color="#FFFFFF" />
+        <ChatIcon size={13} color="#FFFFFF" />
       </span>
       <div className="ac-bubble ac-bubble--assistant">
         {mensagem.payload.kind === 'text' && <div>{mensagem.payload.text}</div>}
@@ -94,7 +94,7 @@ export function MessageBubble({ mensagem, onConfirmarSugestao, onDispensarSugest
         )}
         {mensagem.origem === 'ia' && !isNotFound && (
           <div className="ac-origem-ia">
-            <SparkleIcon size={10} color="#0156FC" /> Respondido pela IA — fora do catálogo padrão
+            <ChatIcon size={10} color="#0156FC" /> Respondido pela IA — fora do catálogo padrão
           </div>
         )}
         {isNotFound && (
