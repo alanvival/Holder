@@ -45,6 +45,44 @@ def _categorizar_saude(row) -> str:
     return "Fluxo Normal"
 
 
+def calcular_rfv(df_cli, df_atd, df_sit, meses: int | None = None):
+    """Matriz de valor × risco (RFV) dos clientes ativos — usada pela Matriz
+    Estratégica. `meses` restringe o histórico de atendimento considerado
+    aos N meses mais recentes (campo de período da aba); None usa a base
+    inteira (comportamento de sempre). Só filtra a base de ATIVOS — nunca
+    aplicar isso ao cálculo das linhas de corte tiradas de quem já
+    cancelou, que fica em `preparar` e ignora esse período de propósito."""
+    df_atd = df_atd.copy()
+    if "mes_ref_dt" not in df_atd.columns:
+        df_atd["mes_ref_dt"] = pd.to_datetime(df_atd["mes_ref"], format="%Y-%m")
+
+    df_master = df_cli.merge(df_sit, on="cliente_id", how="inner")
+    df_ativos = df_master[df_master["situacao"] == "Ativo"].copy()
+
+    df_atd_ativos = df_atd[df_atd["cliente_id"].isin(df_ativos["cliente_id"])].copy()
+    df_atd_ativos["quebra_sla"] = df_atd_ativos["pct_sla_cumprido"] < LIMITE_QUEBRA_SLA
+
+    if meses is not None:
+        limite = df_atd_ativos["mes_ref_dt"].max() - pd.DateOffset(months=meses)
+        df_atd_ativos = df_atd_ativos[df_atd_ativos["mes_ref_dt"] > limite]
+
+    agrupamento = df_atd_ativos.groupby("cliente_id").agg(
+        meses_abaixo_sla=("quebra_sla", "sum"),
+        total_reclamacoes=("reclamacoes_formais", "sum"),
+        uso_medio=("uso_plataforma_pct", "mean"),
+    ).reset_index()
+
+    df_rfv = df_ativos[["cliente_id", "valor_mensal", "segmento"]].merge(
+        agrupamento, on="cliente_id", how="left"
+    )
+    df_rfv["V_Score"] = pd.qcut(df_rfv["valor_mensal"], 5, labels=[1, 2, 3, 4, 5]).astype(int)
+    df_rfv["Fator_Risco"] = df_rfv["meses_abaixo_sla"] + df_rfv["total_reclamacoes"]
+    df_rfv["R_Rank"] = df_rfv["Fator_Risco"].rank(method="first", ascending=False)
+    df_rfv["R_Score"] = pd.qcut(df_rfv["R_Rank"], 5, labels=[1, 2, 3, 4, 5]).astype(int)
+    df_rfv["Categoria_Saude"] = df_rfv.apply(_categorizar_saude, axis=1)
+    return df_rfv
+
+
 def preparar(df_cli, df_atd, df_sit, df_nps):
     """Recebe as quatro tabelas e devolve os nove objetos do dashboard."""
     df_atd = df_atd.copy()
@@ -68,21 +106,10 @@ def preparar(df_cli, df_atd, df_sit, df_nps):
     df_atd_ativos = df_atd[df_atd["cliente_id"].isin(df_ativos["cliente_id"])].copy()
     df_atd_ativos["quebra_sla"] = df_atd_ativos["pct_sla_cumprido"] < LIMITE_QUEBRA_SLA
 
-    agrupamento = df_atd_ativos.groupby("cliente_id").agg(
-        meses_abaixo_sla=("quebra_sla", "sum"),
-        total_reclamacoes=("reclamacoes_formais", "sum"),
-        uso_medio=("uso_plataforma_pct", "mean"),
-    ).reset_index()
-
-    # --- Matriz de valor × risco (RFV) ------------------------------------
-    df_rfv = df_ativos[["cliente_id", "valor_mensal", "segmento"]].merge(
-        agrupamento, on="cliente_id", how="left"
-    )
-    df_rfv["V_Score"] = pd.qcut(df_rfv["valor_mensal"], 5, labels=[1, 2, 3, 4, 5]).astype(int)
-    df_rfv["Fator_Risco"] = df_rfv["meses_abaixo_sla"] + df_rfv["total_reclamacoes"]
-    df_rfv["R_Rank"] = df_rfv["Fator_Risco"].rank(method="first", ascending=False)
-    df_rfv["R_Score"] = pd.qcut(df_rfv["R_Rank"], 5, labels=[1, 2, 3, 4, 5]).astype(int)
-    df_rfv["Categoria_Saude"] = df_rfv.apply(_categorizar_saude, axis=1)
+    # RFV da base inteira (sem filtro de período) — é o que as abas Monitor
+    # Individual e Score de Risco usam. A Matriz Estratégica recalcula a
+    # dela com o período escolhido via `calcular_rfv`, direto no dashboard.
+    df_rfv = calcular_rfv(df_cli, df_atd, df_sit, meses=None)
 
     # --- Linhas de corte, tiradas de quem já cancelou ---------------------
     df_atd_canc = df_atd[df_atd["situacao"] == "Cancelado"].copy()

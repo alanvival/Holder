@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import streamlit as st
 
-from holder.dominio.carteira import carregar_e_preparar
+from holder.dominio.carteira import calcular_rfv, carregar_e_preparar
 
 # Imports ABSOLUTOS, não relativos: o `streamlit run` executa este arquivo
 # como script (`__name__ == "__main__"`, sem pacote), e `from . import ...`
@@ -39,6 +39,14 @@ def carregar_dados():
     return carregar_e_preparar()
 
 
+@st.cache_data
+def carregar_rfv_periodo(df_cli, df_atd, df_sit, meses):
+    """RFV da Matriz Estratégica recalculada pro período escolhido no
+    seletor da aba — nunca chamado pra linhas_risco/padroes_churn (esses
+    ignoram o período de propósito, calculados uma vez em carregar_dados)."""
+    return calcular_rfv(df_cli, df_atd, df_sit, meses=meses)
+
+
 def main() -> None:
     st.set_page_config(page_title="Dashboard Executivo CS", layout="wide")
     estilo.aplicar()
@@ -54,7 +62,19 @@ def main() -> None:
     tab1, tab2, tab3 = st.tabs(ABAS)
 
     with tab1:
-        matriz.renderizar(df_rfv, strikes)
+        meses_periodo = st.selectbox(
+            "Período considerado (clientes ativos)",
+            options=[3, 6, 9, 12],
+            index=3,
+            format_func=lambda m: f"Últimos {m} meses" if m != 12 else "Último 1 ano",
+            help=(
+                "Filtra só o histórico de atendimento dos clientes ATIVOS usado nesta aba "
+                "(matriz e ranking). As linhas de corte tiradas de quem já cancelou continuam "
+                "usando a base inteira, sem esse filtro."
+            ),
+        )
+        df_rfv_periodo = carregar_rfv_periodo(df_cli, df_atd, df_sit, meses_periodo)
+        matriz.renderizar(df_rfv_periodo, strikes)
     with tab2:
         monitor.renderizar(df_cli, df_atd, df_sit, df_nps, df_rfv, linhas_risco)
     with tab3:
