@@ -14,6 +14,7 @@ fallback de IA inteiro — a pergunta cai em "não encontrei" normalmente.
 """
 from __future__ import annotations
 
+from holder.dominio.risco import ACAO_POR_FAIXA
 from holder.infra.persistencia import historico_score
 
 # Antes havia um sys.path.insert aqui: o módulo de score morava na raiz do
@@ -32,23 +33,15 @@ def _mes_anterior(mes_ref: str) -> str:
     return f"{idx // 12:04d}-{idx % 12 + 1:02d}"
 
 
-# Ação sugerida por faixa — dado estruturado (não a IA "decidindo" sozinha
-# o que recomendar a cada resposta, texto fixo e auditável por faixa,
-# igual as próprias faixas em holder.dominio.risco.faixas).
-_ACAO_POR_FAIXA = {
-    "Saudável": "Nenhuma ação necessária — monitoramento passivo.",
-    "Atenção": "Sinalizar no radar do CS responsável, sem alerta ativo ainda — acompanhar a tendência do próximo mês.",
-    "Em risco": "Alerta ativo: o CS deve investigar a causa (ver sinais_detalhados) e agendar contato proativo com o cliente.",
-    "Crítico": "Alerta prioritário — ação imediata recomendada: contato executivo, plano de retenção e revisão do relacionamento nos próximos dias.",
-}
-
-
 def listar_previsao_risco(filtros: dict | None = None, limite: int = 20) -> dict:
     """
     Lista clientes ordenados por probabilidade PREVISTA de cancelamento
     (modelo de regressão logística treinado e validado — AUC~0.95, ver
     testes/test_modelo_risco.py), não um diagnóstico do histórico passado.
-    filtros aceita: faixa ('Crítico'/'Em risco'/'Atenção'/'Saudável').
+    filtros aceita: faixa ('Crítico'/'Em risco'/'Atenção'/'Saudável') e
+    tendencia ('subindo'/'caindo'/'estavel') — a tendência só pode ser
+    filtrada DEPOIS de calculada (compara com o mês anterior), por isso o
+    filtro é aplicado depois do merge, não antes como faixa.
     """
     import json
     try:
@@ -70,29 +63,39 @@ def listar_previsao_risco(filtros: dict | None = None, limite: int = 20) -> dict
     if faixa:
         linhas_atual = linhas_atual[linhas_atual["faixa"] == faixa]
 
+    def _tendencia(r):
+        if r["risco_anterior"] != r["risco_anterior"]:  # NaN
+            return "sem_dado_anterior"
+        delta = r["risco_percentual"] - r["risco_anterior"]
+        return "subindo" if delta > 3 else ("caindo" if delta < -3 else "estavel")
+
+    linhas_atual = linhas_atual.assign(tendencia=linhas_atual.apply(_tendencia, axis=1))
+
+    tendencia_filtro = filtros.get("tendencia")
+    if tendencia_filtro:
+        linhas_atual = linhas_atual[linhas_atual["tendencia"] == tendencia_filtro]
+
+    total_no_filtro = len(linhas_atual)
     linhas_atual = linhas_atual.sort_values("risco_percentual", ascending=False)
     limite = max(1, min(limite or 20, 100))
     pagina = linhas_atual.head(limite)
 
-    clientes = []
-    for _, r in pagina.iterrows():
-        tendencia = "sem_dado_anterior"
-        if r["risco_anterior"] == r["risco_anterior"]:  # not NaN
-            delta = r["risco_percentual"] - r["risco_anterior"]
-            tendencia = "subindo" if delta > 3 else ("caindo" if delta < -3 else "estavel")
-        clientes.append({
+    clientes = [
+        {
             "cliente_id": r["cliente_id"],
             "risco_percentual": round(r["risco_percentual"], 1),
             "faixa": r["faixa"],
-            "tendencia": tendencia,
-            "acao_sugerida": _ACAO_POR_FAIXA.get(r["faixa"], ""),
-        })
+            "tendencia": r["tendencia"],
+            "acao_sugerida": ACAO_POR_FAIXA.get(r["faixa"], ""),
+        }
+        for _, r in pagina.iterrows()
+    ]
 
     return {
         "mes_referencia": mes_atual,
-        "total_clientes": len(linhas_atual),
+        "total_clientes": total_no_filtro,
         "clientes": clientes,
-        "truncado": len(linhas_atual) > limite,
+        "truncado": total_no_filtro > limite,
         "nota": (
             "risco_percentual é a probabilidade real prevista por um modelo de regressão "
             "logística treinado e validado (AUC~0.95, Brier~0.085) contra os cancelamentos "
@@ -136,7 +139,7 @@ def detalhar_previsao_cliente(cliente_id: str) -> dict:
         "mes_referencia": atual["mes_ref"],
         "risco_percentual": round(atual["risco_percentual"], 1),
         "faixa": atual["faixa"],
-        "acao_sugerida": _ACAO_POR_FAIXA.get(atual["faixa"], ""),
+        "acao_sugerida": ACAO_POR_FAIXA.get(atual["faixa"], ""),
         "sinais_detalhados": sinais,
         "trajetoria_ultimos_meses": trajetoria,
         "nota": (

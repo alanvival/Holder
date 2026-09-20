@@ -111,12 +111,15 @@ function renderizarMarkdown(doc, texto, { x, y, larguraUtil, alturaPagina, marge
 
     const citacao = linha.match(/^>\s?(.*)/);
     if (citacao) {
-      doc.setFont('helvetica', 'italic');
-      doc.setFontSize(10);
-      doc.setTextColor(...COR_TEXTO_SUAVE);
       const envolvidas = doc.splitTextToSize(stripBold(citacao[1]), larguraUtil - 16);
       for (const l of envolvidas) {
         garantirEspaco(14);
+        // setFont a cada linha, não só uma vez fora do loop — ver
+        // comentário no título em exportarRespostaComoPdf sobre o bug de
+        // codificação em chamadas consecutivas com o mesmo estado de fonte.
+        doc.setFont('helvetica', 'italic');
+        doc.setFontSize(10);
+        doc.setTextColor(...COR_TEXTO_SUAVE);
         doc.text(l, x + 16, cursor);
         cursor += 14;
       }
@@ -124,12 +127,12 @@ function renderizarMarkdown(doc, texto, { x, y, larguraUtil, alturaPagina, marge
       continue;
     }
 
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10.5);
-    doc.setTextColor(...COR_TEXTO);
     const envolvidas = doc.splitTextToSize(stripBold(linha), larguraUtil);
     for (const l of envolvidas) {
       garantirEspaco(14);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10.5);
+      doc.setTextColor(...COR_TEXTO);
       doc.text(l, x, cursor);
       cursor += 14;
     }
@@ -146,8 +149,36 @@ function renderizarMarkdown(doc, texto, { x, y, larguraUtil, alturaPagina, marge
  * considerado (nunca gera número novo: só formata o que a mensagem já
  * mostrou na tela). Pagina de verdade quando o conteúdo é longo.
  */
+// A corrupção de texto (bytes UTF-16BE intercalados com \x00, ou um "/"
+// espúrio antes de certos caracteres) só reproduz ao vivo no navegador,
+// nunca em teste isolado — e é INTERMITENTE: o mesmo conteúdo exato saiu
+// limpo em duas rodadas e corrompido numa terceira, sempre que a máquina
+// estava sob mais pressão de memória (ver dados/gerado/logs — RAM livre
+// caindo a ~600MB com Vite+Flask+Streamlit+Chrome rodando juntos).
+// Hipótese: jsPDF mede a largura de cada combinação fonte/tamanho na
+// PRIMEIRA vez que ela é usada (via canvas), e essa medição pode não ter
+// resolvido ainda quando `doc.text()`/autoTable já tentam desenhar,
+// especialmente sob CPU ocupada — daí o texto sair com a codificação
+// errada só ÀS VEZES. "Aquecer" cada combinação fonte/tamanho ANTES do
+// conteúdo real (fora da página visível) força essa medição a acontecer
+// cedo, enquanto ainda não há nada sendo desenhado de verdade.
+function aquecerFontes(doc) {
+  const combinacoes = [
+    ['bold', 16], ['normal', 10], ['normal', 9], ['bold', 13],
+    ['bold', 11.5], ['italic', 10], ['normal', 10.5], ['italic', 9],
+    ['bold', 9], ['normal', 8],
+  ];
+  doc.setTextColor(255, 255, 255);
+  for (const [estilo, tamanho] of combinacoes) {
+    doc.setFont('helvetica', estilo);
+    doc.setFontSize(tamanho);
+    doc.text('Aquecimento de fonte 0-9 %~/', -1000, -1000);
+  }
+}
+
 export function exportarRespostaComoPdf(mensagem) {
   const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+  aquecerFontes(doc);
   const largura = doc.internal.pageSize.getWidth();
   const alturaPagina = doc.internal.pageSize.getHeight();
   const margem = 40;
@@ -182,15 +213,18 @@ export function exportarRespostaComoPdf(mensagem) {
   const texto = mensagem.payload?.text;
   const titulo = tituloAPartirDoTexto(texto);
   if (titulo) {
-    doc.setTextColor(...COR_TEXTO);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(13);
-    // Uma chamada por linha (nunca doc.text(array, x, y) de uma vez) — jsPDF
-    // corrompe a codificação de uma string que venha logo depois de uma
-    // chamada de texto em array, quando ela tem acento (bug observado ao
-    // vivo: só reproduzia com o app rodando de verdade, nunca isolado —
-    // ver histórico de commit). Evitar o array de vez elimina o gatilho.
+    // Uma chamada por linha, com setFont/setFontSize repetidos ANTES de
+    // cada uma (não só uma vez fora do loop) — jsPDF corrompe a
+    // codificação de uma linha acentuada quando ela é a 2ª+ chamada de
+    // texto seguida com o mesmo estado de fonte (bug observado ao vivo
+    // duas vezes: só reproduz com o app rodando de verdade, nunca em
+    // teste isolado — ver histórico de commit). Repetir setFont a cada
+    // iteração força o estado interno a ser reconstruído, evitando o
+    // gatilho — doc.text(array, x, y) sozinho não bastou.
     for (const linhaTitulo of doc.splitTextToSize(titulo, larguraUtil)) {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(13);
+      doc.setTextColor(...COR_TEXTO);
       doc.text(linhaTitulo, margem, y);
       y += 16;
     }
@@ -232,10 +266,10 @@ export function exportarRespostaComoPdf(mensagem) {
       doc.addPage();
       y = margem;
     }
-    doc.setTextColor(...COR_TEXTO_SUAVE);
-    doc.setFont('helvetica', 'italic');
-    doc.setFontSize(9);
     for (const linhaContexto of doc.splitTextToSize(mensagem.payload.contexto, larguraUtil)) {
+      doc.setFont('helvetica', 'italic');
+      doc.setFontSize(9);
+      doc.setTextColor(...COR_TEXTO_SUAVE);
       doc.text(linhaContexto, margem, y);
       y += 12;
     }

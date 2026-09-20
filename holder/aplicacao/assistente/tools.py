@@ -156,7 +156,8 @@ TOOLS = [
         "input_schema": {
             "type": "object",
             "properties": {
-                "faixa": {"type": "string", "enum": ["Crítico", "Em risco", "Atenção", "Saudável"], "description": "Opcional — filtra só uma faixa de risco."},
+                "faixa": {"type": ["string", "null"], "enum": ["Crítico", "Em risco", "Atenção", "Saudável", None], "description": "Opcional — filtra só uma faixa de risco."},
+                "tendencia": {"type": ["string", "null"], "enum": ["subindo", "caindo", "estavel", None], "description": "Opcional — filtra por tendência desde o mês anterior. Use pra perguntas tipo 'quais clientes estão com risco subindo/piorando' (tendencia='subindo') ou 'quem está melhorando' (tendencia='caindo')."},
                 "limite": {"type": "integer", "description": "Máximo de clientes a listar (padrão 20, máximo 100)."},
             },
         },
@@ -380,7 +381,12 @@ def executar_tool(nome: str, entrada: dict) -> dict:
     if nome == "clientes_com_strikes":
         return avaliar_strikes(entrada.get("cliente_id"), entrada.get("limite", 20))
     if nome == "listar_previsao_risco":
-        return previsao_risco.listar_previsao_risco({"faixa": entrada.get("faixa")} if entrada.get("faixa") else {}, entrada.get("limite", 20))
+        filtros_previsao = {}
+        if entrada.get("faixa"):
+            filtros_previsao["faixa"] = entrada.get("faixa")
+        if entrada.get("tendencia"):
+            filtros_previsao["tendencia"] = entrada.get("tendencia")
+        return previsao_risco.listar_previsao_risco(filtros_previsao, entrada.get("limite", 20))
     if nome == "detalhar_previsao_cliente":
         return previsao_risco.detalhar_previsao_cliente(entrada.get("cliente_id"))
     if nome == "listar_clientes":

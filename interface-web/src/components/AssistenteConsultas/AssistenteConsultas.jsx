@@ -23,7 +23,8 @@ export function AssistenteConsultas() {
     status,
     abrir,
     fechar,
-    fecharBolha,
+    mostrarBolha,
+    ocultarBolhaComAtraso,
     enviarPergunta,
     confirmarSugestao,
     dispensarSugestao,
@@ -91,8 +92,12 @@ export function AssistenteConsultas() {
         </div>
       )}
 
-      {!aberto && bolhaSaudacaoVisivel && <GreetingBubble onClose={fecharBolha} onClick={abrir} />}
-      {!aberto && <FAB onClick={abrir} />}
+      {!aberto && (
+        <div onMouseEnter={mostrarBolha} onMouseLeave={ocultarBolhaComAtraso}>
+          {bolhaSaudacaoVisivel && <GreetingBubble onClick={abrir} />}
+          <FAB onClick={abrir} />
+        </div>
+      )}
     </div>
   );
 }

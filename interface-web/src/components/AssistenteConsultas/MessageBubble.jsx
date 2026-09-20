@@ -90,8 +90,10 @@ export function MessageBubble({ mensagem, onConfirmarSugestao, onDispensarSugest
             Score de Risco) não tinha como ser exportada, mesmo tendo
             conteúdo real pra levar pra um PDF (bug reportado ao vivo).
             exportarRespostaComoPdf já lida com ausência de tabela sozinho,
-            então só precisa de algum texto pra exportar. */}
-        {!isNotFound && mensagem.payload.text && (
+            então só precisa de algum texto pra exportar. Exclui a saudação
+            estática inicial (msg-saudacao) — ela não é resposta a nenhuma
+            pergunta, não faz sentido "exportar" um convite pra conversar. */}
+        {!isNotFound && mensagem.id !== 'msg-saudacao' && mensagem.payload.text && (
           <button
             type="button"
             className="ac-export-btn"
