@@ -179,6 +179,43 @@ def caso_detalhar_previsao_cliente():
     print("OK   detalhar_previsao_cliente (explicabilidade + trajetória):", resultado["resposta"])
 
 
+def caso_historico_resolve_referencia():
+    """Reproduz o bug reportado ao vivo: sem histórico de conversa, 'esse
+    cliente' não tem a quem se referir — a pergunta sozinha nunca chegaria
+    em detalhar_previsao_cliente(C071) sem o contexto do turno anterior.
+    Confere que o histórico enviado pelo front (useAssistant.js) é
+    injetado nas mensagens ANTES da pergunta nova."""
+    from . import previsao_risco
+    esperado = previsao_risco.detalhar_previsao_cliente("C071")
+    if "erro" in esperado:
+        print("SKIP caso_historico_resolve_referencia (SQL Server indisponível):", esperado["erro"])
+        return
+
+    historico = [
+        {"role": "user", "content": "Qual o risco de cancelamento do cliente C071?"},
+        {"role": "assistant", "content": f"O cliente C071 tem {esperado['risco_percentual']}% de risco, faixa {esperado['faixa']}."},
+    ]
+    tool_call = FakeToolCall("call_24", "detalhar_previsao_cliente", {"cliente_id": "C071"})
+    sequencia = [
+        _resposta(FakeMessage(tool_calls=[tool_call])),
+        _resposta(FakeMessage(content="O principal motivo é o NPS detrator e a lentidão de resolução.")),
+    ]
+    with patch.object(ia_fallback, "_chamar_modelo", side_effect=sequencia) as mock_chamar:
+        resultado = ia_fallback.responder_com_fallback_ia("Por que esse cliente tem esse risco de cancelar?", historico=historico)
+
+    # As mensagens mandadas pro modelo no 1º turno precisam conter o
+    # histórico entre o system prompt e a pergunta nova.
+    primeira_chamada_mensagens = mock_chamar.call_args_list[0].args[0]
+    assert primeira_chamada_mensagens[1] == historico[0]
+    assert primeira_chamada_mensagens[2] == historico[1]
+    assert primeira_chamada_mensagens[3]["content"] == "Por que esse cliente tem esse risco de cancelar?"
+
+    assert resultado["encontrado"] is True
+    assert resultado["tool"] == "detalhar_previsao_cliente"
+    assert resultado["resultado"]["cliente_id"] == "C071"
+    print("OK   histórico de conversa resolve 'esse cliente' pro C071 certo:", resultado["resposta"])
+
+
 def caso_metrica_agrupada_por_categoria():
     """Reproduz o bug reportado ao vivo: 'ticket médio por segmento'
     estourava MAX_TURNOS_TOOL porque o modelo tentava listar segmentos +
@@ -485,6 +522,7 @@ if __name__ == "__main__":
     caso_prever_risco_cancelamento()
     caso_listar_previsao_risco()
     caso_detalhar_previsao_cliente()
+    caso_historico_resolve_referencia()
     caso_metrica_agrupada_por_categoria()
     caso_maior_cliente()
     caso_clientes_por_segmento()

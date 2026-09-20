@@ -61,10 +61,10 @@ async function chamarBackend(caminho, opcoes, timeoutMs = 8000) {
 // esperando indefinidamente se o backend realmente travar.
 const TIMEOUT_FALLBACK_IA_MS = 45000;
 
-async function tentarFallbackIa(texto) {
+async function tentarFallbackIa(texto, historico) {
   const resultado = await chamarBackend('/fallback-ia', {
     method: 'POST',
-    body: JSON.stringify({ pergunta: texto, sessaoId: SESSAO_ID }),
+    body: JSON.stringify({ pergunta: texto, sessaoId: SESSAO_ID, historico }),
   }, TIMEOUT_FALLBACK_IA_MS);
   return resultado?.ok ? resultado.dados : null;
 }
@@ -85,14 +85,14 @@ function registrarHistorico({ pergunta, resposta, origem, tool, sucesso }) {
  * catálogo determinístico local (rápido, sem custo); só se ele não
  * reconhecer é que chama o fallback de IA no backend — nunca ao contrário.
  */
-export async function consultarPergunta(texto) {
+export async function consultarPergunta(texto, { historico } = {}) {
   const resultadoCatalogo = interpretarPergunta(texto);
   if (resultadoCatalogo.payload.kind !== 'not_found') {
     registrarHistorico({ pergunta: texto, resposta: resultadoCatalogo.payload.text ?? null, origem: 'catalogo', tool: resultadoCatalogo.intentId ?? null, sucesso: true });
     return { ...resultadoCatalogo, origem: 'catalogo' };
   }
 
-  const respostaIa = await tentarFallbackIa(texto);
+  const respostaIa = await tentarFallbackIa(texto, historico);
   if (respostaIa?.encontrado) {
     const tabela = respostaIa.resultado?.tabela;
     const payload = TOOLS_COM_TABELA.has(respostaIa.tool) && tabela?.colunas?.length

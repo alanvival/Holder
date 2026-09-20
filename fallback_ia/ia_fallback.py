@@ -97,7 +97,28 @@ def _chamar_modelo(mensagens: list[dict]):
     )
 
 
-def responder_com_fallback_ia(pergunta: str) -> dict:
+_MAX_MENSAGENS_HISTORICO = 6  # mesmo teto do front (useAssistant.js#MAX_TROCAS_HISTORICO)
+
+
+def _sanitizar_historico(historico: list | None) -> list[dict]:
+    """Histórico vem do cliente (POST /api/fallback-ia) — nunca confiar
+    cegamente: só aceita role user/assistant com content string, descarta
+    qualquer outra coisa (não deixa o front injetar um 'system' ou 'tool'
+    falso no meio da conversa real)."""
+    if not historico:
+        return []
+    limpo = []
+    for item in historico[-_MAX_MENSAGENS_HISTORICO:]:
+        if not isinstance(item, dict):
+            continue
+        role = item.get("role")
+        content = item.get("content")
+        if role in ("user", "assistant") and isinstance(content, str) and content.strip():
+            limpo.append({"role": role, "content": content.strip()[:2000]})
+    return limpo
+
+
+def responder_com_fallback_ia(pergunta: str, historico: list | None = None) -> dict:
     """
     Retorna sempre um dict com "origem": "ia" e:
       - {"encontrado": False} quando o modelo não achou tool pra pergunta,
@@ -105,10 +126,19 @@ def responder_com_fallback_ia(pergunta: str) -> dict:
         mesmo fluxo de "não encontrei" do catálogo);
       - {"encontrado": True, "resposta": str, "tool": str} quando resolveu.
     Nunca deixa o modelo devolver texto livre sem ter passado por tool.
+
+    `historico`: últimas trocas da MESMA conversa (ver
+    useAssistant.js#construirHistoricoParaIa) — sem isso, cada pergunta
+    chegava sem nenhum contexto anterior, e referências tipo "esse
+    cliente"/"e esse outro" nunca resolviam a ninguém (bug reportado ao
+    vivo). São só as respostas em TEXTO de turnos passados, não os dados
+    brutos das tools — o suficiente pro modelo resolver a referência, sem
+    inflar o prompt com JSON de tool antigo.
     """
     inicio = time.monotonic()
     mensagens: list[dict] = [
         {"role": "system", "content": SYSTEM_PROMPT},
+        *_sanitizar_historico(historico),
         {"role": "user", "content": pergunta},
     ]
     tools_usadas: list[str] = []

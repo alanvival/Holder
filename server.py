@@ -38,6 +38,11 @@ def fallback_ia():
     corpo = request.get_json(silent=True) or {}
     pergunta = (corpo.get("pergunta") or "").strip()
     sessao_id = corpo.get("sessaoId") or request.remote_addr or "anonimo"
+    # Últimas trocas da conversa (ver useAssistant.js#construirHistoricoParaIa)
+    # — sem isso, cada pergunta chegava sem nenhum contexto anterior, e
+    # referências tipo "esse cliente"/"e esse outro" nunca resolviam a
+    # ninguém (bug reportado ao vivo pelo usuário).
+    historico = corpo.get("historico") or []
 
     if not pergunta:
         return jsonify({"erro": "Campo 'pergunta' é obrigatório."}), 400
@@ -45,7 +50,7 @@ def fallback_ia():
     if limite_excedido(sessao_id):
         return jsonify({"origem": "ia", "encontrado": False, "erro": "rate_limit"}), 429
 
-    resultado = responder_com_fallback_ia(pergunta)
+    resultado = responder_com_fallback_ia(pergunta, historico=historico)
     return jsonify(resultado)
 
 
