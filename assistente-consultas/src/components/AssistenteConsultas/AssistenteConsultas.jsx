@@ -47,7 +47,7 @@ export function AssistenteConsultas() {
           className="ac-panel"
           role="dialog"
           aria-modal="false"
-          aria-label="Assistente de Consultas"
+          aria-label="Assistente de Consultas Preditivo"
         >
           <PanelHeader onClose={fechar} />
 

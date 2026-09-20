@@ -130,6 +130,55 @@ def caso_prever_risco_cancelamento():
     print("OK   prever_risco_cancelamento (predição, não diagnóstico):", resultado["resposta"])
 
 
+def caso_listar_previsao_risco():
+    """Pergunta tipo 'quais empresas podem dar problema' — modelo
+    estatístico (regressão logística) via SQL Server, não a heurística de
+    strikes. Skippa graciosamente se o SQL Server não estiver acessível
+    nesta máquina (ambiente de CI, por exemplo)."""
+    from . import previsao_risco
+    esperado = previsao_risco.listar_previsao_risco({"faixa": "Crítico"}, 5)
+    if "erro" in esperado:
+        print("SKIP listar_previsao_risco (SQL Server indisponível):", esperado["erro"])
+        return
+
+    tool_call = FakeToolCall("call_22", "listar_previsao_risco", {"faixa": "Crítico", "limite": 5})
+    sequencia = [
+        _resposta(FakeMessage(tool_calls=[tool_call])),
+        _resposta(FakeMessage(content="Os clientes em risco crítico de cancelamento são: " + ", ".join(c["cliente_id"] for c in esperado["clientes"]))),
+    ]
+    with patch.object(ia_fallback, "_chamar_modelo", side_effect=sequencia):
+        resultado = ia_fallback.responder_com_fallback_ia("Quais empresas podem dar problema (risco crítico)?")
+
+    assert resultado["encontrado"] is True
+    assert resultado["tool"] == "listar_previsao_risco"
+    assert resultado["resultado"]["clientes"] == esperado["clientes"]
+    print("OK   listar_previsao_risco (modelo estatístico real):", resultado["resposta"])
+
+
+def caso_detalhar_previsao_cliente():
+    """Pergunta tipo 'por que o cliente X tem esse risco' — explicabilidade
+    do modelo (coeficiente × desvio por sinal) + trajetória histórica."""
+    from . import previsao_risco
+    esperado = previsao_risco.detalhar_previsao_cliente("C071")
+    if "erro" in esperado:
+        print("SKIP detalhar_previsao_cliente (SQL Server indisponível):", esperado["erro"])
+        return
+
+    tool_call = FakeToolCall("call_23", "detalhar_previsao_cliente", {"cliente_id": "C071"})
+    sequencia = [
+        _resposta(FakeMessage(tool_calls=[tool_call])),
+        _resposta(FakeMessage(content=f"O cliente C071 tem {esperado['risco_percentual']}% de risco previsto, faixa {esperado['faixa']}.")),
+    ]
+    with patch.object(ia_fallback, "_chamar_modelo", side_effect=sequencia):
+        resultado = ia_fallback.responder_com_fallback_ia("Por que o cliente C071 tem esse risco de cancelamento?")
+
+    assert resultado["encontrado"] is True
+    assert resultado["tool"] == "detalhar_previsao_cliente"
+    assert resultado["resultado"]["risco_percentual"] == esperado["risco_percentual"]
+    assert resultado["resultado"]["sinais_detalhados"] == esperado["sinais_detalhados"]
+    print("OK   detalhar_previsao_cliente (explicabilidade + trajetória):", resultado["resposta"])
+
+
 def caso_metrica_agrupada_por_categoria():
     """Reproduz o bug reportado ao vivo: 'ticket médio por segmento'
     estourava MAX_TURNOS_TOOL porque o modelo tentava listar segmentos +
@@ -434,6 +483,8 @@ if __name__ == "__main__":
     caso_analisar_fatores_churn()
     caso_clientes_em_risco()
     caso_prever_risco_cancelamento()
+    caso_listar_previsao_risco()
+    caso_detalhar_previsao_cliente()
     caso_metrica_agrupada_por_categoria()
     caso_maior_cliente()
     caso_clientes_por_segmento()

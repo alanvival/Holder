@@ -16,7 +16,7 @@ export function GreetingBubble({ onClose, onClick }) {
           <SparkleIcon size={17} color="#FFFFFF" />
         </span>
         <span style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          <span className="ac-greeting__title">Assistente de Consultas</span>
+          <span className="ac-greeting__title">Assistente de Consultas Preditivo</span>
           <span className="ac-greeting__text">Oi! Posso te ajudar a encontrar uma informação no sistema. É só perguntar.</span>
         </span>
       </button>

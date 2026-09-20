@@ -21,7 +21,7 @@ de campo.
 """
 from __future__ import annotations
 
-from . import dados, metricas, tools_genericas
+from . import dados, metricas, tools_genericas, previsao_risco
 
 TOOLS = [
     {
@@ -107,16 +107,15 @@ TOOLS = [
     {
         "name": "prever_risco_cancelamento",
         "description": (
-            "PREDIÇÃO de cancelamento: compara o(s) cliente(s) ativo(s) "
-            "com o padrão real de comportamento de clientes que JÁ "
-            "cancelaram nos últimos meses antes de sair (SLA crítico, "
-            "lentidão de resolução, reclamação recente, NPS detrator) — "
-            "cada sinal batido é um 'strike'. Diferente de clientes_em_risco "
-            "(que compara o cliente com a própria história dele), esta "
-            "compara com quem já saiu de verdade. Use pra perguntas tipo "
-            "'quais alertas temos', 'faça uma predição de cancelamento', "
-            "'esse cliente tem risco de cancelar no futuro', 'quais "
-            "clientes se parecem com quem já cancelou'."
+            "PREDIÇÃO heurística (versão de reserva — prefira "
+            "listar_previsao_risco/detalhar_previsao_cliente quando a "
+            "pergunta for sobre probabilidade/porcentagem de risco; use "
+            "esta só se aquelas devolverem erro, ex: banco indisponível). "
+            "Compara o(s) cliente(s) ativo(s) com o padrão real de "
+            "comportamento de clientes que JÁ cancelaram nos últimos "
+            "meses antes de sair (SLA crítico, lentidão, reclamação "
+            "recente, NPS detrator) — cada sinal batido é um 'strike', "
+            "sem uma probabilidade calibrada por trás."
         ),
         "input_schema": {
             "type": "object",
@@ -124,6 +123,55 @@ TOOLS = [
                 "cliente_id": {"type": "string", "description": "Opcional — avalia só esse cliente. Sem isso, lista todos os ativos com pelo menos 1 alerta."},
                 "limite": {"type": "integer", "description": "Máximo de clientes a listar quando sem cliente_id (padrão 20, máximo 100)."},
             },
+        },
+    },
+    {
+        "name": "listar_previsao_risco",
+        "description": (
+            "PREDIÇÃO estatística de cancelamento — probabilidade real "
+            "(0-100%) por cliente, vinda de um modelo de regressão "
+            "logística TREINADO e VALIDADO contra os cancelamentos reais "
+            "da base (validação cruzada 5-fold: AUC~0.95, Brier~0.085 — "
+            "não é uma nota heurística). Devolve a lista ranqueada de "
+            "clientes por risco, com a faixa (Saudável/Atenção/Em risco/"
+            "Crítico) e a tendência (subindo/caindo/estável desde o mês "
+            "anterior). Use pra perguntas tipo 'quais empresas podem dar "
+            "problema', 'qual a probabilidade de cancelamento de cada "
+            "cliente', 'quais clientes estão em risco crítico agora', "
+            "'me dá o relatório preditivo', 'quais intervenções devo "
+            "priorizar'. Fonte: SQL Server (fScoreRisco, atualizado "
+            "mensalmente por modelo_risco.py) — se devolver erro, o banco "
+            "pode estar fora do ar; nesse caso use prever_risco_cancelamento."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "faixa": {"type": "string", "enum": ["Crítico", "Em risco", "Atenção", "Saudável"], "description": "Opcional — filtra só uma faixa de risco."},
+                "limite": {"type": "integer", "description": "Máximo de clientes a listar (padrão 20, máximo 100)."},
+            },
+        },
+    },
+    {
+        "name": "detalhar_previsao_cliente",
+        "description": (
+            "Detalhe da PREDIÇÃO estatística (mesmo modelo de "
+            "listar_previsao_risco) pra UM cliente específico: "
+            "probabilidade atual, explicabilidade (quais variáveis mais "
+            "contribuem pro risco desse cliente — SLA, uso da plataforma, "
+            "atraso de pagamento, chamados críticos, reclamações, tempo "
+            "de resolução, NPS) e a trajetória do risco nos últimos "
+            "meses (pra ver se está piorando/melhorando ao longo do "
+            "tempo, não só o número de agora). Use pra perguntas tipo "
+            "'por que o cliente X tem esse risco', 'qual a evolução do "
+            "risco do cliente X', 'o que está pesando mais no risco "
+            "desse cliente'."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "cliente_id": {"type": "string", "description": "ID do cliente, ex: C071"},
+            },
+            "required": ["cliente_id"],
         },
     },
     {
@@ -321,6 +369,10 @@ def executar_tool(nome: str, entrada: dict) -> dict:
         return metricas.clientes_em_risco(entrada.get("nivel", "Alto"))
     if nome == "prever_risco_cancelamento":
         return metricas.prever_risco_cancelamento(entrada.get("cliente_id"), entrada.get("limite", 20))
+    if nome == "listar_previsao_risco":
+        return previsao_risco.listar_previsao_risco({"faixa": entrada.get("faixa")} if entrada.get("faixa") else {}, entrada.get("limite", 20))
+    if nome == "detalhar_previsao_cliente":
+        return previsao_risco.detalhar_previsao_cliente(entrada.get("cliente_id"))
     if nome == "listar_clientes":
         return tools_genericas.listar_clientes(
             filtros=entrada.get("filtros"),

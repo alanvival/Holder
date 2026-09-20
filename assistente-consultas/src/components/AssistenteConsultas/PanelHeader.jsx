@@ -8,8 +8,8 @@ export function PanelHeader({ onClose }) {
           <SparkleIcon size={18} color="#FFFFFF" />
         </span>
         <span>
-          <div className="ac-panel__title">Assistente de Consultas</div>
-          <div className="ac-panel__subtitle">Pergunte sobre seus dados</div>
+          <div className="ac-panel__title">Assistente de Consultas Preditivo</div>
+          <div className="ac-panel__subtitle">Pergunte sobre seus dados e previsões</div>
         </span>
       </div>
       <button type="button" className="ac-panel__close" onClick={onClose} aria-label="Minimizar">
