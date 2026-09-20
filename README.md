@@ -20,58 +20,6 @@ O vocabulário do domínio está em [`CONTEXT.md`](CONTEXT.md) e as decisões ar
 Não são sinônimos e podem apontar clientes diferentes — é esperado. Nesta base, 6 clientes
 têm índice de alerta Alto e 41 têm pelo menos um strike, dos mesmos 58 ativos.
 
-## As três perguntas do enunciado, respondidas com número
-
-O desafio lista três perguntas que estruturam o trabalho. Cada uma tem uma resposta medida na
-própria base, e um lugar na tela onde ela aparece:
-
-| Pergunta | Resposta medida | Onde aparece |
-|---|---|---|
-| **Com quanta antecedência o sinal aparece?** | O risco médio previsto já está na faixa Crítico **3 meses antes** do cancelamento real (75,7%), sobe para 84,0% a dois meses e 91,6% no último mês. Seis meses antes ainda está em 25,4%. | aba Score de Risco → *Qualidade do sinal* |
-| **Quão bem ele separa?** | **AUC 0,948** e Brier 0,085 em validação cruzada 5-fold. Para comparar: os sinais isolados disparam para 29% (SLA), 43% (reclamação) e 22% (NPS) dos ativos — por isso o score pondera os sete indicadores em vez de contar sinais. | aba Score de Risco → *Qualidade do sinal* |
-| **Quanto está em jogo?** | **Receita mensal em risco** = valor do contrato × probabilidade do modelo. Hoje são R$ 83.459,08/mês concentrados em 11 clientes, e é esse número que define a ordem de atendimento. | aba Quem Contatar |
-
-A medição da antecedência é um backtest retroativo nos 22 clientes que já cancelaram
-([`holder/dominio/risco/antecedencia.py`](holder/dominio/risco/antecedencia.py)): para cada um,
-qual score o modelo teria dado 1 a 6 meses antes da saída real. A mesma função alimenta o
-gráfico do dashboard e o teste que a valida, então o número da tela é o número testado.
-
-Sobre o NPS, o enunciado observa que "ausência de resposta não é dado faltante, é
-comportamento". Medimos o silêncio e ele **não separa nesta base** — clientes ativos ignoram o
-último convite com frequência maior (27,6%) que os cancelados (22,7%). Por isso ele fica
-deliberadamente fora do score, com o número que sustenta a decisão registrado na
-[ADR 0004](docs/adr/0004-silencio-no-nps-nao-entra-no-score.md).
-
-## Modelo de negócio
-
-O enunciado pergunta qual seria o modelo de negócio de uma solução como essa. A conta sai da
-própria base.
-
-**O que está em jogo.** A carteira do desafio tem 80 clientes e perdeu 22 em dezoito meses —
-R$ 274.966 de receita mensal, R$ 3,3 milhões ao ano. O enunciado é direto sobre a assimetria
-que sustenta o produto: *"reter custa uma fração do que custa conquistar"*. Cada mês de
-antecedência é um mês a mais para negociar valor em vez de desconto.
-
-**Como cobrar.** Assinatura mensal por carteira acompanhada, não por usuário: quem se beneficia
-é o time de relacionamento inteiro, e cobrar por assento puniria justamente o hábito que o
-produto quer criar (mais gente olhando a mesma lista). O valor acompanha o tamanho da carteira,
-porque é ele que determina tanto o custo de processar quanto o risco coberto.
-
-**Por que se paga.** Nesta carteira, quem cancelou tinha contrato médio de R$ 12.498/mês.
-Evitar **um único** desses preserva R$ 150 mil em doze meses. A solução não precisa acertar
-todos os 22 — precisa dar ao time três meses de antecedência sobre os casos que ele já teria
-perdido de qualquer forma.
-
-**Onde escala.** Nada aqui é específico de um segmento: o modelo é treinado contra os
-cancelamentos da própria carteira do cliente, então cada empresa que instala reaprende os pesos
-da sua realidade em vez de herdar os de outra. O que se reaproveita é o método — as três
-leituras de risco, a ordem por receita em risco e a explicação por sinal —, não os coeficientes.
-
-**Qual é o limite honesto.** Uma carteira pequena demais ou sem histórico de cancelamento não
-tem o que treinar; abaixo de algumas dezenas de saídas registradas, o índice de alerta e os
-strikes continuam funcionando (não dependem de treino), mas o score de risco não. Vender a
-solução para quem nunca perdeu cliente seria vender uma tela bonita sem modelo por trás.
-
 ## Arquitetura
 
 ```
@@ -114,6 +62,92 @@ pip install -r requirements.txt
 cp .env.example .env                       # preencha GROQ_API_KEY
 cp interface-web/.env.example interface-web/.env
 
+# Crie o usuário do Jenkins no SQL com o seguinte comando no banco de dados:
+
+USE [master];
+GO
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.server_principals
+    WHERE name = 'holder_jenkins'
+)
+BEGIN
+    CREATE LOGIN [holder_jenkins]
+    WITH PASSWORD = 'Holder@123456',
+         CHECK_POLICY = OFF,
+         CHECK_EXPIRATION = OFF;
+END;
+GO
+
+USE [holder];
+GO
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.database_principals
+    WHERE name = 'holder_jenkins'
+)
+BEGIN
+    CREATE USER [holder_jenkins]
+    FOR LOGIN [holder_jenkins];
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.database_role_members drm
+    INNER JOIN sys.database_principals role_principal
+        ON drm.role_principal_id = role_principal.principal_id
+    INNER JOIN sys.database_principals user_principal
+        ON drm.member_principal_id = user_principal.principal_id
+    WHERE role_principal.name = 'db_datareader'
+      AND user_principal.name = 'holder_jenkins'
+)
+BEGIN
+    ALTER ROLE [db_datareader]
+    ADD MEMBER [holder_jenkins];
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.database_role_members drm
+    INNER JOIN sys.database_principals role_principal
+        ON drm.role_principal_id = role_principal.principal_id
+    INNER JOIN sys.database_principals user_principal
+        ON drm.member_principal_id = user_principal.principal_id
+    WHERE role_principal.name = 'db_datawriter'
+      AND user_principal.name = 'holder_jenkins'
+)
+BEGIN
+    ALTER ROLE [db_datawriter]
+    ADD MEMBER [holder_jenkins];
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.database_role_members drm
+    INNER JOIN sys.database_principals role_principal
+        ON drm.role_principal_id = role_principal.principal_id
+    INNER JOIN sys.database_principals user_principal
+        ON drm.member_principal_id = user_principal.principal_id
+    WHERE role_principal.name = 'db_ddladmin'
+      AND user_principal.name = 'holder_jenkins'
+)
+BEGIN
+    ALTER ROLE [db_ddladmin]
+    ADD MEMBER [holder_jenkins];
+END;
+GO
+
+
+
+
+
+
+
 # 1. Carrega a planilha no modelo dimensional do SQL Server
 python -m holder.infra.etl.ingestao
 
@@ -130,7 +164,7 @@ Depois, três processos, cada um no seu terminal:
 
 ```bash
 python -m holder.interfaces.api                              # API      :8000
-streamlit run holder/interfaces/dashboard/app.py             # dashboard :8501
+python -m streamlit run holder/interfaces/dashboard/app.py             # dashboard :8501
 cd interface-web && npm install && npm run dev               # front     :5173
 ```
 
