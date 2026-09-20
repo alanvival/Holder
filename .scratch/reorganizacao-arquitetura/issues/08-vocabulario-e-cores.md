@@ -1,6 +1,39 @@
 # 08 — Vocabulário risco→alerta e cores semânticas
 
-Status: aberto
+Status: resolvido
+
+## Resultado
+
+`88 passed` (+2 de cores semânticas), `18/18` no JS, `npm run build` passa.
+
+Renomeações, com o critério de que **quem lê a tela** precisa distinguir os três conceitos:
+
+| Antes | Agora |
+|---|---|
+| `clientes_em_risco` (tool + função) | `clientes_em_alerta` |
+| `prever_risco_cancelamento` (tool + função) | `clientes_com_strikes` / `avaliar_strikes` |
+| `calcularRisco` (JS) | `calcularIndiceAlerta` |
+| `clientesComRisco` (JS) | `clientesEmAlerta` |
+| `PESOS_SINAIS_RISCO`, `SINAIS_RISCO_CACHE` | `PESOS_SINAIS_ALERTA`, `INDICE_ALERTA_CACHE` |
+| intent `situacao_risco_cliente` | `situacao_alerta_cliente` |
+| "Risco atual: Alto" (chat) | "Índice de alerta: Alto" |
+| "Linha de Risco (Média de Cancelados)" (dashboard) | "Linha de corte (perfil de quem cancelou)" |
+| `pontuacao_risco` | `pontuacao_alerta` |
+
+`listar_previsao_risco` e `detalhar_previsao_cliente` **mantêm** "risco" no nome: elas são o
+score do modelo treinado, onde a palavra está correta.
+
+As descrições das duas tools heurísticas ganharam um bloco "NÃO CONFUNDIR" explícito, que
+nomeia as outras duas leituras e avisa que **podem apontar clientes diferentes**. Era o risco
+concreto: o modelo escolhia a tool errada porque nada nas descrições as separava.
+
+## Cores semânticas
+
+Seção nova no `docs/design-tokens.md`, com as 4 faixas (escala quente, como já eram) e os 3
+níveis de alerta em **azul de marca** — deliberadamente frios, pra que as duas escalas não se
+confundam de olho. Propagadas para `tokens.css` e `estilo.py`, e presas por dois testes novos:
+um confere as três cópias contra a fonte, o outro falha se as duas escalas passarem a
+compartilhar cor.
 Fase: 8 de 10 · Bloqueado por: 07
 
 ## Problema

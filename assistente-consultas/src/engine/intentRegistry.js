@@ -30,10 +30,10 @@ import {
   buscarSituacao,
   atendimentosDoCliente,
   ultimoNpsRespondido,
-  calcularRisco,
+  calcularIndiceAlerta,
   clientesAtivos,
   situacaoClientes,
-  clientesComRisco,
+  clientesEmAlerta,
 } from '../data/inovaappsDatabase.js';
 import { METRICAS, criarIntentDeMetrica } from './metricas.js';
 
@@ -133,7 +133,7 @@ function datasSemAcompanhamento(entidades) {
 
 // --- Resolvers da base real do Desafio INOVAAPPS (carteira de clientes) ---
 
-function situacaoRiscoCliente(entidades) {
+function situacaoEAlertaDoCliente(entidades) {
   const { clienteId } = entidades;
   if (!clienteId) return notFoundResponse();
   const situacao = buscarSituacao(clienteId);
@@ -144,11 +144,11 @@ function situacaoRiscoCliente(entidades) {
     itens.push({ label: `Cancelou em: ${formatMesPt(situacao.mes_cancelamento)}` });
   }
 
-  const risco = calcularRisco(clienteId);
-  if (risco) {
-    itens.push({ label: `Risco atual: ${risco.nivel} (${formatMesPt(risco.mesRef)})` });
-    if (risco.sinais.length > 0) {
-      itens.push(...risco.sinais.map((s) => ({ label: `Sinal: ${s}` })));
+  const alerta = calcularIndiceAlerta(clienteId);
+  if (alerta) {
+    itens.push({ label: `Índice de alerta: ${alerta.nivel} (${formatMesPt(alerta.mesRef)})` });
+    if (alerta.sinais.length > 0) {
+      itens.push(...alerta.sinais.map((s) => ({ label: `Sinal: ${s}` })));
     }
   }
 
@@ -210,10 +210,10 @@ function contagemCarteira() {
   ]);
 }
 
-function clientesEmRiscoAlto() {
-  const lista = clientesComRisco('Alto');
+function clientesEmAlertaAlto() {
+  const lista = clientesEmAlerta('Alto');
   if (lista.length === 0) return notFoundResponse();
-  return listResponse(`${lista.length} cliente(s) ativo(s) em risco alto agora:`, lista.map((c) => ({ label: c.clienteId })));
+  return listResponse(`${lista.length} cliente(s) ativo(s) com índice de alerta Alto agora:`, lista.map((c) => ({ label: c.clienteId })));
 }
 
 // Extrator de entidades comum a todas as intenções — roda antes do resolver.
@@ -346,25 +346,26 @@ export const intentRegistry = [
 
   // --- Carteira de clientes do Desafio INOVAAPPS (Pulso) ---
   {
-    id: 'situacao_risco_cliente',
-    rotulo: 'Situação e risco de um cliente',
+    id: 'situacao_alerta_cliente',
+    rotulo: 'Situação e índice de alerta de um cliente',
     exemplos: [
       'Qual a situação do cliente C007?',
       'O cliente C030 está em risco?',
       'O cliente C012 cancelou?',
       'Qual o risco do cliente C045 agora?',
     ],
-    // Perguntas com essas palavras são sobre o modelo PREDITIVO (% de
-    // risco calculada por regressão logística, ver fallback_ia/
-    // previsao_risco.py) — não o diagnóstico heurístico deste intent
-    // (calcularRisco, self-baseline). Sem essa exclusão, o casamento por
+    // Perguntas com essas palavras são sobre o SCORE DE RISCO (% de
+    // probabilidade de um modelo treinado, ver
+    // holder/aplicacao/assistente/previsao_risco.py) — não o índice de
+    // alerta deste intent (calcularIndiceAlerta, baseline do próprio
+    // cliente). Sem essa exclusão, o casamento por
     // similaridade de palavras ("qual", "risco", "cliente") capturava
     // "qual o risco DE CANCELAMENTO do cliente X" antes de chegar na IA
     // — bug reportado ao vivo pelo usuário.
     palavrasExcludentes: ['cancelamento', 'cancelar', 'probabilidade', 'previsão', 'previsao', 'prever', 'preditivo', 'preditiva', 'futuro'],
     parametros: ['clienteId'],
     requerEntidade: (e) => Boolean(e.clienteId),
-    resolver: situacaoRiscoCliente,
+    resolver: situacaoEAlertaDoCliente,
     criadaEm: '2026-09-19',
     ativa: true,
   },

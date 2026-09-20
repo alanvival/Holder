@@ -32,6 +32,18 @@
   /* Sub-casos legítimos que não são "card" nem "pílula" — nomeados aqui em
      vez de deixar o valor solto repetido pelos componentes (balão de
      chat com "rabinho" assimétrico, chip/linha de lista pequena). */
+  /* Cores semânticas — ver docs/design-tokens.md, seção "Cores
+     semânticas". Faixas do score de risco em escala quente; níveis do
+     índice de alerta em azul de marca, pra que as duas escalas não se
+     confundam de olho. */
+  --gs-faixa-saudavel: #a9dfbf;
+  --gs-faixa-atencao: #f9e79f;
+  --gs-faixa-em-risco: #f5b041;
+  --gs-faixa-critico: #e74c3c;
+  --gs-alerta-baixo: #c7d3e8;
+  --gs-alerta-medio: #1d1ddb;
+  --gs-alerta-alto: #0000aa;
+
   --gs-radius-bubble: 18px;
   --gs-radius-chip: 12px;
 

@@ -27,6 +27,16 @@ CORES_FAIXA = {
     "Crítico": "#E74C3C",
 }
 
+# Níveis do índice de alerta — azuis de marca, deliberadamente frios, pra
+# não competir com a escala quente das faixas acima. São conceitos
+# diferentes (ver CONTEXT.md) e quem lê a tela precisa perceber isso de
+# olho, não só pelo rótulo.
+CORES_ALERTA = {
+    "Baixo": "#C7D3E8",
+    "Médio": "#1D1DDB",
+    "Alto": "#0000AA",
+}
+
 CSS = """
     <style>
     div[data-testid="stMetricValue"] {

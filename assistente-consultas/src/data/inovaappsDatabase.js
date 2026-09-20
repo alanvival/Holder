@@ -110,11 +110,12 @@ export function extrairClienteId(texto) {
   return clientesPorId.has(id) ? id : null;
 }
 
-// --- Cálculo de risco (mesma lógica de "linha de base do próprio cliente"
-// descrita no PDF do desafio Pulso: compara o mês mais recente com a média
-// histórica do próprio cliente, não com a carteira) ---------------------
+// --- Índice de alerta: compara o mês mais recente com a média histórica
+// do PRÓPRIO cliente, não com a carteira. Responde "este cliente piorou?".
+// Não confundir com strikes (semelhança com quem já cancelou) nem com o
+// score de risco (modelo treinado) — ver CONTEXT.md na raiz do repo. ----
 
-const SINAIS_RISCO_CACHE = new Map();
+const INDICE_ALERTA_CACHE = new Map();
 
 function media(valores) {
   const validos = valores.filter((v) => v !== null && v !== undefined);
@@ -132,21 +133,23 @@ function media(valores) {
 // sincronia com o lado Python era manual. Enquanto os números batessem,
 // ninguém notaria; no dia em que a base mudasse, o dashboard e o assistente
 // passariam a discordar em silêncio.
-const PESOS_SINAIS_RISCO = pesosAlerta.pesos;
-const PONTUACAO_MAXIMA_RISCO = Object.values(PESOS_SINAIS_RISCO).reduce((a, b) => a + b, 0);
+const PESOS_SINAIS_ALERTA = pesosAlerta.pesos;
+const PONTUACAO_MAXIMA_ALERTA = Object.values(PESOS_SINAIS_ALERTA).reduce((a, b) => a + b, 0);
 
 /**
- * Calcula uma pontuação de risco ponderada (estilo credit score) a partir
- * dos sinais que pioraram no mês mais recente do cliente em relação à
- * média dos meses anteriores dele mesmo. Retorna null se o cliente não tem
- * histórico suficiente (menos de 2 meses).
+ * Índice de alerta do cliente: pontuação ponderada (estilo credit score) dos
+ * sinais que pioraram no mês mais recente EM RELAÇÃO À MÉDIA DOS MESES
+ * ANTERIORES DELE MESMO. Responde "este cliente piorou?" — não "este cliente
+ * se parece com quem cancelou?" (isso é strike) nem "qual a probabilidade de
+ * ele cancelar?" (isso é o score de risco do modelo treinado).
+ * Retorna null se o cliente tem menos de 2 meses de histórico.
  */
-export function calcularRisco(clienteId) {
-  if (SINAIS_RISCO_CACHE.has(clienteId)) return SINAIS_RISCO_CACHE.get(clienteId);
+export function calcularIndiceAlerta(clienteId) {
+  if (INDICE_ALERTA_CACHE.has(clienteId)) return INDICE_ALERTA_CACHE.get(clienteId);
 
   const historico = atendimentosDoCliente(clienteId);
   if (historico.length < 2) {
-    SINAIS_RISCO_CACHE.set(clienteId, null);
+    INDICE_ALERTA_CACHE.set(clienteId, null);
     return null;
   }
 
@@ -184,15 +187,15 @@ export function calcularRisco(clienteId) {
     sinais.push('NPS detrator');
   }
 
-  const pontuacaoRisco = sinais.reduce((soma, s) => soma + PESOS_SINAIS_RISCO[s], 0);
-  const percentual = (pontuacaoRisco / PONTUACAO_MAXIMA_RISCO) * 100;
+  const pontuacaoAlerta = sinais.reduce((soma, s) => soma + PESOS_SINAIS_ALERTA[s], 0);
+  const percentual = (pontuacaoAlerta / PONTUACAO_MAXIMA_ALERTA) * 100;
 
   let nivel = 'Baixo';
   if (percentual >= 50) nivel = 'Alto';
   else if (percentual >= 20) nivel = 'Médio';
 
-  const resultado = { nivel, pontuacaoRisco, pontuacaoMaxima: PONTUACAO_MAXIMA_RISCO, sinais, mesRef: atual.mes_ref };
-  SINAIS_RISCO_CACHE.set(clienteId, resultado);
+  const resultado = { nivel, pontuacaoAlerta, pontuacaoMaxima: PONTUACAO_MAXIMA_ALERTA, sinais, mesRef: atual.mes_ref };
+  INDICE_ALERTA_CACHE.set(clienteId, resultado);
   return resultado;
 }
 
@@ -200,9 +203,9 @@ export function clientesAtivos() {
   return situacaoClientes.filter((s) => s.situacao === 'Ativo').map((s) => s.cliente_id);
 }
 
-export function clientesComRisco(nivel) {
+export function clientesEmAlerta(nivel) {
   return clientesAtivos()
-    .map((id) => ({ clienteId: id, risco: calcularRisco(id) }))
+    .map((id) => ({ clienteId: id, alerta: calcularIndiceAlerta(id) }))
     .filter((c) => c.risco && c.risco.nivel === nivel)
-    .sort((a, b) => b.risco.pontuacaoRisco - a.risco.pontuacaoRisco);
+    .sort((a, b) => b.alerta.pontuacaoAlerta - a.alerta.pontuacaoAlerta);
 }

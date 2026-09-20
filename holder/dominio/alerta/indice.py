@@ -74,21 +74,18 @@ def _calcular_para_cliente(cliente_id: str, pesos: dict[str, int]) -> dict | Non
     return {
         "cliente_id": cliente_id,
         "nivel": nivel,
-        "pontuacao_risco": pontuacao,
+        "pontuacao_alerta": pontuacao,
         "pontuacao_maxima": pontuacao_maxima,
         "sinais": sinais,
         "mes_ref": atual["mes_ref"],
     }
 
 
-def clientes_em_risco(nivel: str = "Alto") -> dict:
+def clientes_em_alerta(nivel: str = "Alto") -> dict:
     """Lista clientes ativos num nível de alerta — pra perguntas tipo 'quais
-    clientes estão em risco' ou 'quem eu devo ligar primeiro'. O nível vem de
-    uma pontuação ponderada (ver `pesos.py`), não de contar sinais como se
-    todos pesassem igual.
-
-    O nome desta função ainda fala "risco"; ele muda na fase 8, junto com o
-    texto de tela e as descrições das tools."""
+    clientes pioraram' ou 'quem eu devo ligar primeiro'. O nível vem de uma
+    pontuação ponderada (ver `pesos.py`), não de contar sinais como se todos
+    pesassem igual."""
     if nivel not in ("Alto", "Médio", "Baixo"):
         nivel = "Alto"
 
@@ -102,7 +99,7 @@ def clientes_em_risco(nivel: str = "Alto") -> dict:
         if indice and indice["nivel"] == nivel:
             encontrados.append(indice)
 
-    encontrados.sort(key=lambda r: r["pontuacao_risco"], reverse=True)
+    encontrados.sort(key=lambda r: r["pontuacao_alerta"], reverse=True)
     return {
         "nivel": nivel,
         "total_clientes_ativos": len(ativos),

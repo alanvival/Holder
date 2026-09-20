@@ -28,6 +28,31 @@ background: linear-gradient(112.61deg, #041833 0%, #0000AA 24%, #1D1DDB 62%, #0F
 background: linear-gradient(90deg, #0000AA 0%, #0156FC 100%);
 ```
 
+## Cores semânticas
+
+As três leituras de risco têm escalas **diferentes** e por isso cores
+próprias: quem lê a tela precisa perceber de olho que não são a mesma coisa.
+Ver `CONTEXT.md` na raiz do repositório.
+
+**Faixas do score de risco** (modelo treinado, 0-100% de probabilidade):
+
+| Token | Hex | Faixa |
+|---|---|---|
+| `--gs-faixa-saudavel` | `#A9DFBF` | Saudável (0-29%) |
+| `--gs-faixa-atencao` | `#F9E79F` | Atenção (30-54%) |
+| `--gs-faixa-em-risco` | `#F5B041` | Em risco (55-74%) |
+| `--gs-faixa-critico` | `#E74C3C` | Crítico (75-100%) |
+
+**Níveis do índice de alerta** (heurística de 8 sinais contra a própria
+história do cliente) — deliberadamente **azuis**, da paleta de marca, para
+não competir com a escala quente das faixas acima:
+
+| Token | Hex | Nível |
+|---|---|---|
+| `--gs-alerta-baixo` | `#C7D3E8` | Baixo |
+| `--gs-alerta-medio` | `#1D1DDB` | Médio |
+| `--gs-alerta-alto` | `#0000AA` | Alto |
+
 ## Tipografia
 
 - **Títulos** (headings, nomes de destaque, texto de botão): `Space Grotesk` — peso 700 (bold) para títulos, 600 (semibold) para botões.
@@ -71,6 +96,15 @@ https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600&family=Spac
 
   --gs-radius-card: 20px;
   --gs-radius-pill: 50px;
+
+  --gs-faixa-saudavel: #A9DFBF;
+  --gs-faixa-atencao: #F9E79F;
+  --gs-faixa-em-risco: #F5B041;
+  --gs-faixa-critico: #E74C3C;
+
+  --gs-alerta-baixo: #C7D3E8;
+  --gs-alerta-medio: #1D1DDB;
+  --gs-alerta-alto: #0000AA;
 }
 ```
 

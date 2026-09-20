@@ -25,16 +25,13 @@ from .recencia import meses_recentes
 SINAIS = ("SLA crítico atual", "Lentidão de resolução atual", "Reclamação recente", "Último NPS detrator")
 
 
-def prever_risco_cancelamento(cliente_id: str | None = None, limite: int = 20) -> dict:
+def avaliar_strikes(cliente_id: str | None = None, limite: int = 20) -> dict:
     """
     Prevê quais clientes ativos têm hoje um padrão parecido com o de
     clientes que já cancelaram (SLA crítico, lentidão, reclamação recente,
     NPS detrator) — cada sinal batido vira um "strike". Sem cliente_id,
     lista os ativos com pelo menos 1 strike, ordenados do pior pro melhor;
     com cliente_id, avalia só aquele cliente.
-
-    O nome desta função ainda fala "risco"; ele muda na fase 8, junto com o
-    texto de tela e as descrições das tools.
     """
     linhas = linhas_de_corte()
     if not linhas:
@@ -106,24 +103,24 @@ def prever_risco_cancelamento(cliente_id: str | None = None, limite: int = 20) -
                 "cliente_id": cliente_id,
                 "total_strikes": 0,
                 "strikes": [],
-                "predicao": "Nenhum sinal de alerta — o cliente não se parece com o padrão de quem cancelou.",
+                "predicao": "Nenhum strike — o cliente não se parece com o padrão de quem cancelou.",
             }
         return {**resultado_cliente, "taxa_disparo_por_sinal": taxa_disparo_por_sinal}
 
     limite = max(1, min(limite or 20, 100))
     return {
         "total_clientes_ativos": total_ativos_avaliados,
-        "clientes_com_alerta": len(resultados),
+        "clientes_com_strikes": len(resultados),
         "clientes": resultados[:limite],
         "truncado": len(resultados) > limite,
         "linhas_de_corte": {k: round(v, 2) for k, v in linhas.items()},
         "taxa_disparo_por_sinal": taxa_disparo_por_sinal,
         "nota": (
-            "Predição baseada no padrão real de comportamento de clientes que já "
-            "cancelaram (últimos meses antes de sair) — não é um diagnóstico do "
-            "histórico do próprio cliente (isso é a tool clientes_em_risco). Um "
-            "sinal com taxa_disparo_por_sinal alta dispara pra muitos clientes "
-            "ativos — sozinho é fraco, mas vários strikes juntos no mesmo "
-            "cliente são um alerta forte."
+            "Strikes medem SEMELHANÇA com o padrão real de quem já cancelou "
+            "(os meses antes de sair) — não é diagnóstico do histórico do próprio "
+            "cliente, que é o índice de alerta (tool clientes_em_alerta). Um sinal "
+            "com taxa_disparo_por_sinal alta dispara pra muitos clientes ativos: "
+            "sozinho é fraco, mas vários strikes juntos no mesmo cliente são um "
+            "alerta forte."
         ),
     }

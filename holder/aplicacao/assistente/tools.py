@@ -23,10 +23,10 @@ from __future__ import annotations
 
 from . import tools_genericas, previsao_risco
 from holder.infra.dados import carteira as dados
-from holder.dominio.alerta import clientes_em_risco
+from holder.dominio.alerta import clientes_em_alerta
 from holder.dominio.churn import analisar_fatores_churn
 from holder.dominio.metricas import calcular_metrica, comparar_metrica_por_categoria
-from holder.dominio.strikes import prever_risco_cancelamento
+from holder.dominio.strikes import avaliar_strikes
 
 TOOLS = [
     {
@@ -88,20 +88,21 @@ TOOLS = [
         "input_schema": {"type": "object", "properties": {}},
     },
     {
-        "name": "clientes_em_risco",
+        "name": "clientes_em_alerta",
         "description": (
-            "Lista clientes ativos classificados num nível de risco de "
-            "cancelamento (Alto, Médio ou Baixo) por uma pontuação "
-            "ponderada estilo credit score (soma de pesos dos sinais que "
-            "dispararam, calibrados pelo quanto cada sinal realmente "
-            "diferencia clientes ativos de cancelados na base — não uma "
-            "contagem simples), comparando o mês mais recente de cada "
-            "cliente com a própria média histórica DELE MESMO. É "
-            "diagnóstico (piorou em relação a si próprio?), não predição — "
-            "pra predição (o cliente se parece com quem já cancelou?) use "
-            "prever_risco_cancelamento. Use clientes_em_risco pra "
-            "perguntas tipo 'quais clientes estão em risco', 'quem eu "
-            "devo ligar primeiro'."
+            "ÍNDICE DE ALERTA: lista clientes ativos por nível de alerta "
+            "(Alto, Médio ou Baixo), comparando o mês mais recente de cada "
+            "cliente com a própria média histórica DELE MESMO. Responde "
+            "'este cliente PIOROU?'. Pontuação ponderada estilo credit score "
+            "(pesos calibrados pelo quanto cada sinal diferencia ativos de "
+            "cancelados na base real, não contagem simples).\n"
+            "NÃO CONFUNDIR com as outras duas leituras de risco: "
+            "`clientes_com_strikes` responde 'este cliente SE PARECE com "
+            "quem já saiu?', e `listar_previsao_risco` dá a PROBABILIDADE de "
+            "um modelo treinado. São três coisas diferentes e podem apontar "
+            "clientes diferentes.\n"
+            "Use para: 'quais clientes pioraram', 'quem está em alerta', "
+            "'quem eu devo ligar primeiro'."
         ),
         "input_schema": {
             "type": "object",
@@ -111,17 +112,20 @@ TOOLS = [
         },
     },
     {
-        "name": "prever_risco_cancelamento",
+        "name": "clientes_com_strikes",
         "description": (
-            "PREDIÇÃO heurística (versão de reserva — prefira "
-            "listar_previsao_risco/detalhar_previsao_cliente quando a "
-            "pergunta for sobre probabilidade/porcentagem de risco; use "
-            "esta só se aquelas devolverem erro, ex: banco indisponível). "
-            "Compara o(s) cliente(s) ativo(s) com o padrão real de "
-            "comportamento de clientes que JÁ cancelaram nos últimos "
-            "meses antes de sair (SLA crítico, lentidão, reclamação "
-            "recente, NPS detrator) — cada sinal batido é um 'strike', "
-            "sem uma probabilidade calibrada por trás."
+            "STRIKES: compara o(s) cliente(s) ativo(s) com o perfil real de "
+            "quem JÁ cancelou nos meses antes de sair (SLA crítico, lentidão, "
+            "reclamação recente, último NPS detrator). Cada linha de corte "
+            "batida é um 'strike'. Responde 'este cliente SE PARECE com quem "
+            "saiu?'.\n"
+            "NÃO CONFUNDIR: `clientes_em_alerta` responde 'este cliente "
+            "PIOROU em relação a si mesmo?' (mecanismo diferente, pode "
+            "apontar clientes diferentes), e `listar_previsao_risco` dá a "
+            "PROBABILIDADE calibrada de um modelo treinado — prefira aquela "
+            "quando a pergunta for sobre porcentagem de risco, e use strikes "
+            "quando ela falhar (banco indisponível) ou quando a pergunta for "
+            "sobre semelhança/sinais em aberto."
         ),
         "input_schema": {
             "type": "object",
@@ -371,10 +375,10 @@ def executar_tool(nome: str, entrada: dict) -> dict:
         return calcular_metrica(entrada.get("metrica"), entrada.get("filtros") or {})
     if nome == "analisar_fatores_churn":
         return analisar_fatores_churn()
-    if nome == "clientes_em_risco":
-        return clientes_em_risco(entrada.get("nivel", "Alto"))
-    if nome == "prever_risco_cancelamento":
-        return prever_risco_cancelamento(entrada.get("cliente_id"), entrada.get("limite", 20))
+    if nome == "clientes_em_alerta":
+        return clientes_em_alerta(entrada.get("nivel", "Alto"))
+    if nome == "clientes_com_strikes":
+        return avaliar_strikes(entrada.get("cliente_id"), entrada.get("limite", 20))
     if nome == "listar_previsao_risco":
         return previsao_risco.listar_previsao_risco({"faixa": entrada.get("faixa")} if entrada.get("faixa") else {}, entrada.get("limite", 20))
     if nome == "detalhar_previsao_cliente":

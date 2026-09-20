@@ -38,7 +38,7 @@ def renderizar(df_cli, df_atd, df_sit, df_nps, df_rfv, linhas_risco) -> None:
     with st.container(border=True):
         modulo_header(
             "Monitor Individual",
-            "Evolução de um cliente específico num indicador de atendimento, comparado à linha de risco da base cancelada.",
+            "Evolução de um cliente específico num indicador de atendimento, comparado à linha de corte tirada de quem já cancelou.",
         )
 
         col_filtro1, col_filtro2 = st.columns(2)
@@ -87,7 +87,7 @@ def renderizar(df_cli, df_atd, df_sit, df_nps, df_rfv, linhas_risco) -> None:
         with col_kpi1:
             st.metric(f"Média do Cliente ({opcoes[indicador]})", f"{df_cli_atd[indicador].mean():.1f}")
         with col_kpi2:
-            st.metric("Linha de Risco (Média de Cancelados)", f"{linhas_risco[indicador]:.1f}")
+            st.metric("Linha de corte (perfil de quem cancelou)", f"{linhas_risco[indicador]:.1f}")
 
         fig = go.Figure()
         fig.add_trace(go.Scatter(
@@ -99,7 +99,7 @@ def renderizar(df_cli, df_atd, df_sit, df_nps, df_rfv, linhas_risco) -> None:
         fig.add_trace(go.Scatter(
             x=[df_cli_atd['mes_ref_dt'].min(), df_cli_atd['mes_ref_dt'].max()],
             y=[linhas_risco[indicador], linhas_risco[indicador]],
-            mode='lines', name='Linha de Risco',
+            mode='lines', name='Linha de corte',
             line=dict(color='red', width=2, dash='dash'),
         ))
         fig.update_layout(xaxis_title='Mês', yaxis_title=opcoes[indicador], template='plotly_white', hovermode="x unified")

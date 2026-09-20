@@ -83,6 +83,38 @@ def test_tema_do_streamlit_concorda_com_a_fonte():
     assert "Space Grotesk" in valor("headingFont")
 
 
+def test_cores_semanticas_do_dashboard_concordam_com_a_fonte():
+    """As cores de faixa e de nível de alerta do dashboard são a quarta
+    cópia dos tokens. Elas não existiam no `design-tokens.md` até a fase 8 —
+    estavam declaradas duas vezes dentro do próprio `app.py`, sem token
+    nenhum por trás."""
+    from holder.interfaces.dashboard.estilo import CORES_ALERTA, CORES_FAIXA
+
+    esperado_faixa = {
+        "Saudável": FONTE_TOKENS["gs-faixa-saudavel"],
+        "Atenção": FONTE_TOKENS["gs-faixa-atencao"],
+        "Em risco": FONTE_TOKENS["gs-faixa-em-risco"],
+        "Crítico": FONTE_TOKENS["gs-faixa-critico"],
+    }
+    assert {k: v.lower() for k, v in CORES_FAIXA.items()} == esperado_faixa
+
+    esperado_alerta = {
+        "Baixo": FONTE_TOKENS["gs-alerta-baixo"],
+        "Médio": FONTE_TOKENS["gs-alerta-medio"],
+        "Alto": FONTE_TOKENS["gs-alerta-alto"],
+    }
+    assert {k: v.lower() for k, v in CORES_ALERTA.items()} == esperado_alerta
+
+
+def test_as_duas_escalas_nao_compartilham_cor():
+    """O ponto das cores semânticas: score de risco e índice de alerta são
+    conceitos diferentes e precisam ser distinguíveis de olho. Se as duas
+    escalas passarem a usar a mesma cor, a distinção morre na tela."""
+    faixas = {FONTE_TOKENS[f"gs-faixa-{n}"] for n in ("saudavel", "atencao", "em-risco", "critico")}
+    alertas = {FONTE_TOKENS[f"gs-alerta-{n}"] for n in ("baixo", "medio", "alto")}
+    assert not (faixas & alertas), f"cor compartilhada entre as duas escalas: {faixas & alertas}"
+
+
 def test_cores_do_pdf_concordam_com_a_fonte():
     """No exportarPdf.js os tokens estão em RGB, com o hex de origem no
     comentário da linha. Confere que o RGB corresponde ao hex E que o hex é
