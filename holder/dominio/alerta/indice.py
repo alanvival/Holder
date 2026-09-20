@@ -81,6 +81,14 @@ def _calcular_para_cliente(cliente_id: str, pesos: dict[str, int]) -> dict | Non
     }
 
 
+def indice_de_um_cliente(cliente_id: str, pesos: dict[str, int] | None = None) -> dict | None:
+    """Mesmo cálculo de `clientes_em_alerta`, mas para UM cliente — pra
+    telas que já sabem quem querem (ex: "Quem Contatar", que pega a lista
+    de quem falar no score de risco e só precisa do PORQUÊ de cada um, não
+    de filtrar a carteira inteira por nível de novo)."""
+    return _calcular_para_cliente(cliente_id, pesos or pesos_dos_sinais())
+
+
 def clientes_em_alerta(nivel: str = "Alto") -> dict:
     """Lista clientes ativos num nível de alerta — pra perguntas tipo 'quais
     clientes pioraram' ou 'quem eu devo ligar primeiro'. O nível vem de uma

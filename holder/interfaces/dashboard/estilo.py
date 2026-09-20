@@ -39,6 +39,16 @@ CORES_ALERTA = {
 
 CSS = """
     <style>
+    /* Toolbar de desenvolvimento do Streamlit (menu ⋮, "Deploy", barra de
+       status "Running"/"Stop") — visível por padrão em qualquer app rodado
+       com `streamlit run`, mas lê como "notebook em andamento", não produto
+       pronto. Escondida pra demonstração; não afeta nenhum dado exibido. */
+    #MainMenu, header[data-testid="stHeader"], div[data-testid="stToolbar"],
+    div[data-testid="stDecoration"], div[data-testid="stStatusWidget"] {
+        display: none !important;
+    }
+    .stApp { margin-top: -3.5rem; }
+
     div[data-testid="stMetricValue"] {
         white-space: normal !important;
         word-wrap: break-word !important;

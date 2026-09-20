@@ -14,6 +14,7 @@ fallback de IA inteiro — a pergunta cai em "não encontrei" normalmente.
 """
 from __future__ import annotations
 
+from holder.dominio.risco import ACAO_POR_FAIXA
 from holder.infra.persistencia import historico_score
 
 # Antes havia um sys.path.insert aqui: o módulo de score morava na raiz do
@@ -30,17 +31,6 @@ def _mes_anterior(mes_ref: str) -> str:
     ano, mes = int(mes_ref[:4]), int(mes_ref[5:7])
     idx = ano * 12 + (mes - 1) - 1
     return f"{idx // 12:04d}-{idx % 12 + 1:02d}"
-
-
-# Ação sugerida por faixa — dado estruturado (não a IA "decidindo" sozinha
-# o que recomendar a cada resposta, texto fixo e auditável por faixa,
-# igual as próprias faixas em holder.dominio.risco.faixas).
-_ACAO_POR_FAIXA = {
-    "Saudável": "Nenhuma ação necessária — monitoramento passivo.",
-    "Atenção": "Sinalizar no radar do CS responsável, sem alerta ativo ainda — acompanhar a tendência do próximo mês.",
-    "Em risco": "Alerta ativo: o CS deve investigar a causa (ver sinais_detalhados) e agendar contato proativo com o cliente.",
-    "Crítico": "Alerta prioritário — ação imediata recomendada: contato executivo, plano de retenção e revisão do relacionamento nos próximos dias.",
-}
 
 
 def listar_previsao_risco(filtros: dict | None = None, limite: int = 20) -> dict:
@@ -85,7 +75,7 @@ def listar_previsao_risco(filtros: dict | None = None, limite: int = 20) -> dict
             "risco_percentual": round(r["risco_percentual"], 1),
             "faixa": r["faixa"],
             "tendencia": tendencia,
-            "acao_sugerida": _ACAO_POR_FAIXA.get(r["faixa"], ""),
+            "acao_sugerida": ACAO_POR_FAIXA.get(r["faixa"], ""),
         })
 
     return {
@@ -136,7 +126,7 @@ def detalhar_previsao_cliente(cliente_id: str) -> dict:
         "mes_referencia": atual["mes_ref"],
         "risco_percentual": round(atual["risco_percentual"], 1),
         "faixa": atual["faixa"],
-        "acao_sugerida": _ACAO_POR_FAIXA.get(atual["faixa"], ""),
+        "acao_sugerida": ACAO_POR_FAIXA.get(atual["faixa"], ""),
         "sinais_detalhados": sinais,
         "trajetoria_ultimos_meses": trajetoria,
         "nota": (
