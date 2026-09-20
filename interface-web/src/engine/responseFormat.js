@@ -37,6 +37,14 @@ export function notFoundResponse() {
   return { kind: 'not_found' };
 }
 
+// Diferente de not_found: aqui a IA pode muito bem saber responder, só não
+// deu tempo (chamada de rede abortada pelo timeout do front ou cancelada
+// pelo usuário) — "não encontrei nos registros" seria enganoso, e a ação
+// certa é "tentar de novo", não "sugerir pro catálogo".
+export function timeoutResponse() {
+  return { kind: 'timeout' };
+}
+
 export function formatDatePt(isoDate) {
   const [year, month, day] = isoDate.split('-');
   return `${day}/${month}/${year}`;

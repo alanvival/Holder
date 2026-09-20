@@ -29,6 +29,7 @@ export function AssistenteConsultas() {
     confirmarSugestao,
     dispensarSugestao,
     tentarNovamente,
+    cancelarPerguntaAtual,
   } = useAssistant();
 
   const bodyRef = useRef(null);
@@ -53,7 +54,8 @@ export function AssistenteConsultas() {
     status !== 'loading' &&
     ultimaMensagem?.autor === 'assistente' &&
     ultimaMensagem?.origem === 'ia' &&
-    ultimaMensagem?.payload?.kind !== 'not_found';
+    ultimaMensagem?.payload?.kind !== 'not_found' &&
+    ultimaMensagem?.payload?.kind !== 'timeout';
 
   return (
     <div className="ac-root" data-aberto={aberto}>
@@ -73,6 +75,7 @@ export function AssistenteConsultas() {
                 mensagem={mensagem}
                 onConfirmarSugestao={confirmarSugestao}
                 onDispensarSugestao={dispensarSugestao}
+                onTentarNovamente={enviarPergunta}
               />
             ))}
 
@@ -84,7 +87,7 @@ export function AssistenteConsultas() {
               <FollowUpQuestions perguntas={obterFollowUps(ultimaMensagem.intentId)} onSelecionar={enviarPergunta} />
             )}
 
-            {status === 'loading' && <TypingIndicator />}
+            {status === 'loading' && <TypingIndicator onCancelar={cancelarPerguntaAtual} />}
             {status === 'erro' && <ErrorState onTentarNovamente={tentarNovamente} />}
           </div>
 

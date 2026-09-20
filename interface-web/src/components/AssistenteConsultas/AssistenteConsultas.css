@@ -440,6 +440,23 @@
   color: rgba(0, 10, 30, 0.55);
 }
 
+.ac-typing__cancelar {
+  align-self: flex-start;
+  margin-top: 6px;
+  background: transparent;
+  border: 1px solid rgba(0, 10, 30, 0.15);
+  border-radius: var(--gs-radius-pill);
+  padding: 6px 14px;
+  font-family: var(--gs-font-heading);
+  font-weight: 600;
+  font-size: 11.5px;
+  color: var(--gs-text);
+}
+
+.ac-typing__cancelar:hover {
+  background: rgba(0, 10, 30, 0.05);
+}
+
 /* ---------- Sem resultado ---------- */
 
 .ac-not-found__header {
