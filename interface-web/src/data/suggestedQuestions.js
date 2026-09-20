@@ -15,7 +15,6 @@ const PERGUNTAS_PREDITIVAS = [
   { id: 'sugestao-preditiva-1', texto: 'Quais empresas podem dar problema no futuro?' },
   { id: 'sugestao-preditiva-2', texto: 'Me dá um relatório preditivo dos clientes em risco crítico' },
   { id: 'sugestao-preditiva-3', texto: 'Qual o risco de cancelamento do cliente C071?' },
-  { id: 'sugestao-preditiva-4', texto: 'Quais clientes estão com o risco de cancelamento subindo?' },
 ];
 
 export function obterPerguntasSugeridas(limite = 4) {
