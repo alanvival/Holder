@@ -30,7 +30,7 @@ import time
 
 from groq import Groq
 
-from .guardrails import FallbackTimeoutError, com_timeout, registrar_chamada
+from holder.infra.ia.guardrails import FallbackTimeoutError, com_timeout, registrar_chamada
 from .tools import executar_tool, tools_formato_openai
 
 MODEL = "openai/gpt-oss-120b"

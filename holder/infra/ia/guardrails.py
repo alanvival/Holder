@@ -28,7 +28,7 @@ RATE_LIMIT_JANELA_SEGUNDOS = 60
 
 # --- Log estruturado -------------------------------------------------
 
-LOG_DIR = Path(__file__).resolve().parent.parent / "logs"
+LOG_DIR = Path(__file__).resolve().parents[3] / "logs"
 
 logger = logging.getLogger("fallback_ia")
 

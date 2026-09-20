@@ -3,9 +3,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 import textwrap
-import urllib
 import json
-from sqlalchemy import create_engine # <- NOVA IMPORTAÇÃO PARA O BANCO DE DADOS
 
 import score_risco as sr  # infra compartilhada: conexão, faixas, histórico (fScoreRisco)
 import modelo_risco as mr  # motor de verdade: regressão logística treinada/validada (AUC~0.95, Brier~0.085)
@@ -93,29 +91,13 @@ def _cores_por_corte(serie, cortes):
 # ==============================================================================
 @st.cache_data
 def carregar_dados():
-    # --- CONEXÃO COM O SQL SERVER LOCALHOST ---
-    # Utilizando autenticação do Windows (Trusted_Connection=yes).
-    # O driver 'ODBC Driver 17 for SQL Server' é o padrão mais comum.
-    # Instância nomeada padrão do SQL Server Express: "SQLEXPRESS" (não a
-    # instância default "localhost" pura). Connection string ODBC crua via
-    # odbc_connect= (mesmo padrão de ingestao.py) — a barra invertida do nome
-    # da instância não é confiável dentro da URL "mssql+pyodbc://host/db"
-    # do SQLAlchemy (%5C falha com "Provedor de Pipes Nomeados: servidor não
-    # encontrado" mesmo com o SQL Server rodando e acessível).
-    params = urllib.parse.quote_plus(
-        "DRIVER={ODBC Driver 17 for SQL Server};"
-        r"SERVER=localhost\SQLEXPRESS;"
-        "DATABASE=holder;"
-        "Trusted_Connection=yes;"
-    )
-    engine = create_engine(f"mssql+pyodbc:///?odbc_connect={params}")
-    
-    # Lendo as tabelas do banco de dados no lugar das abas do Excel
-    df_cli = pd.read_sql("SELECT * FROM dClientes", engine)
-    df_atd = pd.read_sql("SELECT * FROM fAtendimento", engine)
-    df_sit = pd.read_sql("SELECT * FROM dSituacao", engine)
-    df_nps = pd.read_sql("SELECT * FROM fPesquisa", engine)
-    
+    # As quatro tabelas vêm da porta de dados (holder/infra/dados/), não de
+    # uma conexão montada aqui. A string ODBC estava escrita três vezes no
+    # repo — neste arquivo, em score_risco.py e na ingestão — e só uma delas
+    # tinha `Encrypt=no`; essa venceu, então o dashboard passa a conectar
+    # sem negociação de TLS. Mesmo resultado, conexão mais rápida.
+    df_cli, df_atd, df_sit, df_nps = sr.carregar_dados()
+
     # --- O RESTANTE DO CÓDIGO CONTINUA INTACTO A PARTIR DAQUI ---
     df_atd['mes_ref_dt'] = pd.to_datetime(df_atd['mes_ref'], format='%Y-%m')
     df_nps['mes_ref_dt'] = pd.to_datetime(df_nps['mes_ref'], format='%Y-%m')

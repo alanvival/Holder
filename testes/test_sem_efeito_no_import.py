@@ -35,9 +35,14 @@ def test_importar_o_pacote_nao_le_a_planilha():
         """
         import fallback_ia.tools  # noqa: F401
         from fallback_ia import dados
+        from holder.infra.dados import adaptador_excel
 
-        info = dados.carregar.cache_info()
-        assert info.misses == 0, f"a planilha foi lida durante o import: {info}"
+        assert dados.carregar.cache_info().misses == 0, (
+            f"os índices por cliente foram montados durante o import: {dados.carregar.cache_info()}"
+        )
+        assert adaptador_excel._abas.cache_info().misses == 0, (
+            f"a planilha foi lida durante o import: {adaptador_excel._abas.cache_info()}"
+        )
         """
     )
 
@@ -46,7 +51,7 @@ def test_importar_o_pacote_nao_configura_log_em_disco():
     _rodar(
         """
         import fallback_ia.ia_fallback  # noqa: F401
-        from fallback_ia import guardrails
+        from holder.infra.ia import guardrails
 
         assert guardrails.logger.handlers == [], (
             f"o log foi configurado durante o import: {guardrails.logger.handlers}"
@@ -65,7 +70,7 @@ def test_importar_ingestao_nao_conecta_no_banco():
         from unittest.mock import patch
 
         with patch("sqlalchemy.create_engine") as motor:
-            import ingestao  # noqa: F401
+            from holder.infra.etl import ingestao  # noqa: F401
 
         assert not motor.called, "ingestao criou um motor de conexão durante o import"
         """

@@ -508,7 +508,7 @@ def test_fora_do_escopo():
 def test_timeout():
     """Simula com_timeout estourando o limite — deve cair em 'não encontrei',
     nunca travar o request nem propagar a exceção pro cliente."""
-    from fallback_ia.guardrails import FallbackTimeoutError
+    from holder.infra.ia.guardrails import FallbackTimeoutError
 
     with patch.object(ia_fallback, "com_timeout", side_effect=FallbackTimeoutError("excedeu 20s")):
         resultado = ia_fallback.responder_com_fallback_ia("pergunta qualquer")

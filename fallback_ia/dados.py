@@ -12,14 +12,19 @@ metricas, tools_genericas, tools, ia_fallback — lia a planilha inteira,
 o que tornava impossível carregar o domínio sem tocar em disco. O cache
 mantém a garantia de antes: a planilha é lida uma única vez por processo, e
 as tabelas devolvidas são sempre os mesmos objetos.
+
+Quem lê o arquivo agora é o adaptador de Excel da porta de dados
+(`holder/infra/dados/adaptador_excel.py`) — este módulo virou o que sempre
+foi de fato: os acessos por cliente que o assistente usa. Os índices por
+cliente_id, que são derivados, seguem aqui e saem na fase 5.
 """
 from functools import lru_cache
-from pathlib import Path
 
-import pandas as pd
+from holder.infra.dados import adaptador_excel
 
-RAIZ = Path(__file__).resolve().parent.parent
-PLANILHA = RAIZ / "INOVAAPPS_base_de_dados.xlsx"
+# Mantidos para quem importava daqui; a fonte é o adaptador.
+RAIZ = adaptador_excel.RAIZ
+PLANILHA = adaptador_excel.PLANILHA
 
 # Valores fixos do contrato, não derivados da planilha — ficam acessíveis
 # sem provocar leitura de disco.
@@ -31,15 +36,12 @@ ABAS = ("clientes", "atendimento_mensal", "pesquisas_nps", "situacao_clientes")
 
 @lru_cache(maxsize=1)
 def carregar() -> dict:
-    """Lê a planilha uma vez por processo e devolve tudo que o resto do
-    pacote consome. Chamadas seguintes devolvem exatamente os mesmos
-    objetos, sem reler nada."""
-    wb = pd.read_excel(PLANILHA, sheet_name=None)
-
-    clientes = wb["clientes"]
-    atendimento_mensal = wb["atendimento_mensal"]
-    pesquisas_nps = wb["pesquisas_nps"]
-    situacao_clientes = wb["situacao_clientes"]
+    """Pega as tabelas no adaptador de Excel e monta os índices derivados.
+    Uma vez por processo; chamadas seguintes devolvem os mesmos objetos."""
+    clientes = adaptador_excel.aba("clientes")
+    atendimento_mensal = adaptador_excel.aba("atendimento_mensal")
+    pesquisas_nps = adaptador_excel.aba("pesquisas_nps")
+    situacao_clientes = adaptador_excel.aba("situacao_clientes")
 
     return {
         "clientes": clientes,

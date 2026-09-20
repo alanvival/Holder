@@ -8,8 +8,8 @@ Duas responsabilidades:
    fluxo de tool use (fallback_ia/ia_fallback.py, via Groq). Existe só pra
    manter a GROQ_API_KEY fora do bundle do front.
 2. Persistência das perguntas cadastradas pelo admin e das sugestões dos
-   usuários (fallback_ia/armazenamento.py, SQLite) — antes viviam só em
-   memória no navegador e sumiam a cada refresh.
+   usuários (holder/infra/persistencia/admin_sqlite.py) — antes viviam só
+   em memória no navegador e sumiam a cada refresh.
 
 Rodar:
     cp .env.example .env   # preencher GROQ_API_KEY
@@ -26,16 +26,16 @@ from flask_cors import CORS
 load_dotenv()
 
 from fallback_ia.ia_fallback import responder_com_fallback_ia  # noqa: E402
-from fallback_ia.guardrails import limite_excedido  # noqa: E402
-from fallback_ia import armazenamento  # noqa: E402
+from holder.infra.ia.guardrails import limite_excedido  # noqa: E402
+from holder.infra.persistencia import admin_sqlite as armazenamento  # noqa: E402
 
 app = Flask(__name__)
 CORS(app, origins=[os.environ.get("FRONTEND_ORIGIN", "http://localhost:5173")])
 
 # Cria as tabelas do SQLite se ainda não existirem. Isso era feito no import
-# de fallback_ia/armazenamento.py, o que fazia qualquer importador do pacote
-# — inclusive a suíte de testes — abrir conexão e rodar DDL sem pedir. Agora
-# quem precisa do banco é quem o inicializa: o servidor.
+# do módulo de persistência, o que fazia qualquer importador — inclusive a
+# suíte de testes — abrir conexão e rodar DDL sem pedir. Agora quem precisa
+# do banco é quem o inicializa: o servidor.
 armazenamento.inicializar()
 
 
