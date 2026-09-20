@@ -53,12 +53,12 @@ async function chamarBackend(caminho, opcoes, timeoutMs = 8000) {
 // de CRUD: o backend tem seu próprio guardrail de até TIMEOUT_SEGUNDOS (20s,
 // ver fallback_ia/guardrails.py) POR chamada ao modelo, e perguntas que
 // encadeiam tools (ex: comparação indireta) fazem várias chamadas antes de
-// responder. 8s (o timeout padrão de chamarBackend) abortava a requisição
-// ANTES do backend terminar, mesmo quando ele ia responder certo — bug
-// reportado ao vivo ("não encontrei" pra uma pergunta que o log do backend
-// mostrava ter respondido com sucesso em ~14s). 45s dá margem confortável
-// pro pior caso (múltiplos turnos, cada um até 20s) sem deixar o usuário
-// esperando indefinidamente se o backend realmente travar.
+// responder. Esse teto chegou a subir até 100s enquanto o backend usava
+// gpt-oss-120b (reasoning model — respostas de 40 a 223s ao vivo pra
+// perguntas de 1 tool só). Trocado pra gpt-oss-20b (mesma família, ~6x
+// menor) depois de confirmar respostas de ~18s pro mesmo caso — 45s ainda
+// dá margem pra 2 chamadas mais lentas sem deixar o usuário esperando
+// indefinidamente se o backend realmente travar.
 const TIMEOUT_FALLBACK_IA_MS = 45000;
 
 async function tentarFallbackIa(texto, historico) {

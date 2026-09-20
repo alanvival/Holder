@@ -74,13 +74,6 @@ export function MessageBubble({ mensagem, onConfirmarSugestao, onDispensarSugest
               </table>
             </div>
             {mensagem.payload.contexto && <div className="ac-answer-contexto">{mensagem.payload.contexto}</div>}
-            <button
-              type="button"
-              className="ac-export-btn"
-              onClick={() => exportarRespostaComoPdf(mensagem, { tituloRelatorio: mensagem.payload.text })}
-            >
-              <DownloadIcon /> Exportar PDF
-            </button>
           </>
         )}
         {mensagem.payload.kind === 'metric' && (
@@ -91,6 +84,21 @@ export function MessageBubble({ mensagem, onConfirmarSugestao, onDispensarSugest
             </div>
             {mensagem.payload.contexto && <div className="ac-answer-contexto">{mensagem.payload.contexto}</div>}
           </>
+        )}
+        {/* Botão de exportar ficava só dentro do bloco 'table' — qualquer
+            resposta sem tabela (texto puro da IA, ex: explicabilidade do
+            Score de Risco) não tinha como ser exportada, mesmo tendo
+            conteúdo real pra levar pra um PDF (bug reportado ao vivo).
+            exportarRespostaComoPdf já lida com ausência de tabela sozinho,
+            então só precisa de algum texto pra exportar. */}
+        {!isNotFound && mensagem.payload.text && (
+          <button
+            type="button"
+            className="ac-export-btn"
+            onClick={() => exportarRespostaComoPdf(mensagem)}
+          >
+            <DownloadIcon /> Exportar PDF
+          </button>
         )}
         {mensagem.origem === 'ia' && !isNotFound && (
           <div className="ac-origem-ia">

@@ -33,12 +33,15 @@ from groq import Groq
 from .guardrails import FallbackTimeoutError, com_timeout, registrar_chamada
 from .tools import executar_tool, tools_formato_openai
 
-MODEL = "openai/gpt-oss-120b"
-# gpt-oss é um "reasoning model" — gasta uma parte do orçamento de tokens
-# pensando antes de responder, então precisa de mais margem que um modelo
-# comum pra sobrar espaço pro texto final (testado: 300 tokens já cortava
-# respostas curtas pela metade).
-MAX_TOKENS = 2048
+MODEL = "openai/gpt-oss-20b"
+# gpt-oss-120b foi trocado por esse depois de observar ao vivo respostas de
+# 40s a 223s pra perguntas de 1 tool só (reasoning model gasta uma fatia do
+# orçamento de tokens "pensando" antes de responder). Tentativa de trocar
+# pra um modelo sem essa etapa (llama-3.3-70b-versatile) falhou — essa
+# conta Groq só tem acesso à família gpt-oss (ver client.models.list()).
+# gpt-oss-20b é a mesma arquitetura do 120b, só que ~6x menor — ainda
+# "pensa" antes de responder, mas bem mais rápido nisso.
+MAX_TOKENS = 1024
 
 # Guardrail contra loop de tool use: no máximo N idas e vindas antes de
 # desistir e cair em "não encontrei" — perguntas legítimas resolvem em 1-2.
@@ -57,7 +60,9 @@ SYSTEM_PROMPT = (
     "forma — isso será tratado separadamente pelo sistema. Ao formatar a "
     "resposta final, use o valor exatamente como veio do resultado da tool, "
     "declare o universo considerado (quantos clientes, qual período, quais "
-    "filtros), e use formatação brasileira (R$, vírgula decimal).\n\n"
+    "filtros), e use formatação brasileira (R$, vírgula decimal). A "
+    "resposta é markdown puro (**negrito**, listas, tabelas em pipe) — "
+    "nunca use tags HTML como <br> ou <b>, o front não renderiza HTML.\n\n"
     "Quando uma pergunta exigir informação que nenhuma tool sozinha resolve "
     "— por exemplo, identificar um cliente por uma descrição antes de "
     "comparar ou detalhar algo sobre ele — chame as tools necessárias em "
