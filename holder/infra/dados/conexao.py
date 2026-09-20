@@ -2,8 +2,8 @@
 O único lugar que sabe conectar no SQL Server.
 
 A mesma string ODBC estava escrita três vezes — no dashboard, no score de
-risco e na ingestão — e só uma das três tinha `Encrypt=no`. Essa venceu: é a
-mais simples e a mais rápida, e o resultado das consultas é idêntico. A
+risco e na ingestão — e só uma das três tinha `Encrypt=no`. Essa venceu: é
+a mais simples e a mais rápida, e o resultado das consultas é idêntico. A
 consequência é que o dashboard passa a conectar sem negociação de TLS, o que
 é mudança de comportamento de infra (assumida de propósito), não de cálculo.
 
@@ -23,6 +23,9 @@ DATABASE = "holder"
 
 DRIVER = "ODBC Driver 17 for SQL Server"
 
+USERNAME = "holder_jenkins"
+PASSWORD = "Holder@123456"
+
 
 def string_odbc(database: str | None = None) -> str:
     """String de conexão ODBC. `Encrypt=no` evita a negociação de TLS que o
@@ -32,7 +35,8 @@ def string_odbc(database: str | None = None) -> str:
         f"DRIVER={{{DRIVER}}};"
         f"SERVER={SERVER};"
         f"DATABASE={database or DATABASE};"
-        f"Trusted_Connection=yes;"
+        f"UID={USERNAME};"
+        f"PWD={PASSWORD};"
         f"Encrypt=no;"
     )
 
