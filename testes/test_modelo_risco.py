@@ -9,12 +9,14 @@ Testes de validação do modelo de risco (modelo_risco.py):
    do cancelamento real (não força o número a bater, só confere a
    tendência geral).
 
-Uso: python testar_modelo_risco.py
+Uso: pytest testes/test_modelo_risco.py
+     pytest -m "not sqlserver"   pra pular tudo que depende do banco
 """
 from __future__ import annotations
 
 import numpy as np
 import pandas as pd
+import pytest
 
 import modelo_risco as mr
 import score_risco as sr
@@ -23,7 +25,9 @@ AUC_MINIMO_ACEITAVEL = 0.85
 BRIER_MAXIMO_ACEITAVEL = 0.15
 
 
-def testar_validacao_cruzada():
+@pytest.mark.sqlserver
+@pytest.mark.lento
+def test_validacao_cruzada():
     dataset = mr.construir_dataset()
     _, _, _, metricas = mr.treinar_modelo(dataset)
 
@@ -34,10 +38,11 @@ def testar_validacao_cruzada():
     assert metricas["auc"] >= AUC_MINIMO_ACEITAVEL, f"AUC caiu abaixo do aceitável: {metricas['auc']:.3f}"
     assert metricas["brier"] <= BRIER_MAXIMO_ACEITAVEL, f"Brier subiu acima do aceitável: {metricas['brier']:.3f}"
     print("OK   validação cruzada dentro do esperado.\n")
-    return metricas
 
 
-def testar_backtest_retroativo():
+@pytest.mark.sqlserver
+@pytest.mark.lento
+def test_backtest_retroativo():
     modelo_pack = mr.carregar_modelo()
     _, df_atd, df_sit, df_nps = sr.carregar_dados()
     cancelados = df_sit[df_sit["situacao"] == "Cancelado"][["cliente_id", "mes_cancelamento"]]
@@ -65,7 +70,3 @@ def testar_backtest_retroativo():
     print("OK   probabilidade sobe consistentemente conforme aproxima do cancelamento real.\n")
 
 
-if __name__ == "__main__":
-    testar_validacao_cruzada()
-    testar_backtest_retroativo()
-    print("Todos os testes de validação do modelo passaram.")

@@ -1,6 +1,6 @@
 # 01 — Documentação de domínio
 
-Status: em andamento
+Status: resolvido (commit `bf03c3a`)
 Fase: 1 de 10 · Zero mudança de código
 
 ## Objetivo

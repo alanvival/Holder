@@ -22,9 +22,11 @@ import json
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from . import ia_fallback
-from .metricas import calcular_metrica, comparar_metrica_por_categoria, analisar_fatores_churn, clientes_em_risco, prever_risco_cancelamento
-from .tools_genericas import listar_clientes, buscar_campo_cliente, comparar_clientes, evolucao_temporal
+import pytest
+
+from fallback_ia import ia_fallback
+from fallback_ia.metricas import calcular_metrica, comparar_metrica_por_categoria, analisar_fatores_churn, clientes_em_risco, prever_risco_cancelamento
+from fallback_ia.tools_genericas import listar_clientes, buscar_campo_cliente, comparar_clientes, evolucao_temporal
 
 
 class FakeFunction:
@@ -58,7 +60,7 @@ def _resposta(mensagem):
     return SimpleNamespace(choices=[SimpleNamespace(message=mensagem)])
 
 
-def caso_consultar_metrica():
+def test_consultar_metrica():
     """Pergunta que deveria bater em consultar_metrica, resolvida em 1 turno."""
     tool_call = FakeToolCall("call_1", "consultar_metrica", {"metrica": "ticket_medio", "filtros": {"plano": "Enterprise"}})
     sequencia = [
@@ -76,7 +78,7 @@ def caso_consultar_metrica():
     print("OK   consultar_metrica (1 turno):", resultado["resposta"])
 
 
-def caso_analisar_fatores_churn():
+def test_analisar_fatores_churn():
     """Pergunta tipo 'o que mais influencia o cancelamento'."""
     tool_call = FakeToolCall("call_2", "analisar_fatores_churn", {})
     sequencia = [
@@ -93,7 +95,7 @@ def caso_analisar_fatores_churn():
     print("OK   analisar_fatores_churn:", resultado["resposta"])
 
 
-def caso_clientes_em_risco():
+def test_clientes_em_risco():
     """Pergunta tipo 'quais clientes estão em risco alto agora'."""
     tool_call = FakeToolCall("call_3", "clientes_em_risco", {"nivel": "Alto"})
     sequencia = [
@@ -110,7 +112,7 @@ def caso_clientes_em_risco():
     print("OK   clientes_em_risco:", resultado["resposta"])
 
 
-def caso_prever_risco_cancelamento():
+def test_prever_risco_cancelamento():
     """Pergunta tipo 'faça uma predição de cancelamento' — diferente de
     clientes_em_risco (diagnóstico contra a própria história), compara o
     cliente ativo com o padrão real de quem já cancelou."""
@@ -130,16 +132,16 @@ def caso_prever_risco_cancelamento():
     print("OK   prever_risco_cancelamento (predição, não diagnóstico):", resultado["resposta"])
 
 
-def caso_listar_previsao_risco():
+@pytest.mark.sqlserver
+def test_listar_previsao_risco():
     """Pergunta tipo 'quais empresas podem dar problema' — modelo
     estatístico (regressão logística) via SQL Server, não a heurística de
     strikes. Skippa graciosamente se o SQL Server não estiver acessível
     nesta máquina (ambiente de CI, por exemplo)."""
-    from . import previsao_risco
+    from fallback_ia import previsao_risco
     esperado = previsao_risco.listar_previsao_risco({"faixa": "Crítico"}, 5)
     if "erro" in esperado:
-        print("SKIP listar_previsao_risco (SQL Server indisponível):", esperado["erro"])
-        return
+        pytest.skip(f"SQL Server indisponível: {esperado['erro']}")
 
     tool_call = FakeToolCall("call_22", "listar_previsao_risco", {"faixa": "Crítico", "limite": 5})
     sequencia = [
@@ -155,14 +157,14 @@ def caso_listar_previsao_risco():
     print("OK   listar_previsao_risco (modelo estatístico real):", resultado["resposta"])
 
 
-def caso_detalhar_previsao_cliente():
+@pytest.mark.sqlserver
+def test_detalhar_previsao_cliente():
     """Pergunta tipo 'por que o cliente X tem esse risco' — explicabilidade
     do modelo (coeficiente × desvio por sinal) + trajetória histórica."""
-    from . import previsao_risco
+    from fallback_ia import previsao_risco
     esperado = previsao_risco.detalhar_previsao_cliente("C071")
     if "erro" in esperado:
-        print("SKIP detalhar_previsao_cliente (SQL Server indisponível):", esperado["erro"])
-        return
+        pytest.skip(f"SQL Server indisponível: {esperado['erro']}")
 
     tool_call = FakeToolCall("call_23", "detalhar_previsao_cliente", {"cliente_id": "C071"})
     sequencia = [
@@ -179,17 +181,17 @@ def caso_detalhar_previsao_cliente():
     print("OK   detalhar_previsao_cliente (explicabilidade + trajetória):", resultado["resposta"])
 
 
-def caso_historico_resolve_referencia():
+@pytest.mark.sqlserver
+def test_historico_resolve_referencia():
     """Reproduz o bug reportado ao vivo: sem histórico de conversa, 'esse
     cliente' não tem a quem se referir — a pergunta sozinha nunca chegaria
     em detalhar_previsao_cliente(C071) sem o contexto do turno anterior.
     Confere que o histórico enviado pelo front (useAssistant.js) é
     injetado nas mensagens ANTES da pergunta nova."""
-    from . import previsao_risco
+    from fallback_ia import previsao_risco
     esperado = previsao_risco.detalhar_previsao_cliente("C071")
     if "erro" in esperado:
-        print("SKIP caso_historico_resolve_referencia (SQL Server indisponível):", esperado["erro"])
-        return
+        pytest.skip(f"SQL Server indisponível: {esperado['erro']}")
 
     historico = [
         {"role": "user", "content": "Qual o risco de cancelamento do cliente C071?"},
@@ -216,7 +218,7 @@ def caso_historico_resolve_referencia():
     print("OK   histórico de conversa resolve 'esse cliente' pro C071 certo:", resultado["resposta"])
 
 
-def caso_metrica_agrupada_por_categoria():
+def test_metrica_agrupada_por_categoria():
     """Reproduz o bug reportado ao vivo: 'ticket médio por segmento'
     estourava MAX_TURNOS_TOOL porque o modelo tentava listar segmentos +
     chamar consultar_metrica uma vez por valor (6 chamadas, mais que o
@@ -238,7 +240,7 @@ def caso_metrica_agrupada_por_categoria():
 
 # --- Os 4 casos originais do prompt de refatoração (via listar_clientes) --
 
-def caso_maior_cliente():
+def test_maior_cliente():
     """'Qual o maior cliente' -> listar_clientes com ordenar_por='valor_mensal',
     direcao='desc', limite=1 — ranking vira um caso particular de listagem."""
     tool_call = FakeToolCall(
@@ -259,7 +261,7 @@ def caso_maior_cliente():
     print("OK   maior cliente (listar_clientes + ordenar_por):", resultado["resposta"])
 
 
-def caso_clientes_por_segmento():
+def test_clientes_por_segmento():
     """'Quais clientes são do segmento Varejo' -> listar_clientes com filtro simples."""
     tool_call = FakeToolCall(
         "call_5", "listar_clientes",
@@ -278,7 +280,7 @@ def caso_clientes_por_segmento():
     print("OK   clientes por segmento (listar_clientes):", resultado["resposta"])
 
 
-def caso_cancelamentos_por_periodo():
+def test_cancelamentos_por_periodo():
     """'Quantos clientes cancelaram em 2026' -> listar_clientes com
     retornar='contagem', filtrando mes_cancelamento por 'entre'."""
     tool_call = FakeToolCall(
@@ -304,7 +306,7 @@ def caso_cancelamentos_por_periodo():
     print("OK   cancelamentos por período (listar_clientes, retornar=contagem):", resultado["resposta"])
 
 
-def caso_detratores():
+def test_detratores():
     """'Quais clientes são detratores' -> listar_clientes filtrando
     classificacao_nps (campo de série temporal — usa a pesquisa mais recente)."""
     tool_call = FakeToolCall(
@@ -326,7 +328,7 @@ def caso_detratores():
 
 # --- buscar_campo_cliente (cobre a lacuna real: "qual dia entrou o cliente") -
 
-def caso_buscar_campo_cliente():
+def test_buscar_campo_cliente():
     tool_call = FakeToolCall("call_8", "buscar_campo_cliente", {"cliente_id": "C002", "campos": ["inicio_contrato", "plano"]})
     sequencia = [
         _resposta(FakeMessage(tool_calls=[tool_call])),
@@ -340,7 +342,7 @@ def caso_buscar_campo_cliente():
     print("OK   buscar_campo_cliente:", resultado["resposta"])
 
 
-def caso_normaliza_cliente_id_com_erro_de_digitacao():
+def test_normaliza_cliente_id_com_erro_de_digitacao():
     """Reproduz o bug reportado ao vivo: 'CO02' (letra O) em vez de 'C002'
     (zero) — a tool tem que normalizar antes de buscar."""
     tool_call = FakeToolCall("call_9", "buscar_campo_cliente", {"cliente_id": "CO02", "campos": ["inicio_contrato"]})
@@ -359,7 +361,7 @@ def caso_normaliza_cliente_id_com_erro_de_digitacao():
 
 # --- Os 3 cenários novos (teste real de generalização) ---------------------
 
-def caso_comparacao_indireta():
+def test_comparacao_indireta():
     """'Compare o maior cliente do Varejo com o de Saúde' — o modelo não
     conhece os cliente_id de antemão: precisa encadear duas chamadas de
     listar_clientes (uma por segmento) pra descobrir quem são, e só então
@@ -395,7 +397,7 @@ def caso_comparacao_indireta():
     print("OK   comparação indireta (encadeamento de 3 tools):", resultado["resposta"])
 
 
-def caso_comparacao_entre_periodos():
+def test_comparacao_entre_periodos():
     """'Compare o cliente C047 entre 2025 e 2026' — mesmo cliente, dois
     períodos, via periodo_comparacao."""
     tool_call = FakeToolCall(
@@ -423,7 +425,7 @@ def caso_comparacao_entre_periodos():
     print("OK   comparação entre dois períodos (mesmo cliente):", resultado["resposta"])
 
 
-def caso_evolucao_temporal():
+def test_evolucao_temporal():
     """'Como evoluiu o uso da plataforma do cliente C047 nos últimos meses' —
     nenhuma tool anterior devolvia série mensal de um campo bruto."""
     tool_call = FakeToolCall("call_14", "evolucao_temporal", {"campo": "uso_plataforma_pct", "cliente_id": "C047"})
@@ -441,7 +443,7 @@ def caso_evolucao_temporal():
     print("OK   evolução temporal (cliente único):", resultado["resposta"])
 
 
-def caso_campo_invalido():
+def test_campo_invalido():
     """Campo fora do allowlist -> erro estruturado com sugestão, nunca
     exceção crua nem acesso a coluna arbitrária."""
     tool_call = FakeToolCall("call_15", "buscar_campo_cliente", {"cliente_id": "C001", "campos": ["nome_fantasia"]})
@@ -458,7 +460,7 @@ def caso_campo_invalido():
     print("OK   campo inválido -> erro estruturado com sugestão:", resultado["resultado"]["erro"])
 
 
-def caso_multi_turno():
+def test_multi_turno():
     """
     Reproduz o bug encontrado em teste manual ao vivo: pergunta aberta
     ("diagnóstico geral") faz o modelo chamar uma tool, olhar o resultado,
@@ -481,7 +483,7 @@ def caso_multi_turno():
     print("OK   multi-turno (2 tools antes do texto):", resultado["resposta"])
 
 
-def caso_max_turnos_excedido():
+def test_max_turnos_excedido():
     """Se o modelo só encadear tool_calls sem nunca escrever texto, desiste
     após MAX_TURNOS_TOOL rodadas em vez de girar pra sempre."""
     tool_call = FakeToolCall("call_18", "consultar_metrica", {"metrica": "churn"})
@@ -493,7 +495,7 @@ def caso_max_turnos_excedido():
     print("OK   desiste após", ia_fallback.MAX_TURNOS_TOOL, "turnos sem travar")
 
 
-def caso_fora_do_escopo():
+def test_fora_do_escopo():
     """Pergunta genuinamente fora do escopo — o modelo não chama nenhuma tool."""
     resposta_sem_tool = _resposta(FakeMessage(content="...", tool_calls=[]))
     with patch.object(ia_fallback, "_chamar_modelo", return_value=resposta_sem_tool):
@@ -503,10 +505,10 @@ def caso_fora_do_escopo():
     print("OK   fora do escopo -> não encontrado (sem texto livre inventado)")
 
 
-def caso_timeout():
+def test_timeout():
     """Simula com_timeout estourando o limite — deve cair em 'não encontrei',
     nunca travar o request nem propagar a exceção pro cliente."""
-    from .guardrails import FallbackTimeoutError
+    from fallback_ia.guardrails import FallbackTimeoutError
 
     with patch.object(ia_fallback, "com_timeout", side_effect=FallbackTimeoutError("excedeu 20s")):
         resultado = ia_fallback.responder_com_fallback_ia("pergunta qualquer")
@@ -515,27 +517,3 @@ def caso_timeout():
     print("OK   timeout tratado sem travar:", resultado)
 
 
-if __name__ == "__main__":
-    caso_consultar_metrica()
-    caso_analisar_fatores_churn()
-    caso_clientes_em_risco()
-    caso_prever_risco_cancelamento()
-    caso_listar_previsao_risco()
-    caso_detalhar_previsao_cliente()
-    caso_historico_resolve_referencia()
-    caso_metrica_agrupada_por_categoria()
-    caso_maior_cliente()
-    caso_clientes_por_segmento()
-    caso_cancelamentos_por_periodo()
-    caso_detratores()
-    caso_buscar_campo_cliente()
-    caso_normaliza_cliente_id_com_erro_de_digitacao()
-    caso_comparacao_indireta()
-    caso_comparacao_entre_periodos()
-    caso_evolucao_temporal()
-    caso_campo_invalido()
-    caso_multi_turno()
-    caso_max_turnos_excedido()
-    caso_fora_do_escopo()
-    caso_timeout()
-    print("\nTodos os cenários (incluindo encadeamento de tools e generalização) passaram (com API mockada).")
