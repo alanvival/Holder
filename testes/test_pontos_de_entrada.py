@@ -80,3 +80,34 @@ def test_a_api_expoe_as_rotas_esperadas():
     }
     faltando = esperadas - rotas
     assert not faltando, f"rotas que desapareceram da API: {sorted(faltando)}"
+
+
+def test_o_dashboard_executa_sem_a_raiz_no_sys_path():
+    """O teste acima roda o script com `python -c` e `cwd=RAIZ`, e o `-c`
+    coloca o diretório atual no `sys.path`. O `streamlit run` **não** faz
+    isso: o `_fix_sys_path` do Streamlit insere só
+    `os.path.dirname(main_script_path)` — o diretório do próprio arquivo.
+
+    Resultado: `from holder.dominio...` resolvia em todo teste e em todo
+    `python -m streamlit` local, e quebrava com ModuleNotFoundError no
+    `streamlit run` puro — que é como o Streamlit Cloud sobe o app.
+
+    Este teste reproduz o ambiente real: `-P` impede o Python de prepender o
+    diretório atual, e só o diretório do script entra no caminho, igual ao
+    Streamlit."""
+    import os
+
+    codigo = (
+        "import sys, runpy;"
+        f"sys.path.insert(0, r'{ENTRADA_DASHBOARD.parent}');"
+        f"runpy.run_path(r'{ENTRADA_DASHBOARD}', run_name='__main__')"
+    )
+    resultado = subprocess.run(
+        [sys.executable, "-P", "-c", codigo],
+        cwd=RAIZ, capture_output=True, text=True,
+        env={**os.environ, "HOLDER_BANCO": "sqlite"},
+    )
+    assert resultado.returncode == 0, (
+        "o dashboard não executa como o `streamlit run` o executa:\n"
+        f"--- stderr ---\n{resultado.stderr[-2000:]}"
+    )

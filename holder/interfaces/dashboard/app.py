@@ -13,9 +13,23 @@ chamada, por exigência do Streamlit.
 """
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
 import streamlit as st
 
-from holder.dominio.carteira import calcular_rfv, carregar_e_preparar
+# O `streamlit run` insere no sys.path só o diretório DESTE arquivo (é o que
+# o `_fix_sys_path` do Streamlit faz), nunca a raiz do repo — então
+# `import holder` não resolve sozinho. Rodar por `python -m streamlit` ou por
+# `python -c` mascarava isso, porque aí o próprio Python prepende o diretório
+# atual; no `streamlit run` puro, que é como o Streamlit Cloud sobe o app, o
+# resultado era ModuleNotFoundError na primeira linha de import do projeto.
+# Mesmo prólogo de `scripts/gerar_pesos_alerta.py`, pela mesma razão.
+RAIZ = Path(__file__).resolve().parents[3]
+if str(RAIZ) not in sys.path:
+    sys.path.insert(0, str(RAIZ))
+
+from holder.dominio.carteira import calcular_rfv, carregar_e_preparar  # noqa: E402
 
 # Imports ABSOLUTOS, não relativos: o `streamlit run` executa este arquivo
 # como script (`__name__ == "__main__"`, sem pacote), e `from . import ...`
