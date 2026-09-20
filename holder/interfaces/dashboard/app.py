@@ -52,10 +52,11 @@ def main() -> None:
     st.set_page_config(page_title="Dashboard Executivo CS", layout="wide")
     estilo.aplicar()
 
-    # `padroes_churn` e `taxa_falso_alarme` são calculados pela preparação e
-    # não são exibidos por nenhuma aba hoje — eram assim antes da divisão
-    # também. Ficam nomeados em vez de descartados pra deixar a lacuna
-    # visível, em vez de parecer que a preparação devolve o que ninguém pediu.
+    # `padroes_churn` continua calculado pela preparação e não exibido por
+    # nenhuma aba — fica nomeado em vez de descartado pra deixar a lacuna
+    # visível, em vez de parecer que a preparação devolve o que ninguém
+    # pediu. `taxa_falso_alarme` era assim também até virar a resposta a
+    # "quão bem o sinal separa?" na aba Score de Risco.
     (df_cli, df_atd, df_sit, df_nps, df_rfv,
      linhas_risco, padroes_churn, strikes, taxa_falso_alarme) = carregar_dados()
 
@@ -82,7 +83,7 @@ def main() -> None:
     with tab2:
         monitor.renderizar(df_cli, df_atd, df_sit, df_nps, df_rfv, linhas_risco)
     with tab3:
-        score.renderizar(df_cli, df_sit)
+        score.renderizar(df_cli, df_sit, df_atd, df_nps, taxa_falso_alarme)
 
 
 main()

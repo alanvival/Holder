@@ -18,6 +18,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from holder.dominio.risco import antecedencia
 from holder.dominio.risco import dataset as ds
 from holder.dominio.risco import modelo as mr
 from holder.infra.dados.porta import fonte
@@ -45,24 +46,21 @@ def test_validacao_cruzada():
 @pytest.mark.sqlserver
 @pytest.mark.lento
 def test_backtest_retroativo():
+    """O cálculo mora em `holder/dominio/risco/antecedencia.py` — a mesma
+    função alimenta a aba Score de Risco do dashboard, pra o número que o
+    teste valida ser exatamente o que a tela mostra, não um recorte à
+    parte que pode divergir em silêncio."""
     modelo_pack = modelo_treinado.carregar()
     _, df_atd, df_sit, df_nps = fonte().carregar_tudo()
-    cancelados = df_sit[df_sit["situacao"] == "Cancelado"][["cliente_id", "mes_cancelamento"]]
 
-    por_lag = {lag: [] for lag in range(1, 7)}
-    for _, r in cancelados.iterrows():
-        cid, mes_canc = r["cliente_id"], r["mes_cancelamento"]
-        for lag in range(1, 7):
-            mes_alvo = ds.mes_mais(mes_canc, -lag)
-            resultado = mr.calcular_score_cliente(cid, mes_alvo, df_atd, df_nps, modelo_pack)
-            if resultado:
-                por_lag[lag].append(resultado["risco_percentual"])
+    linhas = antecedencia.curva_de_antecedencia(df_sit, df_atd, df_nps, modelo_pack)
+    medias = {l["meses_antes"]: l["risco_medio"] for l in linhas}
 
-    medias = {lag: np.mean(vals) for lag, vals in por_lag.items() if vals}
     print("Probabilidade média prevista, por lag (meses antes do cancelamento real):")
-    for lag in range(6, 0, -1):
-        if lag in medias:
-            print(f"  Lag {lag}: {medias[lag]:.1f}%  (n={len(por_lag[lag])})")
+    for l in linhas:
+        print(f"  Lag {l['meses_antes']}: {l['risco_medio']:.1f}%  ({l['faixa']}, n={l['n_clientes']})")
+    print(f"Antecedência útil (risco médio já em Crítico): "
+          f"{antecedencia.antecedencia_util(linhas)} meses antes da saída.")
 
     # Tendência geral: lag 1 (mais perto do cancelamento) deve ter risco
     # médio bem maior que lag 6 (mais longe) — não exige monotonicidade
@@ -70,5 +68,21 @@ def test_backtest_retroativo():
     assert medias[1] > medias[6], "Probabilidade não sobe conforme aproxima do cancelamento — modelo não está antecipando."
     assert medias[1] >= 70, f"Probabilidade no último mês antes do cancelamento está baixa demais: {medias[1]:.1f}%"
     print("OK   probabilidade sobe consistentemente conforme aproxima do cancelamento real.\n")
+
+
+@pytest.mark.sqlserver
+@pytest.mark.lento
+def test_antecedencia_util_da_tempo_de_agir():
+    """Um sinal que só acende no mês da saída é inútil (enunciado do
+    desafio, pergunta 1). Confere que o risco médio já está em Crítico com
+    pelo menos 2 meses de antecedência — tempo real de agir sobre a conta."""
+    modelo_pack = modelo_treinado.carregar()
+    _, df_atd, df_sit, df_nps = fonte().carregar_tudo()
+
+    linhas = antecedencia.curva_de_antecedencia(df_sit, df_atd, df_nps, modelo_pack)
+    meses = antecedencia.antecedencia_util(linhas)
+
+    assert meses is not None, "O risco médio nunca chega à faixa Crítico antes da saída."
+    assert meses >= 2, f"Só {meses} mês(es) de antecedência — pouco tempo pra agir."
 
 

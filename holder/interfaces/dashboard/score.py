@@ -13,8 +13,8 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from holder.dominio.risco import faixas
-from holder.infra.persistencia import historico_score, log_treinos
+from holder.dominio.risco import antecedencia, faixas
+from holder.infra.persistencia import historico_score, log_treinos, modelo_treinado
 
 from .estilo import CORES_FAIXA, modulo_header
 
@@ -211,6 +211,121 @@ def _linha_do_tempo(df_filtrado, df_score, df_historico) -> None:
     st.caption("Faixas de fundo: verde = Saudável, amarelo claro = Atenção, laranja = Em risco, vermelho = Crítico.")
 
 
+@st.cache_data(ttl=600)
+def _auc_do_ultimo_treino() -> float | None:
+    """None quando não há log ainda ou o banco não respondeu — quem chama
+    simplesmente omite o número em vez de derrubar a seção."""
+    try:
+        df_log = log_treinos.carregar()
+    except Exception:
+        return None
+    return None if df_log.empty else float(df_log.iloc[0]["auc"])
+
+
+@st.cache_data(ttl=600)
+def _curva_antecedencia(df_sit, df_atd, df_nps) -> list[dict]:
+    try:
+        modelo_pack = modelo_treinado.carregar()
+    except Exception:
+        return []
+    return antecedencia.curva_de_antecedencia(df_sit, df_atd, df_nps, modelo_pack)
+
+
+def _qualidade_do_sinal(df_sit, df_atd, df_nps, taxa_falso_alarme) -> None:
+    """Duas das três perguntas que o enunciado do desafio lista como
+    estruturantes — "com quanta antecedência o sinal aparece?" e "quão bem
+    ele separa?" — respondidas com número medido, não com afirmação. A
+    terceira ("quanto está em jogo?") é a receita em risco, e mora na aba
+    Quem Contatar, junto da ordem de atendimento que ela define.
+
+    Estes números existiam antes só dentro de `testes/test_modelo_risco.py`
+    (a curva) e como valor de retorno que nenhuma aba lia (a taxa de
+    disparo) — calculados e invisíveis pra quem abre a solução.
+    """
+    st.markdown("---")
+    st.markdown("#### Qualidade do sinal")
+
+    linhas = _curva_antecedencia(df_sit, df_atd, df_nps)
+    col_esq, col_dir = st.columns([3, 2])
+
+    with col_esq:
+        st.markdown("**Com quanta antecedência o sinal aparece?**")
+        if not linhas:
+            st.info("Sem modelo treinado ainda — rode o treino pra medir a antecedência.")
+        else:
+            meses = antecedencia.antecedencia_util(linhas)
+            if meses:
+                st.metric("Antecedência útil", f"{meses} meses antes da saída",
+                          help="Quantos meses antes do cancelamento real o risco médio previsto já "
+                               "alcança a faixa Crítico — o tempo que o time teria pra agir.")
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(
+                x=[l["meses_antes"] for l in linhas],
+                y=[l["risco_medio"] for l in linhas],
+                mode="lines+markers+text",
+                text=[f"{l['risco_medio']:.0f}%" for l in linhas],
+                textposition="top center",
+                line=dict(width=3, color="#0156FC"),
+                name="Risco médio previsto",
+            ))
+            for lo, hi, nome in faixas.FAIXAS:
+                fig.add_hrect(y0=lo, y1=min(hi, 100), fillcolor=CORES_FAIXA[nome], opacity=0.15, line_width=0)
+            # Eixo invertido: quanto mais à direita, mais perto da saída —
+            # lê-se da esquerda (6 meses antes) pra direita (mês da saída),
+            # que é a direção em que o tempo passa pra quem acompanha.
+            fig.update_layout(
+                xaxis=dict(title="meses antes do cancelamento real", autorange="reversed",
+                           dtick=1),
+                yaxis=dict(title="risco médio previsto (%)", range=[0, 100]),
+                height=280, margin=dict(l=0, r=10, t=10, b=0), template="plotly_white",
+                showlegend=False,
+            )
+            st.plotly_chart(fig, use_container_width=True)
+            # max(n_clientes), não o da primeira linha: nos lags mais
+            # distantes nem todo cancelado tem histórico daquele mês, então
+            # a primeira linha subestima o tamanho do backtest.
+            st.caption(
+                f"Backtest retroativo nos {max(l['n_clientes'] for l in linhas)} clientes que já "
+                "cancelaram: o score que o modelo teria dado a cada mês antes da saída real. "
+                "Um sinal que só acende no mês da saída é inútil — não sobra tempo de agir."
+            )
+
+    with col_dir:
+        st.markdown("**Quão bem ele separa?**")
+        # A taxa de disparo vem primeiro de propósito: ela já está em
+        # memória, enquanto o AUC é uma leitura do log de treino no banco.
+        # Streamlit renderiza de cima pra baixo, então com o banco lento
+        # (ou fora do ar) o que não depende dele já apareceu — e esta seção
+        # responde uma das perguntas estruturantes do desafio, não pode
+        # ficar em branco esperando um número acessório.
+        st.markdown(
+            "<div style='font-family:\"Montserrat\",sans-serif;font-size:0.85rem;'>"
+            "<b>Taxa de disparo de cada sinal isolado</b>, sobre os clientes ativos — um sinal "
+            "que dispara pra quase todo mundo gera alarme falso, e alarme falso faz a equipe "
+            "deixar de olhar:</div>",
+            unsafe_allow_html=True,
+        )
+        for nome, taxa in sorted(taxa_falso_alarme.items(), key=lambda kv: -kv[1]):
+            st.markdown(
+                f"<div style='font-family:\"Montserrat\",sans-serif;font-size:0.85rem;"
+                f"margin-top:6px;'>{nome} — dispara em <b>{taxa*100:.0f}%</b> dos ativos</div>"
+                f"<div style='height:6px;border-radius:3px;background:rgba(0,10,30,0.08);"
+                f"overflow:hidden;margin-top:3px;'>"
+                f"<div style='width:{taxa*100:.0f}%;height:100%;background:#1D1DDB;'></div></div>",
+                unsafe_allow_html=True,
+            )
+        st.caption(
+            "É por isso que o score não é a contagem desses sinais: ele pondera os sete "
+            "indicadores pelo quanto cada um de fato separou quem cancelou de quem ficou."
+        )
+
+        auc = _auc_do_ultimo_treino()
+        if auc is not None:
+            st.metric("AUC (validação cruzada 5-fold)", f"{auc:.3f}",
+                      help="1,0 seria separação perfeita; 0,5 seria o mesmo que sortear. "
+                           "Mede a capacidade do modelo de ordenar quem cancelou acima de quem ficou.")
+
+
 def _metodologia() -> None:
     st.markdown("---")
     with st.expander("Sobre este score (metodologia)"):
@@ -245,7 +360,7 @@ def _metodologia() -> None:
         """)
 
 
-def renderizar(df_cli, df_sit) -> None:
+def renderizar(df_cli, df_sit, df_atd, df_nps, taxa_falso_alarme) -> None:
     ativos_ids = frozenset(df_sit[df_sit["situacao"] == "Ativo"]["cliente_id"])
     resultados = _carregar_score_atual(ativos_ids)
     df_historico = _carregar_historico()
@@ -296,4 +411,5 @@ def renderizar(df_cli, df_sit) -> None:
         else:
             _linha_do_tempo(df_filtrado, df_score, df_historico)
 
+        _qualidade_do_sinal(df_sit, df_atd, df_nps, taxa_falso_alarme)
         _metodologia()

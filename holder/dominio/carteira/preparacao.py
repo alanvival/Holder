@@ -253,10 +253,12 @@ def preparar(df_cli, df_atd, df_sit, df_nps):
 
     # Taxa de disparo de cada sinal sobre todos os ativos — sinal que
     # dispara pra quase todo mundo é fraco isoladamente.
+    # As chaves vão direto pra tela (aba Score de Risco → Qualidade do
+    # sinal), então são rótulos, não identificadores.
     taxa_falso_alarme = {
-        "SLA": strikes[COLUNAS_STRIKES[0]].mean(),
-        "Reclamacao": strikes[COLUNAS_STRIKES[2]].mean(),
-        "NPS": strikes[COLUNAS_STRIKES[3]].mean(),
+        "SLA quebrado": strikes[COLUNAS_STRIKES[0]].mean(),
+        "Reclamação recente": strikes[COLUNAS_STRIKES[2]].mean(),
+        "NPS detrator": strikes[COLUNAS_STRIKES[3]].mean(),
     }
 
     return df_cli, df_atd, df_sit, df_nps, df_rfv, linhas_risco, padroes_churn, strikes, taxa_falso_alarme
