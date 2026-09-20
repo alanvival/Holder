@@ -1,44 +1,37 @@
 """
-Centraliza todas as conexões com o SQL Server.
+O único lugar que sabe conectar no SQL Server.
 
-Fluxo:
+A mesma string ODBC estava escrita três vezes — no dashboard, no score de
+risco e na ingestão — e só uma das três tinha `Encrypt=no`. Essa venceu: é
+a mais simples e a mais rápida, e o resultado das consultas é idêntico. A
+consequência é que o dashboard passa a conectar sem negociação de TLS, o que
+é mudança de comportamento de infra (assumida de propósito), não de cálculo.
 
-1. Conecta inicialmente usando autenticação Windows.
-2. Cria o login SQL holder_jenkins caso ele não exista.
-3. Cria o usuário holder_jenkins dentro do banco holder.
-4. Concede as permissões necessárias.
-5. Conecta utilizando o login SQL holder_jenkins.
-
-A autenticação Windows precisa possuir permissões suficientes
-para criar logins e usuários no SQL Server.
+A barra invertida do nome da instância não é confiável dentro da URL
+`mssql+pyodbc://host/db` do SQLAlchemy (`%5C` falha com "Provedor de Pipes
+Nomeados: servidor não encontrado" mesmo com o SQL Server acessível), por
+isso a string crua via `odbc_connect=`.
 """
-
 from __future__ import annotations
 
 import urllib.parse
 
-from sqlalchemy import create_engine, text
-from sqlalchemy.engine import Engine
+from sqlalchemy import create_engine
 
-
-# NÃO COMMITAR: instância nomeada do SQL Server Express local ("localhost"
-# sozinho é a instância default, que não é a que está instalada aqui —
-# regride pra "Provedor de Pipes Nomeados: servidor não encontrado" mesmo
-# com o serviço no ar). Específico desta máquina — o Alan usa a default.
 SERVER = "localhost"
 DATABASE = "holder"
 
 DRIVER = "ODBC Driver 17 for SQL Server"
 
+# Login SQL do Jenkins (CI) — mantido como credencial PRIMÁRIA de propósito
+# (é o que o pipeline usa). Numa máquina de dev onde esse login SQL não
+# existe (só autenticação do Windows configurada), `criar_engine` cai pra
+# Trusted_Connection sozinho — ver `_TENTATIVAS_AUTH` abaixo.
 USERNAME = "holder_jenkins"
 PASSWORD = "Holder@123456"
 
 
-def _string_odbc_base(database: str | None = None) -> str:
-    """
-    Parte comum da string ODBC.
-    """
-
+def _string_odbc_base(database: str | None) -> str:
     return (
         f"DRIVER={{{DRIVER}}};"
         f"SERVER={SERVER};"
@@ -48,268 +41,41 @@ def _string_odbc_base(database: str | None = None) -> str:
 
 
 def string_odbc(database: str | None = None) -> str:
-    """
-    String de conexão usando autenticação SQL Server.
-    """
-
-    connection_string = (
-        f"{_string_odbc_base(database)}"
-        f"UID={USERNAME};"
-        f"PWD={PASSWORD};"
+    """String de conexão ODBC com o login SQL do Jenkins. `Encrypt=no` evita
+    a negociação de TLS que o driver 17 tenta por padrão antes de cair pra
+    conexão sem criptografia — desnecessária numa instância local."""
+    return urllib.parse.quote_plus(
+        f"{_string_odbc_base(database)}UID={USERNAME};PWD={PASSWORD};"
     )
-
-    return urllib.parse.quote_plus(connection_string)
 
 
 def _string_odbc_trusted(database: str | None = None) -> str:
+    """Mesma string, mas com autenticação do Windows — fallback pra quando
+    o login SQL do Jenkins não existe na instância (comum em máquina de dev,
+    que normalmente só tem o usuário Windows configurado como admin do
+    SQL Server)."""
+    return urllib.parse.quote_plus(f"{_string_odbc_base(database)}Trusted_Connection=yes;")
+
+
+def criar_engine(database: str | None = None, **kwargs):
+    """Motor SQLAlchemy para o banco pedido (por padrão, `holder`).
+    `kwargs` passa direto pro create_engine — a ingestão usa
+    `isolation_level="AUTOCOMMIT"` pra poder executar CREATE DATABASE.
+
+    Tenta o login SQL do Jenkins primeiro (credencial de CI, sempre a
+    preferida); se a conexão falhar — login inválido, usuário inexistente
+    nesta instância etc. — cai pra autenticação do Windows automaticamente,
+    sem precisar de nenhum ajuste manual por máquina. Um erro de rede/
+    timeout genuíno (SQL Server fora do ar) falha nas duas tentativas e
+    sobe a exceção real da segunda, que é a mais informativa nesse caso.
     """
-    String de conexão usando autenticação integrada do Windows.
-    """
-
-    connection_string = (
-        f"{_string_odbc_base(database)}"
-        f"Trusted_Connection=yes;"
-    )
-
-    return urllib.parse.quote_plus(connection_string)
-
-
-def _criar_engine_sql(
-    database: str | None = None,
-    **kwargs,
-) -> Engine:
-    """
-    Cria uma engine utilizando o login SQL holder_jenkins.
-    """
-
-    return create_engine(
-        f"mssql+pyodbc:///?odbc_connect={string_odbc(database)}",
-        **kwargs,
-    )
-
-
-def _criar_engine_windows(
-    database: str | None = None,
-    **kwargs,
-) -> Engine:
-    """
-    Cria uma engine utilizando autenticação Windows.
-    """
-
-    return create_engine(
-        f"mssql+pyodbc:///?odbc_connect={_string_odbc_trusted(database)}",
-        **kwargs,
-    )
-
-
-def _garantir_login_sql(engine_windows: Engine) -> None:
-    """
-    Cria o login SQL holder_jenkins na instância do SQL Server,
-    caso ele ainda não exista.
-    """
-
-    username_sql = USERNAME.replace("]", "]]")
-    password_sql = PASSWORD.replace("'", "''")
-
-    comando = text(
-        f"""
-        IF NOT EXISTS (
-            SELECT 1
-            FROM sys.server_principals
-            WHERE name = :username
-        )
-        BEGIN
-            CREATE LOGIN [{username_sql}]
-            WITH PASSWORD = '{password_sql}',
-                 CHECK_POLICY = OFF,
-                 CHECK_EXPIRATION = OFF;
-        END;
-        """
-    )
-
-    with engine_windows.connect() as connection:
-        connection.execute(
-            comando,
-            {"username": USERNAME},
-        )
-        connection.commit()
-
-    print(
-        f"[SQL Server] Login '{USERNAME}' criado ou já existente."
-    )
-
-
-def _garantir_usuario_banco(
-    engine_windows: Engine,
-    database: str,
-) -> None:
-    """
-    Cria o usuário dentro do banco e concede permissões.
-    """
-
-    username_sql = USERNAME.replace("]", "]]")
-
-    comando = text(
-        f"""
-        IF NOT EXISTS (
-            SELECT 1
-            FROM sys.database_principals
-            WHERE name = :username
-        )
-        BEGIN
-            CREATE USER [{username_sql}]
-            FOR LOGIN [{username_sql}];
-        END;
-
-        IF NOT EXISTS (
-            SELECT 1
-            FROM sys.database_role_members drm
-            INNER JOIN sys.database_principals role_principal
-                ON drm.role_principal_id = role_principal.principal_id
-            INNER JOIN sys.database_principals user_principal
-                ON drm.member_principal_id = user_principal.principal_id
-            WHERE role_principal.name = 'db_datareader'
-              AND user_principal.name = :username
-        )
-        BEGIN
-            ALTER ROLE db_datareader
-            ADD MEMBER [{username_sql}];
-        END;
-
-        IF NOT EXISTS (
-            SELECT 1
-            FROM sys.database_role_members drm
-            INNER JOIN sys.database_principals role_principal
-                ON drm.role_principal_id = role_principal.principal_id
-            INNER JOIN sys.database_principals user_principal
-                ON drm.member_principal_id = user_principal.principal_id
-            WHERE role_principal.name = 'db_datawriter'
-              AND user_principal.name = :username
-        )
-        BEGIN
-            ALTER ROLE db_datawriter
-            ADD MEMBER [{username_sql}];
-        END;
-
-        IF NOT EXISTS (
-            SELECT 1
-            FROM sys.database_role_members drm
-            INNER JOIN sys.database_principals role_principal
-                ON drm.role_principal_id = role_principal.principal_id
-            INNER JOIN sys.database_principals user_principal
-                ON drm.member_principal_id = user_principal.principal_id
-            WHERE role_principal.name = 'db_ddladmin'
-              AND user_principal.name = :username
-        )
-        BEGIN
-            ALTER ROLE db_ddladmin
-            ADD MEMBER [{username_sql}];
-        END;
-        """
-    )
-
-    with engine_windows.connect() as connection:
-        connection.execute(
-            comando,
-            {"username": USERNAME},
-        )
-        connection.commit()
-
-    print(
-        f"[SQL Server] Usuário '{USERNAME}' configurado "
-        f"no banco '{database}'."
-    )
-
-
-def _preparar_login_jenkins(
-    database: str,
-    **kwargs,
-) -> None:
-    """
-    Conecta primeiro via Windows e prepara o login SQL do Jenkins.
-    """
-
-    print(
-        "[SQL Server] Conectando via autenticação Windows "
-        "para preparar o login do Jenkins..."
-    )
-
-    engine_windows = _criar_engine_windows(
-        database=database,
-        **kwargs,
-    )
-
+    engine = create_engine(f"mssql+pyodbc:///?odbc_connect={string_odbc(database)}", **kwargs)
     try:
-        with engine_windows.connect():
+        with engine.connect():
             pass
-
-        print(
-            "[SQL Server] Autenticação Windows realizada com sucesso."
+        return engine
+    except Exception:
+        engine.dispose()
+        return create_engine(
+            f"mssql+pyodbc:///?odbc_connect={_string_odbc_trusted(database)}", **kwargs
         )
-
-        _garantir_login_sql(engine_windows)
-        _garantir_usuario_banco(engine_windows, database)
-
-    finally:
-        engine_windows.dispose()
-
-
-def criar_engine(
-    database: str | None = None,
-    **kwargs,
-) -> Engine:
-    """
-    Cria uma engine SQLAlchemy.
-
-    O login SQL do Jenkins é preparado primeiro por meio
-    da autenticação Windows.
-
-    Depois disso, a conexão final utiliza o login SQL.
-    """
-
-    database = database or DATABASE
-
-    # Primeiro: autenticação Windows e criação do login
-    _preparar_login_jenkins(
-        database=database,
-        **kwargs,
-    )
-
-    # Segundo: conexão final utilizando o login SQL
-    print(
-        f"[SQL Server] Tentando conexão com o login SQL '{USERNAME}'..."
-    )
-
-    engine_sql = _criar_engine_sql(
-        database=database,
-        **kwargs,
-    )
-
-    try:
-        with engine_sql.connect():
-            pass
-
-        print(
-            f"[SQL Server] Conectado com sucesso usando '{USERNAME}'."
-        )
-
-        return engine_sql
-
-    except Exception as erro:
-        # O login foi criado acima, mas criar não garante poder usar: numa
-        # instância configurada só para autenticação do Windows (padrão do
-        # SQL Server Express), o CREATE LOGIN funciona e o logon seguinte
-        # falha com 18456. Era exatamente isso que deixava o app inteiro
-        # fora do ar numa máquina de dev — todas as telas caíam, porque
-        # `criar_engine` é a porta de entrada de qualquer leitura.
-        #
-        # Como já chegamos aqui por autenticação do Windows (foi ela que
-        # preparou o login), ela comprovadamente funciona nesta máquina:
-        # cair de volta pra ela mantém o ambiente de pé sem precisar de
-        # permissão de administrador pra habilitar o modo misto.
-        engine_sql.dispose()
-        print(
-            f"[SQL Server] Login '{USERNAME}' indisponível ({erro.__class__.__name__}). "
-            "Usando autenticação do Windows."
-        )
-        return _criar_engine_windows(database=database, **kwargs)
