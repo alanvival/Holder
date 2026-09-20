@@ -40,11 +40,11 @@ def carregar_dados():
 
 
 @st.cache_data
-def carregar_rfv_periodo(df_cli, df_atd, df_sit, meses):
+def carregar_rfv_periodo(df_cli, df_atd, df_sit, df_nps, meses):
     """RFV da Matriz Estratégica recalculada pro período escolhido no
     seletor da aba — nunca chamado pra linhas_risco/padroes_churn (esses
     ignoram o período de propósito, calculados uma vez em carregar_dados)."""
-    return calcular_rfv(df_cli, df_atd, df_sit, meses=meses)
+    return calcular_rfv(df_cli, df_atd, df_sit, df_nps, meses=meses)
 
 
 def main() -> None:
@@ -68,12 +68,13 @@ def main() -> None:
             index=3,
             format_func=lambda m: f"Últimos {m} meses" if m != 12 else "Último 1 ano",
             help=(
-                "Filtra só o histórico de atendimento dos clientes ATIVOS usado nesta aba "
-                "(matriz e ranking). As linhas de corte tiradas de quem já cancelou continuam "
-                "usando a base inteira, sem esse filtro."
+                "Filtra o histórico de atendimento E de NPS dos clientes ATIVOS usado nesta "
+                "aba (matriz e ranking) — um cliente com falhas reais no período mas NPS bom "
+                "no mesmo período tem a saúde ajustada pra cima. As linhas de corte tiradas de "
+                "quem já cancelou continuam usando a base inteira, sem esse filtro."
             ),
         )
-        df_rfv_periodo = carregar_rfv_periodo(df_cli, df_atd, df_sit, meses_periodo)
+        df_rfv_periodo = carregar_rfv_periodo(df_cli, df_atd, df_sit, df_nps, meses_periodo)
         matriz.renderizar(df_rfv_periodo, strikes)
     with tab2:
         monitor.renderizar(df_cli, df_atd, df_sit, df_nps, df_rfv, linhas_risco)

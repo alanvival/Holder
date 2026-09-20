@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import textwrap
 
+import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
@@ -75,23 +76,41 @@ def _renderizar_matriz(df_rfv) -> None:
     st.plotly_chart(fig, use_container_width=True)
 
 
+def _rotulo_nps(risco_medio) -> str:
+    if pd.isna(risco_medio):
+        return "Sem pesquisa no período"
+    if risco_medio <= 25:
+        return "Promotor"
+    if risco_medio >= 75:
+        return "Detrator"
+    return "Neutro"
+
+
 def _renderizar_ranking(df_rfv) -> None:
     modulo_header(
         "Ranking de Priorização de Contato",
-        "Clientes ordenados por risco (pior primeiro) — por quem começar esta semana.",
+        "Clientes ordenados por risco (pior primeiro) — por quem começar esta semana. O fator de risco já "
+        "considera o NPS do período: falhas reais com NPS bom pesam menos.",
     )
     df_ranking = df_rfv.sort_values(by=['R_Score', 'V_Score'], ascending=[True, False]).copy()
-    df_display = df_ranking[['cliente_id', 'segmento', 'valor_mensal', 'Fator_Risco', 'Categoria_Saude']].copy()
-    df_display.columns = ['ID Cliente', 'Setor', 'Ticket Mensal (R$)', 'Total Falhas (SLA + Reclamações)', 'Status Estratégico']
+    df_ranking['NPS (período)'] = df_ranking['NPS_Risco_Medio'].apply(_rotulo_nps)
+    df_display = df_ranking[
+        ['cliente_id', 'segmento', 'valor_mensal', 'Fator_Risco', 'NPS (período)', 'Categoria_Saude']
+    ].copy()
+    df_display.columns = [
+        'ID Cliente', 'Setor', 'Ticket Mensal (R$)', 'Fator de Risco (SLA + Reclamações, ajustado por NPS)',
+        'NPS (período)', 'Status Estratégico',
+    ]
 
     # Cortes por quartil da própria coluna — mesma ideia de "4 baldes
     # discretos" da matriz, calibrada aos valores reais desta métrica (não é
     # um percentual 0-100 como o score de risco, então os cortes fixos de lá
     # não serviriam aqui).
-    cortes_falhas = tuple(df_display['Total Falhas (SLA + Reclamações)'].quantile([0.25, 0.5, 0.75]))
+    coluna_fator = 'Fator de Risco (SLA + Reclamações, ajustado por NPS)'
+    cortes_falhas = tuple(df_display[coluna_fator].quantile([0.25, 0.5, 0.75]))
     st.dataframe(
         df_display.style
-            .apply(lambda s: cores_por_corte(s, cortes_falhas), subset=['Total Falhas (SLA + Reclamações)'])
+            .apply(lambda s: cores_por_corte(s, cortes_falhas), subset=[coluna_fator])
             .format({'Ticket Mensal (R$)': 'R$ {:.2f}'}),
         use_container_width=True, hide_index=True,
     )
