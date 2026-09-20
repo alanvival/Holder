@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { consultarPergunta, registrarSugestaoUsuario, hidratarCatalogoAdmin } from '../services/assistenteApi.js';
+import { consultarPergunta, registrarSugestaoUsuario, hidratarCatalogoAdmin, PerguntaCanceladaError } from '../services/assistenteApi.js';
 import { useTenant } from '../context/TenantContext.jsx';
 
 // Histórico de conversa — estrutura pronta para persistir por usuário depois:
@@ -52,6 +52,7 @@ export function useAssistant() {
   const [mensagens, setMensagens] = useState([SAUDACAO_INICIAL]);
   const [status, setStatus] = useState('idle'); // idle | loading | erro
   const bolhaTimeoutRef = useRef(null);
+  const controladorPerguntaRef = useRef(null);
 
   // Sincroniza as perguntas cadastradas pelo admin (persistidas no
   // backend) pro motor local de matching, uma vez ao montar — assim elas
@@ -107,9 +108,12 @@ export function useAssistant() {
     setMensagens((atual) => [...atual, mensagemUsuario]);
     setStatus('loading');
 
+    const controlador = new AbortController();
+    controladorPerguntaRef.current = controlador;
+
     try {
       const inicio = Date.now();
-      const { payload, origem, intentId } = await consultarPergunta(texto, { historico: historicoParaIa });
+      const { payload, origem, intentId } = await consultarPergunta(texto, { historico: historicoParaIa, sinal: controlador.signal });
 
       // O catálogo determinístico resolve em memória (instantâneo) — sem
       // um atraso mínimo, a resposta aparece antes do indicador "digitando"
@@ -132,12 +136,18 @@ export function useAssistant() {
         ...(payload.kind === 'not_found'
           ? { perguntaOrigem: texto, sugestaoStatus: 'pendente' }
           : {}),
+        ...(payload.kind === 'timeout' ? { perguntaOrigem: texto } : {}),
         criadaEm: new Date().toISOString(),
       };
       setMensagens((atual) => [...atual, mensagemResposta]);
       setStatus('idle');
-    } catch {
-      setStatus('erro');
+    } catch (erro) {
+      // Cancelamento pelo usuário (botão "Cancelar" no indicador de
+      // digitando) não é uma falha — só volta pro estado ocioso, sem
+      // mensagem de erro nem resposta falsa de "não sei".
+      setStatus(erro instanceof PerguntaCanceladaError ? 'idle' : 'erro');
+    } finally {
+      controladorPerguntaRef.current = null;
     }
   }, [status, mensagens]);
 
@@ -161,6 +171,10 @@ export function useAssistant() {
     setStatus('idle');
   }, []);
 
+  const cancelarPerguntaAtual = useCallback(() => {
+    controladorPerguntaRef.current?.abort();
+  }, []);
+
   return {
     aberto,
     bolhaSaudacaoVisivel,
@@ -175,5 +189,6 @@ export function useAssistant() {
     confirmarSugestao,
     dispensarSugestao,
     tentarNovamente,
+    cancelarPerguntaAtual,
   };
 }

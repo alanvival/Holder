@@ -19,7 +19,13 @@ import {
   aprovarSugestao,
   rejeitarSugestao,
 } from '../engine/suggestionsStore.js';
-import { textResponse, tableResponse, notFoundResponse } from '../engine/responseFormat.js';
+import { textResponse, tableResponse, notFoundResponse, timeoutResponse } from '../engine/responseFormat.js';
+
+// Lançado quando o USUÁRIO cancela a pergunta em andamento (botão
+// "Cancelar" no indicador de digitando — ver TypingIndicator.jsx) —
+// diferente de um timeout de verdade: aqui não faz sentido nenhuma
+// mensagem de resposta, só voltar pro estado ocioso sem nada na tela.
+export class PerguntaCanceladaError extends Error {}
 
 // Tools cujo resultado é naturalmente tabular — quando o backend devolve um
 // bloco `tabela` (colunas + linhas), a UI renderiza como tabela em vez de
@@ -32,21 +38,32 @@ const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:8000/a
 // chamadas da mesma sessão — não é autenticação nem identifica a pessoa.
 const SESSAO_ID = `sessao-${Math.random().toString(36).slice(2)}-${Date.now()}`;
 
-async function chamarBackend(caminho, opcoes, timeoutMs = 8000) {
+// `sinalExterno` é opcional — quando presente (só usado pelo fallback de
+// IA, a única chamada longa o bastante pra alguém querer cancelar), um
+// abort dele derruba a mesma requisição que o timeout interno derrubaria,
+// e a função sabe distinguir os dois casos (usuário cancelou vs. só
+// demorou demais) pra quem chamou decidir o que mostrar.
+async function chamarBackend(caminho, opcoes, timeoutMs = 8000, sinalExterno) {
+  const controlador = new AbortController();
+  const timeoutId = setTimeout(() => controlador.abort(), timeoutMs);
+  const propagarCancelamento = () => controlador.abort();
+  sinalExterno?.addEventListener('abort', propagarCancelamento);
   try {
-    const controlador = new AbortController();
-    const timeoutId = setTimeout(() => controlador.abort(), timeoutMs);
     const resposta = await fetch(`${BACKEND_URL}${caminho}`, {
       headers: { 'Content-Type': 'application/json' },
       signal: controlador.signal,
       ...opcoes,
     });
-    clearTimeout(timeoutId);
     const corpo = await resposta.json().catch(() => null);
     return { ok: resposta.ok, status: resposta.status, dados: corpo };
   } catch {
-    // Backend fora do ar, CORS não configurado, rede caiu, etc.
+    if (sinalExterno?.aborted) throw new PerguntaCanceladaError();
+    // Backend fora do ar, CORS não configurado, rede caiu, ou o timeout
+    // interno (timeoutMs) estourou — quem chamou trata como "sem resposta".
     return null;
+  } finally {
+    clearTimeout(timeoutId);
+    sinalExterno?.removeEventListener('abort', propagarCancelamento);
   }
 }
 
@@ -62,11 +79,11 @@ async function chamarBackend(caminho, opcoes, timeoutMs = 8000) {
 // indefinidamente se o backend realmente travar.
 const TIMEOUT_FALLBACK_IA_MS = 45000;
 
-async function tentarFallbackIa(texto, historico) {
+async function tentarFallbackIa(texto, historico, sinal) {
   const resultado = await chamarBackend('/fallback-ia', {
     method: 'POST',
     body: JSON.stringify({ pergunta: texto, sessaoId: SESSAO_ID, historico }),
-  }, TIMEOUT_FALLBACK_IA_MS);
+  }, TIMEOUT_FALLBACK_IA_MS, sinal);
   return resultado?.ok ? resultado.dados : null;
 }
 
@@ -87,7 +104,7 @@ function registrarHistorico({ pergunta, resposta, origem, tool, sucesso }) {
  * rede) -> atalho de risco (rota fixa no backend, sem Groq) -> fallback de
  * IA (Groq, com tool use — só quando os dois primeiros não reconhecem).
  */
-export async function consultarPergunta(texto, { historico } = {}) {
+export async function consultarPergunta(texto, { historico, sinal } = {}) {
   const resultadoCatalogo = interpretarPergunta(texto);
   if (resultadoCatalogo.payload.kind !== 'not_found') {
     registrarHistorico({ pergunta: texto, resposta: resultadoCatalogo.payload.text ?? null, origem: 'catalogo', tool: resultadoCatalogo.intentId ?? null, sucesso: true });
@@ -101,7 +118,7 @@ export async function consultarPergunta(texto, { historico } = {}) {
     return { payload, intentId: 'risco_direto', origem: 'catalogo' };
   }
 
-  const respostaIa = await tentarFallbackIa(texto, historico);
+  const respostaIa = await tentarFallbackIa(texto, historico, sinal);
   if (respostaIa?.encontrado) {
     const tabela = respostaIa.resultado?.tabela;
     const payload = TOOLS_COM_TABELA.has(respostaIa.tool) && tabela?.colunas?.length
@@ -111,10 +128,19 @@ export async function consultarPergunta(texto, { historico } = {}) {
     return { payload, intentId: respostaIa.tool ?? null, origem: 'ia' };
   }
 
-  // Fallback não achou tool, deu timeout, ou o backend nem está no ar —
-  // sempre cai no mesmo "não encontrei" + sugestão que já existe no widget.
-  registrarHistorico({ pergunta: texto, resposta: null, origem: respostaIa ? 'ia' : 'catalogo', tool: null, sucesso: false });
-  return { payload: notFoundResponse(), intentId: null, origem: respostaIa ? 'ia' : 'catalogo' };
+  // `respostaIa` é null em dois casos BEM diferentes, que agora viram
+  // mensagens diferentes: (a) a chamada nem completou — timeout do front,
+  // rede caiu, backend fora do ar — não é "não encontrei", é "não deu
+  // tempo/não rolou", com botão de tentar de novo; (b) a chamada completou
+  // e a própria IA decidiu que nenhuma tool respondia a pergunta —
+  // "não encontrei" de verdade, com o prompt de sugestão pro catálogo.
+  if (!respostaIa) {
+    registrarHistorico({ pergunta: texto, resposta: null, origem: 'ia', tool: null, sucesso: false });
+    return { payload: timeoutResponse(), intentId: null, origem: 'ia' };
+  }
+
+  registrarHistorico({ pergunta: texto, resposta: null, origem: 'ia', tool: null, sucesso: false });
+  return { payload: notFoundResponse(), intentId: null, origem: 'ia' };
 }
 
 // Injeta uma pergunta vinda do backend no motor local de matching, usando o

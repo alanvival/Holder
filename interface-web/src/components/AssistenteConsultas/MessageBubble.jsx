@@ -1,7 +1,7 @@
 import { ChatIcon, CalendarIcon, CheckIcon, AlertIcon, DownloadIcon } from './icons/index.jsx';
 import { exportarRespostaComoPdf } from '../../utils/exportarPdf.js';
 
-export function MessageBubble({ mensagem, onConfirmarSugestao, onDispensarSugestao }) {
+export function MessageBubble({ mensagem, onConfirmarSugestao, onDispensarSugestao, onTentarNovamente }) {
   if (mensagem.autor === 'usuario') {
     return (
       <div className="ac-message-row ac-message-row--user">
@@ -11,6 +11,7 @@ export function MessageBubble({ mensagem, onConfirmarSugestao, onDispensarSugest
   }
 
   const isNotFound = mensagem.payload.kind === 'not_found';
+  const isTimeout = mensagem.payload.kind === 'timeout';
 
   return (
     <div className="ac-message-row">
@@ -93,7 +94,7 @@ export function MessageBubble({ mensagem, onConfirmarSugestao, onDispensarSugest
             então só precisa de algum texto pra exportar. Exclui a saudação
             estática inicial (msg-saudacao) — ela não é resposta a nenhuma
             pergunta, não faz sentido "exportar" um convite pra conversar. */}
-        {!isNotFound && mensagem.id !== 'msg-saudacao' && mensagem.payload.text && (
+        {!isNotFound && !isTimeout && mensagem.id !== 'msg-saudacao' && mensagem.payload.text && (
           <button
             type="button"
             className="ac-export-btn"
@@ -102,10 +103,26 @@ export function MessageBubble({ mensagem, onConfirmarSugestao, onDispensarSugest
             <DownloadIcon /> Exportar PDF
           </button>
         )}
-        {mensagem.origem === 'ia' && !isNotFound && (
+        {mensagem.origem === 'ia' && !isNotFound && !isTimeout && (
           <div className="ac-origem-ia">
             <ChatIcon size={10} color="#0156FC" /> Respondido pela IA — fora do catálogo padrão
           </div>
+        )}
+        {isTimeout && (
+          <>
+            <div className="ac-not-found__header">
+              <AlertIcon />
+              <div>Isso demorou demais pra responder — pode ter sido instabilidade na rede ou no servidor.</div>
+            </div>
+            <button
+              type="button"
+              className="ac-btn ac-btn--primary"
+              style={{ alignSelf: 'flex-start' }}
+              onClick={() => onTentarNovamente(mensagem.perguntaOrigem)}
+            >
+              Tentar de novo
+            </button>
+          </>
         )}
         {isNotFound && (
           <>
