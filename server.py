@@ -30,7 +30,7 @@ from fallback_ia.guardrails import limite_excedido  # noqa: E402
 from fallback_ia import armazenamento  # noqa: E402
 
 app = Flask(__name__)
-CORS(app, origins=[os.environ.get("FRONTEND_ORIGIN", "http://localhost:5183")])
+CORS(app, origins=[os.environ.get("FRONTEND_ORIGIN", "http://localhost:5173")])
 
 # Cria as tabelas do SQLite se ainda não existirem. Isso era feito no import
 # de fallback_ia/armazenamento.py, o que fazia qualquer importador do pacote

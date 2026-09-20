@@ -31,6 +31,17 @@ componente dentro dela. Numa apresentação para banca, o nome atual gera pergun
   `strictPort: true` no `vite.config.js`, além do backend em 5173. Com `strictPort`, o Vite
   falha alto em vez de escolher outra porta em silêncio — que é o que provavelmente originou
   essa divergência.
+
+  **RESOLVIDO e ANTECIPADO para antes da fase 4.** O usuário confirmou que sobe o front com
+  `npm run dev` puro, ou seja, na 5173 — então o bug estava ativo. Provado com sonda de CORS:
+  requisição com `Origin: http://localhost:5173` voltava **sem**
+  `Access-Control-Allow-Origin`, o que faz o navegador descartar a resposta enquanto o Flask
+  **executa** a requisição normalmente (a sonda gravou linha no histórico e devolveu 201).
+  Resultado prático: o widget vinha caindo no modo local em silêncio.
+
+  Antecipado porque a verificação visual das fases 4 a 8 inclui o chat, e não faz sentido
+  pedir conferência de um chat quebrado. Depois da correção: 5173 recebe o cabeçalho, 5183
+  não. O que resta desta fase é o rename para `interface-web/` e o `.env.example` próprio.
 - Garantir que nada do `tokens.css` regrediu — ele está hoje 100% conforme ao
   `design-tokens.md` (11 cores, 2 gradientes, 2 fontes, 2 raios) e assim deve continuar.
 
