@@ -11,13 +11,14 @@ import os
 
 from groq import Groq
 
-MODELO = "openai/gpt-oss-120b"
-
-# gpt-oss é um "reasoning model" — gasta uma parte do orçamento de tokens
-# pensando antes de responder, então precisa de mais margem que um modelo
-# comum pra sobrar espaço pro texto final (testado: 300 tokens já cortava
-# respostas curtas pela metade).
-MAX_TOKENS = 2048
+MODELO = "openai/gpt-oss-20b"
+# gpt-oss-120b media 40-223s por pergunta de 1 tool só, ao vivo (reasoning
+# model — gasta uma fatia do orçamento de tokens "pensando" antes de
+# responder). Troca pra llama-3.3-70b-versatile (sem essa etapa) falhou:
+# esta conta Groq só tem acesso à família gpt-oss (client.models.list()).
+# gpt-oss-20b é a mesma arquitetura do 120b, ~6x menor — ainda "pensa",
+# mas bem mais rápido nisso (confirmado ao vivo: ~18-29s no mesmo caso).
+MAX_TOKENS = 1024
 
 _cliente = None
 
