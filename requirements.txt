@@ -9,6 +9,11 @@ sqlalchemy
 pyodbc
 matplotlib
 
+# Score de risco de cancelamento (modelo_risco.py) — regressão logística
+# treinada/validada contra a base real (ver testar_modelo_risco.py)
+scikit-learn
+numpy
+
 # Backend do fallback de IA do Assistente de Consultas (server.py)
 Flask>=3.1
 flask-cors>=6.0
