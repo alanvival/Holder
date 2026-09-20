@@ -23,7 +23,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from . import ia_fallback
-from .metricas import calcular_metrica, comparar_metrica_por_categoria, analisar_fatores_churn, clientes_em_risco
+from .metricas import calcular_metrica, comparar_metrica_por_categoria, analisar_fatores_churn, clientes_em_risco, prever_risco_cancelamento
 from .tools_genericas import listar_clientes, buscar_campo_cliente, comparar_clientes, evolucao_temporal
 
 
@@ -108,6 +108,26 @@ def caso_clientes_em_risco():
     obtido_ids = {c["cliente_id"] for c in resultado["resultado"]["clientes"]}
     assert obtido_ids == esperado_ids
     print("OK   clientes_em_risco:", resultado["resposta"])
+
+
+def caso_prever_risco_cancelamento():
+    """Pergunta tipo 'faça uma predição de cancelamento' — diferente de
+    clientes_em_risco (diagnóstico contra a própria história), compara o
+    cliente ativo com o padrão real de quem já cancelou."""
+    tool_call = FakeToolCall("call_21", "prever_risco_cancelamento", {"cliente_id": "C067"})
+    sequencia = [
+        _resposta(FakeMessage(tool_calls=[tool_call])),
+        _resposta(FakeMessage(content="O cliente C067 bateu 4 de 4 sinais de alerta: SLA crítico, lentidão, reclamação recente e NPS detrator — mesmo padrão de quem já cancelou.")),
+    ]
+    with patch.object(ia_fallback, "_chamar_modelo", side_effect=sequencia):
+        resultado = ia_fallback.responder_com_fallback_ia("Faça uma predição de cancelamento pro cliente C067")
+
+    assert resultado["encontrado"] is True
+    assert resultado["tool"] == "prever_risco_cancelamento"
+    esperado = prever_risco_cancelamento("C067")
+    assert resultado["resultado"]["total_strikes"] == esperado["total_strikes"]
+    assert resultado["resultado"]["strikes"] == esperado["strikes"]
+    print("OK   prever_risco_cancelamento (predição, não diagnóstico):", resultado["resposta"])
 
 
 def caso_metrica_agrupada_por_categoria():
@@ -413,6 +433,7 @@ if __name__ == "__main__":
     caso_consultar_metrica()
     caso_analisar_fatores_churn()
     caso_clientes_em_risco()
+    caso_prever_risco_cancelamento()
     caso_metrica_agrupada_por_categoria()
     caso_maior_cliente()
     caso_clientes_por_segmento()

@@ -90,7 +90,10 @@ TOOLS = [
             "dispararam, calibrados pelo quanto cada sinal realmente "
             "diferencia clientes ativos de cancelados na base — não uma "
             "contagem simples), comparando o mês mais recente de cada "
-            "cliente com a própria média histórica dele. Use pra "
+            "cliente com a própria média histórica DELE MESMO. É "
+            "diagnóstico (piorou em relação a si próprio?), não predição — "
+            "pra predição (o cliente se parece com quem já cancelou?) use "
+            "prever_risco_cancelamento. Use clientes_em_risco pra "
             "perguntas tipo 'quais clientes estão em risco', 'quem eu "
             "devo ligar primeiro'."
         ),
@@ -98,6 +101,28 @@ TOOLS = [
             "type": "object",
             "properties": {
                 "nivel": {"type": "string", "enum": ["Alto", "Médio", "Baixo"], "description": "Padrão: Alto."},
+            },
+        },
+    },
+    {
+        "name": "prever_risco_cancelamento",
+        "description": (
+            "PREDIÇÃO de cancelamento: compara o(s) cliente(s) ativo(s) "
+            "com o padrão real de comportamento de clientes que JÁ "
+            "cancelaram nos últimos meses antes de sair (SLA crítico, "
+            "lentidão de resolução, reclamação recente, NPS detrator) — "
+            "cada sinal batido é um 'strike'. Diferente de clientes_em_risco "
+            "(que compara o cliente com a própria história dele), esta "
+            "compara com quem já saiu de verdade. Use pra perguntas tipo "
+            "'quais alertas temos', 'faça uma predição de cancelamento', "
+            "'esse cliente tem risco de cancelar no futuro', 'quais "
+            "clientes se parecem com quem já cancelou'."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "cliente_id": {"type": "string", "description": "Opcional — avalia só esse cliente. Sem isso, lista todos os ativos com pelo menos 1 alerta."},
+                "limite": {"type": "integer", "description": "Máximo de clientes a listar quando sem cliente_id (padrão 20, máximo 100)."},
             },
         },
     },
@@ -294,6 +319,8 @@ def executar_tool(nome: str, entrada: dict) -> dict:
         return metricas.analisar_fatores_churn()
     if nome == "clientes_em_risco":
         return metricas.clientes_em_risco(entrada.get("nivel", "Alto"))
+    if nome == "prever_risco_cancelamento":
+        return metricas.prever_risco_cancelamento(entrada.get("cliente_id"), entrada.get("limite", 20))
     if nome == "listar_clientes":
         return tools_genericas.listar_clientes(
             filtros=entrada.get("filtros"),

@@ -545,3 +545,146 @@ def clientes_em_risco(nivel: str = "Alto") -> dict:
         "pesos_sinais": pesos,
         "clientes": encontrados,
     }
+
+
+# --- Tool: prever_risco_cancelamento (predição, não diagnóstico) -----------
+#
+# clientes_em_risco (acima) é DIAGNÓSTICO: compara o cliente com a PRÓPRIA
+# história (piorou em relação a si mesmo?). Esta função é PREDIÇÃO: compara
+# o cliente ativo com o padrão real de comportamento de quem JÁ cancelou
+# nos últimos meses antes de sair — "esse cliente ativo hoje se parece com
+# como os que cancelaram estavam pouco antes de cancelar?". Mesma lógica do
+# painel "Strikes" do dashboard (app.py), portada aqui pra a IA conseguir
+# responder a mesma pergunta ("quais alertas/predições temos pra frente").
+#
+# É sempre um fato sobre o passado (quem já cancelou) aplicado ao presente
+# de quem ainda está ativo — nunca uma estimativa gelocal "inventada":
+# a IA só formata o resultado deste cálculo, igual em todo o resto do
+# projeto.
+
+def _linhas_risco_benchmark() -> dict[str, float]:
+    """Perfil típico (mediana; média só pra reclamações/reuniões, que são
+    contagens esparsas) dos meses de quem JÁ cancelou — vira a linha de
+    corte pra avaliar quem está ativo hoje."""
+    df_canc = _filtrar("atendimento_mensal", {"situacao": "Cancelado"})
+    if len(df_canc) == 0:
+        return {}
+
+    colunas_media = {"reclamacoes_formais"}
+    colunas = [
+        "chamados_abertos", "chamados_criticos", "chamados_reabertos", "chamados_dentro_sla",
+        "pct_sla_cumprido", "tempo_medio_resolucao_h", "reclamacoes_formais",
+        "uso_plataforma_pct", "dias_atraso_pagamento",
+    ]
+    linhas = {}
+    for col in colunas:
+        serie = df_canc[col].dropna()
+        if len(serie) == 0:
+            continue
+        linhas[col] = float(serie.mean()) if col in colunas_media else float(serie.median())
+    return linhas
+
+
+def prever_risco_cancelamento(cliente_id: str | None = None, limite: int = 20) -> dict:
+    """
+    Prevê quais clientes ativos têm hoje um padrão parecido com o de
+    clientes que já cancelaram (SLA crítico, lentidão, reclamação recente,
+    NPS detrator) — cada sinal batido vira um "strike". Sem cliente_id,
+    lista os ativos com pelo menos 1 strike, ordenados do pior pro melhor;
+    com cliente_id, avalia só aquele cliente.
+    """
+    linhas = _linhas_risco_benchmark()
+    if not linhas:
+        return {"erro": "Sem clientes cancelados suficientes na base pra montar o padrão de comparação."}
+
+    df_ativos_atd = _filtrar("atendimento_mensal", {"situacao": "Ativo"})
+    if cliente_id:
+        cliente_id = dados.normalizar_cliente_id(cliente_id)
+        if not dados.cliente_existe(cliente_id) or dados.situacao_do_cliente(cliente_id) != "Ativo":
+            return {"erro": f"Cliente {cliente_id} não encontrado entre os ativos."}
+
+    # taxa_disparo_por_sinal precisa da população TODA de ativos como base,
+    # mesmo quando cliente_id filtra o resultado pra um só — por isso o
+    # loop abaixo sempre roda sobre TODOS os ativos (df_ativos_atd), e só no
+    # final filtramos pro cliente pedido; senão a taxa viraria 100%/0%
+    # degenerada (base de 1 cliente) em vez da taxa real da carteira.
+
+    # "Recente" = último mês disponível na base pra clientes ativos, ou o mês
+    # anterior — cobre o caso de reclamação registrada no mês anterior ao
+    # mais recente sem exigir que tenha sido bem no último mês exato.
+    meses_recentes = sorted(df_ativos_atd["mes_ref"].unique())[-2:]
+
+    total_ativos_avaliados = df_ativos_atd["cliente_id"].nunique()
+    contagem_por_sinal = {"SLA crítico atual": 0, "Lentidão de resolução atual": 0, "Reclamação recente": 0, "Último NPS detrator": 0}
+    resultados = []
+    for cid, grupo in df_ativos_atd.groupby("cliente_id"):
+        grupo = grupo.sort_values("mes_ref")
+        ultima_linha = grupo.iloc[-1]
+
+        ultima_nps = dados.pesquisas_nps[
+            (dados.pesquisas_nps["cliente_id"] == cid) & (dados.pesquisas_nps["respondeu"] == 1)
+        ].sort_values("mes_ref")
+        classificacao_nps_recente = ultima_nps.iloc[-1]["classificacao_nps"] if len(ultima_nps) > 0 else None
+
+        reclamacoes_recentes = grupo[grupo["mes_ref"].isin(meses_recentes)]["reclamacoes_formais"].sum()
+
+        strikes = []
+        if "pct_sla_cumprido" in linhas and ultima_linha["pct_sla_cumprido"] == ultima_linha["pct_sla_cumprido"] and ultima_linha["pct_sla_cumprido"] <= linhas["pct_sla_cumprido"]:
+            strikes.append("SLA crítico atual")
+        if "tempo_medio_resolucao_h" in linhas and ultima_linha["tempo_medio_resolucao_h"] >= linhas["tempo_medio_resolucao_h"]:
+            strikes.append("Lentidão de resolução atual")
+        if reclamacoes_recentes > 0:
+            strikes.append("Reclamação recente")
+        if classificacao_nps_recente == "Detrator":
+            strikes.append("Último NPS detrator")
+
+        for sinal in strikes:
+            contagem_por_sinal[sinal] += 1
+
+        if strikes:
+            resultados.append({
+                "cliente_id": cid,
+                "strikes": strikes,
+                "total_strikes": len(strikes),
+                "mes_ref": ultima_linha["mes_ref"],
+            })
+
+    resultados.sort(key=lambda r: r["total_strikes"], reverse=True)
+
+    # Taxa de disparo de cada sinal sobre TODOS os ativos avaliados (não só
+    # os que tiveram algum strike) — sinal que dispara pra quase todo mundo
+    # é fraco isoladamente (alto risco de falso alarme), mesmo padrão do
+    # "taxa de falso alarme" do painel Strikes do dashboard.
+    taxa_disparo_por_sinal = {
+        sinal: round(qtd / total_ativos_avaliados * 100, 1) if total_ativos_avaliados else 0.0
+        for sinal, qtd in contagem_por_sinal.items()
+    }
+
+    if cliente_id:
+        resultado_cliente = next((r for r in resultados if r["cliente_id"] == cliente_id), None)
+        if not resultado_cliente:
+            return {
+                "cliente_id": cliente_id,
+                "total_strikes": 0,
+                "strikes": [],
+                "predicao": "Nenhum sinal de alerta — o cliente não se parece com o padrão de quem cancelou.",
+            }
+        return {**resultado_cliente, "taxa_disparo_por_sinal": taxa_disparo_por_sinal}
+
+    limite = max(1, min(limite or 20, 100))
+    return {
+        "total_clientes_ativos": total_ativos_avaliados,
+        "clientes_com_alerta": len(resultados),
+        "clientes": resultados[:limite],
+        "truncado": len(resultados) > limite,
+        "linhas_de_corte": {k: round(v, 2) for k, v in linhas.items()},
+        "taxa_disparo_por_sinal": taxa_disparo_por_sinal,
+        "nota": (
+            "Predição baseada no padrão real de comportamento de clientes que já "
+            "cancelaram (últimos meses antes de sair) — não é um diagnóstico do "
+            "histórico do próprio cliente (isso é a tool clientes_em_risco). Um "
+            "sinal com taxa_disparo_por_sinal alta dispara pra muitos clientes "
+            "ativos — sozinho é fraco, mas vários strikes juntos no mesmo "
+            "cliente são um alerta forte."
+        ),
+    }
