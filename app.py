@@ -6,6 +6,8 @@ import textwrap
 import urllib
 from sqlalchemy import create_engine # <- NOVA IMPORTAÇÃO PARA O BANCO DE DADOS
 
+import score_risco as sr  # Score de risco de cancelamento em duas camadas (precoce + confirmada)
+
 st.set_page_config(page_title="Dashboard Executivo CS", layout="wide")
 
 # Identidade visual da Globalsys (ver design-tokens.md na raiz do repo —
@@ -179,9 +181,10 @@ df_cli, df_atd, df_sit, df_nps, df_rfv, linhas_risco, padroes_churn, strikes, ta
 # ==============================================================================
 st.title("Dashboard Integrado de Customer Success")
 
-tab1, tab2 = st.tabs([
-    "Matriz Estratégica (Visão Geral)", 
-    "Monitor Individual (Análise de Risco)"
+tab1, tab2, tab3 = st.tabs([
+    "Matriz Estratégica (Visão Geral)",
+    "Monitor Individual (Análise de Risco)",
+    "Score de Risco (Preditivo)",
 ])
 
 # ------------------------------------------------------------------------------
@@ -350,3 +353,172 @@ with tab2:
         st.caption("Aviso: Quanto maior este indicador, maior o risco de cancelamento.")
     else:
         st.caption("Aviso: Nova métrica detectada. O gráfico plota o valor do cliente vs. a mediana da base cancelada para avaliação de desvio padrão.")
+
+# ------------------------------------------------------------------------------
+# ABA 3: SCORE DE RISCO (PREDITIVO) — duas camadas (precoce + confirmada),
+# não é ML: score de regras ponderadas, auditável, calibrado por
+# backtesting (ver testar_score_risco.py). Histórico salvo em SQL Server
+# (fScoreRisco) via score_risco.py — rodar `python score_risco.py` pra
+# atualizar/popular antes de abrir esta aba pela primeira vez.
+# ------------------------------------------------------------------------------
+with tab3:
+    @st.cache_data(ttl=600)
+    def _carregar_score_atual():
+        return sr.calcular_risco_todos_clientes(apenas_ativos=True)
+
+    @st.cache_data(ttl=600)
+    def _carregar_historico_score():
+        return sr.carregar_historico()
+
+    resultados = _carregar_score_atual()
+    historico_score = _carregar_historico_score()
+
+    if not resultados:
+        st.warning("Sem score calculado ainda. Rode `python score_risco.py` no terminal pra popular o histórico.")
+    else:
+        df_score = pd.DataFrame(resultados)
+        df_score = df_score.merge(df_cli[['cliente_id', 'plano', 'porte', 'segmento']], on='cliente_id', how='left')
+
+        mes_atual = df_score['mes_ref'].iloc[0]
+        mes_anterior_ref = (pd.Period(mes_atual, freq='M') - 1).strftime('%Y-%m')
+
+        # Tendência: compara o risco% deste mês com o do mês anterior salvo
+        # no histórico — alimenta a seta subiu/caiu/estável e o alerta de
+        # "cruzou de faixa".
+        hist_anterior = historico_score[historico_score['mes_ref'] == mes_anterior_ref][['cliente_id', 'risco_percentual', 'faixa']]
+        hist_anterior = hist_anterior.rename(columns={'risco_percentual': 'risco_anterior', 'faixa': 'faixa_anterior'})
+        df_score = df_score.merge(hist_anterior, on='cliente_id', how='left')
+
+        def _tendencia(row):
+            if pd.isna(row.get('risco_anterior')):
+                return '—'
+            delta = row['risco_percentual'] - row['risco_anterior']
+            if delta > 3:
+                return '↑ subindo'
+            if delta < -3:
+                return '↓ caindo'
+            return '→ estável'
+        df_score['tendencia'] = df_score.apply(_tendencia, axis=1)
+        df_score['cruzou_faixa'] = df_score.apply(
+            lambda r: bool(pd.notna(r.get('faixa_anterior')) and r['faixa_anterior'] != r['faixa']), axis=1
+        )
+        df_score['estagio_predominante'] = df_score.apply(
+            lambda r: 'Precoce' if r['score_precoce'] > r['score_confirmado'] else 'Confirmado', axis=1
+        )
+
+        st.caption(f"Score calculado com base no mês mais recente disponível: **{mes_atual}** · {len(df_score)} clientes ativos avaliados.")
+
+        # --- Filtros -----------------------------------------------------
+        col_f1, col_f2, col_f3, col_f4 = st.columns(4)
+        with col_f1:
+            faixas_sel = st.multiselect("Faixa de risco", ['Crítico', 'Em risco', 'Atenção', 'Saudável'],
+                                         default=['Crítico', 'Em risco', 'Atenção', 'Saudável'])
+        with col_f2:
+            planos_sel = st.multiselect("Plano", sorted(df_score['plano'].dropna().unique()), default=None)
+        with col_f3:
+            segmentos_sel = st.multiselect("Segmento", sorted(df_score['segmento'].dropna().unique()), default=None)
+        with col_f4:
+            estagio_sel = st.multiselect("Estágio predominante", ['Precoce', 'Confirmado'], default=None)
+
+        df_filtrado = df_score[df_score['faixa'].isin(faixas_sel)]
+        if planos_sel:
+            df_filtrado = df_filtrado[df_filtrado['plano'].isin(planos_sel)]
+        if segmentos_sel:
+            df_filtrado = df_filtrado[df_filtrado['segmento'].isin(segmentos_sel)]
+        if estagio_sel:
+            df_filtrado = df_filtrado[df_filtrado['estagio_predominante'].isin(estagio_sel)]
+
+        modo = st.radio("Modo de visualização", ["Lista ranqueada", "Cards por faixa", "Linha do tempo (cliente)"], horizontal=True)
+
+        cores_faixa = {'Crítico': '#E74C3C', 'Em risco': '#F5B041', 'Atenção': '#F9E79F', 'Saudável': '#A9DFBF'}
+
+        # --- Modo 1: Lista ranqueada --------------------------------------
+        if modo == "Lista ranqueada":
+            st.subheader(f"{len(df_filtrado)} cliente(s) — ordenado por risco decrescente")
+            for _, r in df_filtrado.iterrows():
+                alerta = " 🔔 cruzou de faixa" if r['cruzou_faixa'] else ""
+                icone_estagio = "👁️" if r['estagio_predominante'] == 'Precoce' else "🚨"
+                with st.expander(f"{icone_estagio} **{r['cliente_id']}** — {r['risco_percentual']:.0f}% · {r['faixa']} · {r['tendencia']}{alerta}"):
+                    col_a, col_b = st.columns([1, 2])
+                    with col_a:
+                        st.metric("Risco de cancelamento", f"{r['risco_percentual']:.0f}%")
+                        st.write(f"**Faixa:** {r['faixa']}")
+                        st.write(f"**Estágio predominante:** {r['estagio_predominante']}")
+                        st.write(f"**Tendência (vs. mês anterior):** {r['tendencia']}")
+                        st.write(f"**Plano/Porte/Segmento:** {r['plano']} · {r['porte']} · {r['segmento']}")
+                    with col_b:
+                        sinais = r['sinais_detalhados']
+                        nomes = {
+                            'atraso_pagamento': 'Atraso de pagamento', 'chamados_criticos': 'Chamados críticos',
+                            'sla_cumprido': 'SLA cumprido', 'uso_plataforma': 'Uso da plataforma',
+                            'reclamacoes': 'Reclamações', 'nps': 'NPS',
+                        }
+                        contrib = {nomes[k]: v.get('contribuicao', 0) or 0 for k, v in sinais.items()}
+                        fig_expl = go.Figure(go.Bar(
+                            x=list(contrib.values()), y=list(contrib.keys()), orientation='h',
+                            marker_color=['#0156FC' if k in ('atraso_pagamento', 'chamados_criticos') else '#1D1DDB' for k in sinais.keys()],
+                        ))
+                        fig_expl.update_layout(
+                            height=220, margin=dict(l=0, r=10, t=10, b=10),
+                            xaxis=dict(range=[0, 100], title='contribuição pro score (0-100)'),
+                            template='plotly_white',
+                        )
+                        st.plotly_chart(fig_expl, use_container_width=True)
+                        if sinais['nps']['classificacao_recente']:
+                            st.caption(f"Último NPS: {sinais['nps']['classificacao_recente']}")
+                        if sinais['atraso_pagamento']['baseline_pessoal'] is not None:
+                            st.caption(
+                                f"Atraso atual: {sinais['atraso_pagamento']['valor_atual']} dias "
+                                f"(baseline pessoal: {sinais['atraso_pagamento']['baseline_pessoal']:.1f})"
+                            )
+
+        # --- Modo 2: Cards por faixa ---------------------------------------
+        elif modo == "Cards por faixa":
+            cols = st.columns(4)
+            for col, faixa in zip(cols, ['Crítico', 'Em risco', 'Atenção', 'Saudável']):
+                with col:
+                    subset = df_filtrado[df_filtrado['faixa'] == faixa]
+                    st.markdown(f"##### {faixa} ({len(subset)})")
+                    for _, r in subset.sort_values('risco_percentual', ascending=False).iterrows():
+                        st.markdown(
+                            f"<div style='background:{cores_faixa[faixa]}22;border-left:4px solid {cores_faixa[faixa]};"
+                            f"border-radius:8px;padding:8px 10px;margin-bottom:6px;'>"
+                            f"<b>{r['cliente_id']}</b> — {r['risco_percentual']:.0f}%<br>"
+                            f"<span style='font-size:12px;color:#555;'>{r['tendencia']}</span></div>",
+                            unsafe_allow_html=True,
+                        )
+
+        # --- Modo 3: Linha do tempo individual ------------------------------
+        else:
+            cliente_timeline = st.selectbox("Cliente:", sorted(df_filtrado['cliente_id'].unique()) or sorted(df_score['cliente_id'].unique()))
+            hist_cliente = historico_score[historico_score['cliente_id'] == cliente_timeline].sort_values('mes_ref')
+            if hist_cliente.empty:
+                st.info("Sem histórico salvo pra esse cliente ainda.")
+            else:
+                fig_tl = go.Figure()
+                fig_tl.add_trace(go.Scatter(
+                    x=hist_cliente['mes_ref'], y=hist_cliente['risco_percentual'],
+                    mode='lines+markers+text', text=hist_cliente['risco_percentual'].round(0),
+                    textposition='top center', line=dict(width=3, color='#0156FC'), name='Risco %',
+                ))
+                for lo, hi, nome in sr.FAIXAS:
+                    fig_tl.add_hrect(y0=lo, y1=min(hi, 100), fillcolor=cores_faixa[nome], opacity=0.15, line_width=0)
+                fig_tl.update_layout(
+                    xaxis_title='Mês', yaxis_title='Risco de cancelamento (%)', yaxis=dict(range=[0, 100]),
+                    template='plotly_white', hovermode='x unified',
+                )
+                st.plotly_chart(fig_tl, use_container_width=True)
+                st.caption("Faixas de fundo: verde = Saudável, amarelo claro = Atenção, laranja = Em risco, vermelho = Crítico.")
+
+        st.markdown("---")
+        with st.expander("Sobre este score (metodologia)"):
+            st.markdown(f"""
+            **Score em duas camadas**, não machine learning — regras ponderadas e auditáveis:
+            - **Camada precoce** (peso {sr.PESO_PRECOCE:.0%}): desvio de atraso de pagamento e chamados críticos
+              contra a própria baseline do cliente (média móvel de 6 meses).
+            - **Camada confirmada** (peso {sr.PESO_CONFIRMADO:.0%}): SLA cumprido, uso da plataforma, reclamações
+              e NPS mais recente, normalizados contra a base geral de clientes ativos.
+
+            Faixas: Saudável (0–29%) · Atenção (30–54%) · Em risco (55–74%) · Crítico (75–100%).
+            Calibração e validação retroativa contra os 22 clientes já cancelados: ver `testar_score_risco.py`.
+            """)
