@@ -95,7 +95,8 @@ O dashboard também abre sozinho em `:8501`, se você quiser só ele.
 pytest                          # tudo
 pytest -m "not sqlserver"       # sem o que depende do banco
 pytest -m "not lento"           # sem treino nem backtest
-cd interface-web && npm run test:metricas
+cd interface-web && npm run test:metricas    # os números do catálogo
+cd interface-web && npm run test:catalogo    # as intenções montam e respondem
 ```
 
 Os dois últimos formam um **teste de contrato**: os mesmos números de referência são

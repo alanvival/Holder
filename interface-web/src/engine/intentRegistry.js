@@ -437,7 +437,7 @@ export const intentRegistry = [
     ],
     parametros: [],
     requerEntidade: () => true,
-    resolver: clientesEmRiscoAlto,
+    resolver: clientesEmAlertaAlto,
     criadaEm: '2026-09-19',
     ativa: true,
   },

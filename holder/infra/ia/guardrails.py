@@ -15,7 +15,7 @@ from threading import Lock
 
 # O prompt original pedia "~8s"; subiu pra 15s depois de observar timeouts
 # reais em perguntas cujo resultado de tool é mais volumoso (ex:
-# clientes_em_risco devolvendo vários clientes com listas de sinais cada) —
+# clientes_em_alerta devolvendo vários clientes com listas de sinais cada) —
 # gpt-oss é um reasoning model e gasta mais tempo "pensando" sobre payloads
 # maiores antes de escrever a resposta final. Subiu de novo pra 20s depois
 # de observar timeouts intermitentes mesmo em chamadas simples (ex:

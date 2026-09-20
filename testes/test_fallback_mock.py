@@ -117,7 +117,7 @@ def test_clientes_em_alerta():
 
 def test_clientes_com_strikes():
     """Pergunta tipo 'faça uma predição de cancelamento' — diferente de
-    clientes_em_risco (diagnóstico contra a própria história), compara o
+    clientes_em_alerta (diagnóstico contra a própria história), compara o
     cliente ativo com o padrão real de quem já cancelou."""
     tool_call = FakeToolCall("call_21", "clientes_com_strikes", {"cliente_id": "C067"})
     sequencia = [

@@ -15,7 +15,7 @@ isso não escala, o número de perguntas possíveis é infinito. Agora
 validado contra CAMPOS_PERMITIDOS, nunca vira nome de coluna cru).
 `consultar_metrica` continua à parte porque métricas agregadas (ticket
 médio, SLA, NPS, churn...) são CÁLCULOS com fórmula própria, não um campo
-só; `analisar_fatores_churn` e `clientes_em_risco` também continuam à parte
+só; `analisar_fatores_churn` e `clientes_em_alerta` também continuam à parte
 pelo mesmo motivo — são análises que cruzam várias métricas, não uma leitura
 de campo.
 """
@@ -151,7 +151,7 @@ TOOLS = [
             "'me dá o relatório preditivo', 'quais intervenções devo "
             "priorizar'. Fonte: SQL Server (fScoreRisco, atualizado "
             "mensalmente pelo job de treino) — se devolver erro, o banco "
-            "pode estar fora do ar; nesse caso use prever_risco_cancelamento."
+            "pode estar fora do ar; nesse caso use clientes_com_strikes."
         ),
         "input_schema": {
             "type": "object",

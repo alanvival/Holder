@@ -15,11 +15,11 @@ const FOLLOW_UPS_POR_TOOL = {
     'Quais outras empresas estão em risco parecido?',
     'O que a empresa deve fazer agora com esse cliente?',
   ],
-  prever_risco_cancelamento: [
+  clientes_com_strikes: [
     'Me dá a probabilidade real desse cliente (relatório preditivo)',
     'Quais outros clientes têm alertas parecidos?',
   ],
-  clientes_em_risco: [
+  clientes_em_alerta: [
     'Qual desses tem a maior probabilidade real de cancelar?',
     'O que mais influencia o cancelamento na carteira?',
   ],

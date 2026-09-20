@@ -47,10 +47,17 @@ def resolver_campo(nome: str):
     return CAMPOS_PERMITIDOS.get(nome)
 
 
-def erro_campo_invalido(nome: str) -> dict:
-    sugestoes = difflib.get_close_matches(nome, CAMPOS_PERMITIDOS.keys(), n=3, cutoff=0.4)
+def erro_campo_invalido(nome) -> dict:
+    # `nome` pode vir None: o modelo de IA às vezes omite um parâmetro
+    # obrigatório do schema. Sem esta guarda, o difflib recebia None e
+    # levantava TypeError, derrubando a execução da tool em vez de devolver
+    # o erro estruturado que o fluxo sabe tratar.
+    sugestoes = (
+        difflib.get_close_matches(nome, CAMPOS_PERMITIDOS.keys(), n=3, cutoff=0.4)
+        if isinstance(nome, str) else []
+    )
     return {
-        "erro": f"Campo desconhecido: '{nome}'.",
+        "erro": f"Campo desconhecido: {nome!r}." if nome else "Nenhum campo informado.",
         "campos_validos": sorted(CAMPOS_PERMITIDOS.keys()),
         "sugestoes": sugestoes,
     }
