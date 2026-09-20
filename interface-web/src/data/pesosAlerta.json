@@ -1,0 +1,13 @@
+{
+  "_gerado": "GERADO por scripts/gerar_pesos_alerta.py a partir de holder/dominio/alerta/pesos.py. Não editar à mão: os pesos vêm dos fatores de cancelamento calculados sobre a base real.",
+  "pesos": {
+    "Mais chamados críticos": 83,
+    "Reclamação formal recente": 70,
+    "Atraso de pagamento crescente": 48,
+    "NPS detrator": 24,
+    "Mais chamados reabertos": 22,
+    "Queda no SLA cumprido": 14,
+    "Queda no uso da plataforma": 10,
+    "Reunião prevista não realizada": 12
+  }
+}

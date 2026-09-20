@@ -1,6 +1,6 @@
 """
 Converte INOVAAPPS_base_de_dados.xlsx em JSON estático consumido pelo
-Assistente de Consultas (assistente-consultas/src/data/inovaapps/*.json).
+Assistente de Consultas (interface-web/src/data/inovaapps/*.json).
 
 Roda uma vez (ou sempre que a planilha for atualizada); o app não faz
 parsing de xlsx em runtime — os JSONs commitados são a fonte de dados.
@@ -13,8 +13,8 @@ from pathlib import Path
 import openpyxl
 
 RAIZ = Path(__file__).resolve().parent.parent
-PLANILHA = RAIZ / "INOVAAPPS_base_de_dados.xlsx"
-DESTINO = RAIZ / "assistente-consultas" / "src" / "data" / "inovaapps"
+PLANILHA = RAIZ / "dados" / "INOVAAPPS_base_de_dados.xlsx"
+DESTINO = RAIZ / "interface-web" / "src" / "data" / "inovaapps"
 
 
 def linhas_como_dicts(ws):

@@ -1,0 +1,154 @@
+{
+  "_sobre": [
+    "FONTE ÚNICA das definições de métrica. Lido pelos DOIS resolvedores: o",
+    "Python (holder/dominio/metricas/definicoes.py) e o JavaScript",
+    "(interface-web/src/engine/metricas.js).",
+    "",
+    "Cada entrada diz de qual tabela ler, qual agregação aplicar, quais linhas",
+    "excluir e como escalar — nunca COMO somar ou dividir, que é papel das",
+    "cinco agregações nomeadas que cada lado implementa na sua linguagem.",
+    "",
+    "Por que dois resolvedores e uma definição: ver",
+    "docs/adr/0003-resolvedor-de-metricas-duplicado-de-proposito.md. O",
+    "resolvedor em JavaScript é o que faz o catálogo responder no navegador,",
+    "sem rede e sem backend no ar.",
+    "",
+    "Antes deste arquivo, as definições estavam escritas duas vezes, e quatro",
+    "ids divergiam entre os lados (atraso_pagamento/atraso_medio_pagamento,",
+    "churn/taxa_cancelamento, uso_plataforma/uso_medio_plataforma,",
+    "nps/nps_carteira). Os nomes do JavaScript venceram: dizem a agregação no",
+    "próprio id, como o resto da casa já fazia, e não usam anglicismo."
+  ],
+  "metricas": [
+    {
+      "id": "ticket_medio",
+      "rotulo": "Ticket médio",
+      "aba": "clientes",
+      "formato": "moeda",
+      "agregacao": "media",
+      "campo": "valor_mensal"
+    },
+    {
+      "id": "antiguidade_contrato",
+      "rotulo": "Antiguidade do contrato",
+      "aba": "clientes",
+      "formato": "dias",
+      "agregacao": "antiguidade_dias",
+      "campo": "inicio_contrato",
+      "_nota": "Ranking por 'maior' = contrato mais velho = cliente mais antigo."
+    },
+    {
+      "id": "sla_contratado",
+      "rotulo": "SLA contratado",
+      "aba": "clientes",
+      "formato": "horas",
+      "agregacao": "media",
+      "campo": "sla_contratado_h",
+      "_nota": "É o PRAZO em horas do contrato, fixo por cliente — diferente de sla_cumprido, que é o % de chamados no prazo."
+    },
+    {
+      "id": "tempo_medio_resolucao",
+      "rotulo": "Tempo médio de resolução",
+      "aba": "atendimento_mensal",
+      "formato": "horas",
+      "agregacao": "media_ponderada",
+      "campo": "tempo_medio_resolucao_h",
+      "campo_peso": "chamados_abertos",
+      "filtro_linha": {"campo": "chamados_abertos", "operador": ">", "valor": 0},
+      "leitura_alternativa": {
+        "agregacao": "media",
+        "campo": "tempo_medio_resolucao_h",
+        "rotulo": "média simples (sem ponderar pelo volume de chamados)"
+      },
+      "_nota": "Linhas sem chamado carregam tempo residual que não representa nada real."
+    },
+    {
+      "id": "media_reclamacoes",
+      "rotulo": "Média de reclamações",
+      "aba": "atendimento_mensal",
+      "formato": "numero",
+      "agregacao": "media",
+      "campo": "reclamacoes_formais"
+    },
+    {
+      "id": "atraso_medio_pagamento",
+      "rotulo": "Atraso médio de pagamento",
+      "aba": "atendimento_mensal",
+      "formato": "dias",
+      "agregacao": "media",
+      "campo": "dias_atraso_pagamento"
+    },
+    {
+      "id": "sla_cumprido",
+      "rotulo": "SLA cumprido",
+      "aba": "atendimento_mensal",
+      "formato": "percentual",
+      "agregacao": "razao_soma",
+      "campo_numerador": "chamados_dentro_sla",
+      "campo_denominador": "chamados_abertos",
+      "filtro_linha": {"campo": "chamados_abertos", "operador": ">", "valor": 0},
+      "escala100": true,
+      "leitura_alternativa": {
+        "agregacao": "media",
+        "campo": "pct_sla_cumprido",
+        "rotulo": "média simples do percentual mensal já calculado"
+      }
+    },
+    {
+      "id": "taxa_cancelamento",
+      "rotulo": "Taxa de cancelamento (churn)",
+      "aba": "situacao_clientes",
+      "formato": "percentual",
+      "agregacao": "proporcao_linhas",
+      "campo": "situacao",
+      "valor": "Cancelado",
+      "escala100": true
+    },
+    {
+      "id": "uso_medio_plataforma",
+      "rotulo": "Uso médio da plataforma",
+      "aba": "atendimento_mensal",
+      "formato": "percentual",
+      "agregacao": "media",
+      "campo": "uso_plataforma_pct",
+      "_nota": "O campo já vem em 0-100, então não leva escala100."
+    },
+    {
+      "id": "reunioes_realizadas",
+      "rotulo": "Reuniões realizadas",
+      "aba": "atendimento_mensal",
+      "formato": "percentual",
+      "agregacao": "razao_soma",
+      "campo_numerador": "reunioes_realizadas",
+      "campo_denominador": "reunioes_previstas",
+      "escala100": true
+    },
+    {
+      "id": "chamados_criticos",
+      "rotulo": "Chamados críticos",
+      "aba": "atendimento_mensal",
+      "formato": "inteiro",
+      "agregacao": "soma",
+      "campo": "chamados_criticos"
+    },
+    {
+      "id": "taxa_reabertura",
+      "rotulo": "Taxa de reabertura",
+      "aba": "atendimento_mensal",
+      "formato": "percentual",
+      "agregacao": "razao_soma",
+      "campo_numerador": "chamados_reabertos",
+      "campo_denominador": "chamados_abertos",
+      "filtro_linha": {"campo": "chamados_abertos", "operador": ">", "valor": 0},
+      "escala100": true
+    },
+    {
+      "id": "nps_carteira",
+      "rotulo": "NPS",
+      "aba": "pesquisas_nps",
+      "formato": "nps",
+      "agregacao": "nps",
+      "_nota": "Estrutura própria (score, nota média, respondidas, convites). A contagem de convites importa: não-resposta é comportamento, não dado faltante."
+    }
+  ]
+}

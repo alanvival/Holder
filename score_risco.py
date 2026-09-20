@@ -17,7 +17,7 @@ import urllib.parse
 import pandas as pd
 from sqlalchemy import create_engine, text
 
-SERVER = r"localhost\SQLEXPRESS"
+SERVER = "localhost"
 DATABASE = "holder"
 
 # Faixas de ação — ponto de partida, recalibrar depois que houver histórico

@@ -1,21 +1,22 @@
 # Segredos — nunca versionar
 .env
 .env.local
+interface-web/.env
+interface-web/.env.local
 
 # Python
 __pycache__/
 *.pyc
 .venv/
 venv/
+.pytest_cache/
 
-# Logs
-*.log
-logs/
+# Node
+node_modules/
+dist/
 
-# Banco local (estado de runtime, não código-fonte)
-*.sqlite3
-
-# Modelo treinado (artefato gerado — rode `python modelo_risco.py` pra
-# recriar; o histórico de AUC/Brier de cada treino fica em fModeloRiscoLog
-# no SQL Server, não aqui)
-modelo_risco.pkl
+# Artefatos gerados em tempo de execução: banco do admin, modelo treinado e
+# logs. Tudo aqui se recria — o banco na primeira subida da API, o modelo com
+# `python -m holder.aplicacao.treino`. A planilha do desafio, que é ENTRADA e
+# não artefato, fica em dados/ e é versionada.
+dados/gerado/
