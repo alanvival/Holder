@@ -105,6 +105,16 @@
   color: #b42318;
 }
 
+.admin-badge--ia {
+  background: rgba(1, 86, 252, 0.1);
+  color: var(--gs-blue-accent);
+}
+
+.admin-badge--catalogo {
+  background: rgba(0, 10, 30, 0.08);
+  color: rgba(0, 10, 30, 0.6);
+}
+
 .admin-row__actions {
   display: flex;
   gap: 8px;

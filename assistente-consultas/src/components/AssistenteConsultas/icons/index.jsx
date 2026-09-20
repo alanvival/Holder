@@ -86,6 +86,27 @@ export function CheckIcon({ size = 14, color = '#0156FC', ...props }) {
   );
 }
 
+export function DownloadIcon({ size = 14, color = '#0156FC', ...props }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <path d="M12 3v12" />
+      <polyline points="7 11 12 16 17 11" />
+      <path d="M5 20h14" />
+    </svg>
+  );
+}
+
 export function AlertIcon({ size = 16, color = '#000A1E', ...props }) {
   return (
     <svg

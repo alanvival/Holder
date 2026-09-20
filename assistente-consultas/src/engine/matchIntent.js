@@ -18,8 +18,16 @@ export function interpretarPergunta(textoUsuario, { hoje = hojeFixo() } = {}) {
   let melhorIntencao = null;
   let melhorScore = 0;
 
+  const textoLower = textoUsuario.toLowerCase();
+
   for (const intencao of intentRegistry) {
     if (!intencao.ativa) continue;
+    // Intents podem declarar palavras que NUNCA devem casar com elas (ex:
+    // "situacao_risco_cliente" não deve capturar perguntas sobre
+    // probabilidade/predição, que são do modelo estatístico via IA, não
+    // do diagnóstico heurístico deste intent) — checado antes da
+    // similaridade, não depois, pra nem competir pelo melhor score.
+    if (intencao.palavrasExcludentes?.some((palavra) => textoLower.includes(palavra))) continue;
     const score = bestSimilarityAgainstPatterns(textoUsuario, intencao.exemplos);
     if (score > melhorScore) {
       melhorScore = score;

@@ -2,10 +2,12 @@ import { useEffect, useRef } from 'react';
 import './AssistenteConsultas.css';
 import { useAssistant } from '../../hooks/useAssistant.js';
 import { obterPerguntasSugeridas } from '../../data/suggestedQuestions.js';
+import { obterFollowUps } from '../../data/followUpQuestions.js';
 import { FAB } from './FAB.jsx';
 import { GreetingBubble } from './GreetingBubble.jsx';
 import { PanelHeader } from './PanelHeader.jsx';
 import { SuggestedQuestions } from './SuggestedQuestions.jsx';
+import { FollowUpQuestions } from './FollowUpQuestions.jsx';
 import { MessageBubble } from './MessageBubble.jsx';
 import { TypingIndicator } from './TypingIndicator.jsx';
 import { Composer } from './Composer.jsx';
@@ -40,6 +42,18 @@ export function AssistenteConsultas() {
   // saudação inicial) — depois disso o usuário já está no fluxo de perguntas.
   const mostrarSugestoes = mensagens.length === 1;
 
+  // Follow-ups só na ÚLTIMA mensagem, e só quando ela foi respondida pela
+  // IA com sucesso (origem 'catalogo' já é uma resposta fechada/simples,
+  // não precisa de "continuar" — e not_found já tem seu próprio prompt de
+  // sugestão) — é o que dá a sensação de diálogo contínuo sem poluir toda
+  // mensagem antiga com botões desatualizados.
+  const ultimaMensagem = mensagens[mensagens.length - 1];
+  const mostrarFollowUps =
+    status !== 'loading' &&
+    ultimaMensagem?.autor === 'assistente' &&
+    ultimaMensagem?.origem === 'ia' &&
+    ultimaMensagem?.payload?.kind !== 'not_found';
+
   return (
     <div className="ac-root" data-aberto={aberto}>
       {aberto && (
@@ -63,6 +77,10 @@ export function AssistenteConsultas() {
 
             {mostrarSugestoes && status !== 'loading' && (
               <SuggestedQuestions perguntas={perguntasSugeridas} onSelecionar={enviarPergunta} />
+            )}
+
+            {mostrarFollowUps && (
+              <FollowUpQuestions perguntas={obterFollowUps(ultimaMensagem.intentId)} onSelecionar={enviarPergunta} />
             )}
 
             {status === 'loading' && <TypingIndicator />}

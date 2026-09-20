@@ -1,4 +1,5 @@
-import { SparkleIcon, CalendarIcon, CheckIcon, AlertIcon } from './icons/index.jsx';
+import { SparkleIcon, CalendarIcon, CheckIcon, AlertIcon, DownloadIcon } from './icons/index.jsx';
+import { exportarRespostaComoPdf } from '../../utils/exportarPdf.js';
 
 export function MessageBubble({ mensagem, onConfirmarSugestao, onDispensarSugestao }) {
   if (mensagem.autor === 'usuario') {
@@ -73,6 +74,13 @@ export function MessageBubble({ mensagem, onConfirmarSugestao, onDispensarSugest
               </table>
             </div>
             {mensagem.payload.contexto && <div className="ac-answer-contexto">{mensagem.payload.contexto}</div>}
+            <button
+              type="button"
+              className="ac-export-btn"
+              onClick={() => exportarRespostaComoPdf(mensagem, { tituloRelatorio: mensagem.payload.text })}
+            >
+              <DownloadIcon /> Exportar PDF
+            </button>
           </>
         )}
         {mensagem.payload.kind === 'metric' && (

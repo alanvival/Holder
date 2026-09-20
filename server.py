@@ -49,6 +49,33 @@ def fallback_ia():
     return jsonify(resultado)
 
 
+@app.get("/api/historico")
+def listar_historico():
+    """Histórico de conversas (catálogo + IA) já respondidas no widget —
+    exibido no painel de Administração pra nada se perder entre sessões."""
+    limite = request.args.get("limite", default=100, type=int)
+    return jsonify(armazenamento.listar_historico(limite))
+
+
+@app.post("/api/historico")
+def registrar_historico():
+    """Chamado pelo front (services/assistenteApi.js) logo depois de
+    QUALQUER pergunta respondida — catálogo determinístico ou IA — pra
+    ficar tudo no mesmo lugar, não só as chamadas de fallback."""
+    corpo = request.get_json(silent=True) or {}
+    pergunta = (corpo.get("pergunta") or "").strip()
+    if not pergunta:
+        return jsonify({"erro": "Campo 'pergunta' é obrigatório."}), 400
+    entrada = armazenamento.registrar_conversa(
+        pergunta=pergunta,
+        resposta=corpo.get("resposta"),
+        origem=corpo.get("origem") or "catalogo",
+        tool=corpo.get("tool"),
+        sucesso=bool(corpo.get("sucesso", True)),
+    )
+    return jsonify(entrada), 201
+
+
 @app.get("/api/health")
 def health():
     return jsonify({"status": "ok", "chave_configurada": bool(os.environ.get("GROQ_API_KEY"))})

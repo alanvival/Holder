@@ -9,6 +9,7 @@ import {
   aprovarSugestaoUsuario,
   rejeitarSugestaoUsuario,
   sugerirRespostaIa,
+  listarHistorico,
 } from '../../services/assistenteApi.js';
 
 function NovaPerguntaForm({ onCriada }) {
@@ -161,15 +162,18 @@ export function AdminPerguntas() {
   const tenant = useTenant();
   const [perguntas, setPerguntas] = useState([]);
   const [sugestoesPendentes, setSugestoesPendentes] = useState([]);
+  const [historico, setHistorico] = useState([]);
   const [carregando, setCarregando] = useState(true);
 
   const recarregar = useCallback(async () => {
-    const [listaPerguntas, listaSugestoes] = await Promise.all([
+    const [listaPerguntas, listaSugestoes, listaHistorico] = await Promise.all([
       listarPerguntasCadastradas(tenant),
       listarSugestoes(tenant),
+      listarHistorico(),
     ]);
     setPerguntas(listaPerguntas);
     setSugestoesPendentes(listaSugestoes.filter((s) => s.status === 'pendente'));
+    setHistorico(listaHistorico);
     setCarregando(false);
   }, [tenant]);
 
@@ -249,6 +253,37 @@ export function AdminPerguntas() {
         </div>
 
         <NovaPerguntaForm onCriada={recarregar} />
+      </section>
+
+      <section className="admin-section">
+        <div className="admin-section__header">
+          <h2 className="admin-section__title">Histórico de conversas</h2>
+          <span className="admin-section__count">{historico.length} recente(s)</span>
+        </div>
+        {historico.length === 0 ? (
+          <div className="admin-empty">Nenhuma conversa registrada ainda.</div>
+        ) : (
+          <div className="admin-list">
+            {historico.map((item) => (
+              <div className="admin-row" style={{ flexDirection: 'column', alignItems: 'stretch' }} key={item.id}>
+                <div className="admin-row__label">{item.pergunta}</div>
+                {item.resposta && (
+                  <div className="admin-row__meta" style={{ marginTop: 4, whiteSpace: 'pre-wrap' }}>
+                    {item.resposta.length > 240 ? `${item.resposta.slice(0, 240)}…` : item.resposta}
+                  </div>
+                )}
+                <div className="admin-row__meta" style={{ marginTop: 6 }}>
+                  <span className={`admin-badge admin-badge--${item.origem}`}>
+                    {item.origem === 'ia' ? 'Respondido pela IA' : 'Catálogo determinístico'}
+                  </span>
+                  {item.tool && <span className="admin-badge">{item.tool}</span>}
+                  {!item.sucesso && <span className="admin-badge admin-badge--inativa">Não encontrou resposta</span>}
+                  {new Date(item.criadaEm).toLocaleString('pt-BR')}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );

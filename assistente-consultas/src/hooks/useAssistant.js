@@ -21,7 +21,7 @@ function newId() {
 const SAUDACAO_INICIAL = {
   id: 'msg-saudacao',
   autor: 'assistente',
-  payload: { kind: 'text', text: 'Olá! Posso te ajudar a consultar as informações já cadastradas no sistema. O que você gostaria de saber?' },
+  payload: { kind: 'text', text: 'Olá! Posso te ajudar a consultar as informações já cadastradas no sistema, e também prever riscos futuros de cancelamento. O que você gostaria de saber?' },
   criadaEm: new Date().toISOString(),
 };
 
@@ -61,12 +61,27 @@ export function useAssistant() {
     setStatus('loading');
 
     try {
-      const { payload, origem } = await consultarPergunta(texto, tenant);
+      const inicio = Date.now();
+      const { payload, origem, intentId } = await consultarPergunta(texto, tenant);
+
+      // O catálogo determinístico resolve em memória (instantâneo) — sem
+      // um atraso mínimo, a resposta aparece antes do indicador "digitando"
+      // sequer piscar na tela, parecendo um formulário automático em vez de
+      // uma conversa. A IA já demora de verdade (chamada de rede), não
+      // precisa disso. Delay pequeno e só pra completar até um piso, nunca
+      // soma tempo de espera em cima do que já levou.
+      const DELAY_MINIMO_MS = 650;
+      const decorrido = Date.now() - inicio;
+      if (decorrido < DELAY_MINIMO_MS) {
+        await new Promise((resolve) => setTimeout(resolve, DELAY_MINIMO_MS - decorrido));
+      }
+
       const mensagemResposta = {
         id: newId(),
         autor: 'assistente',
         payload,
-        origem, // 'catalogo' | 'ia' — usado só pra um indicador visual sutil
+        origem, // 'catalogo' | 'ia' — indicador visual + escolha de follow-ups
+        intentId: intentId ?? null, // nome da tool (IA) — escolhe os follow-ups certos
         ...(payload.kind === 'not_found'
           ? { perguntaOrigem: texto, sugestaoStatus: 'pendente' }
           : {}),

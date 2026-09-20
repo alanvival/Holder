@@ -354,6 +354,14 @@ export const intentRegistry = [
       'O cliente C012 cancelou?',
       'Qual o risco do cliente C045 agora?',
     ],
+    // Perguntas com essas palavras são sobre o modelo PREDITIVO (% de
+    // risco calculada por regressão logística, ver fallback_ia/
+    // previsao_risco.py) — não o diagnóstico heurístico deste intent
+    // (calcularRisco, self-baseline). Sem essa exclusão, o casamento por
+    // similaridade de palavras ("qual", "risco", "cliente") capturava
+    // "qual o risco DE CANCELAMENTO do cliente X" antes de chegar na IA
+    // — bug reportado ao vivo pelo usuário.
+    palavrasExcludentes: ['cancelamento', 'cancelar', 'probabilidade', 'previsão', 'previsao', 'prever', 'preditivo', 'preditiva', 'futuro'],
     parametros: ['clienteId'],
     requerEntidade: (e) => Boolean(e.clienteId),
     resolver: situacaoRiscoCliente,

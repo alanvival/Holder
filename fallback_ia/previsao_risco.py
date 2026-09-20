@@ -37,6 +37,17 @@ def _mes_anterior(mes_ref: str) -> str:
     return f"{idx // 12:04d}-{idx % 12 + 1:02d}"
 
 
+# Ação sugerida por faixa — dado estruturado (não a IA "decidindo" sozinha
+# o que recomendar a cada resposta, texto fixo e auditável por faixa,
+# igual as próprias faixas em score_risco.FAIXAS).
+_ACAO_POR_FAIXA = {
+    "Saudável": "Nenhuma ação necessária — monitoramento passivo.",
+    "Atenção": "Sinalizar no radar do CS responsável, sem alerta ativo ainda — acompanhar a tendência do próximo mês.",
+    "Em risco": "Alerta ativo: o CS deve investigar a causa (ver sinais_detalhados) e agendar contato proativo com o cliente.",
+    "Crítico": "Alerta prioritário — ação imediata recomendada: contato executivo, plano de retenção e revisão do relacionamento nos próximos dias.",
+}
+
+
 def listar_previsao_risco(filtros: dict | None = None, limite: int = 20) -> dict:
     """
     Lista clientes ordenados por probabilidade PREVISTA de cancelamento
@@ -79,6 +90,7 @@ def listar_previsao_risco(filtros: dict | None = None, limite: int = 20) -> dict
             "risco_percentual": round(r["risco_percentual"], 1),
             "faixa": r["faixa"],
             "tendencia": tendencia,
+            "acao_sugerida": _ACAO_POR_FAIXA.get(r["faixa"], ""),
         })
 
     return {
@@ -90,7 +102,8 @@ def listar_previsao_risco(filtros: dict | None = None, limite: int = 20) -> dict
             "risco_percentual é a probabilidade real prevista por um modelo de regressão "
             "logística treinado e validado (AUC~0.95, Brier~0.085) contra os cancelamentos "
             "reais da base — não é uma nota heurística. Faixas: Saudável (0-29%), Atenção "
-            "(30-54%), Em risco (55-74%), Crítico (75-100%)."
+            "(30-54%), Em risco (55-74%), Crítico (75-100%). acao_sugerida é a recomendação "
+            "padrão da faixa — use isso pra responder 'o que fazer', não invente outra ação."
         ),
     }
 
@@ -128,11 +141,13 @@ def detalhar_previsao_cliente(cliente_id: str) -> dict:
         "mes_referencia": atual["mes_ref"],
         "risco_percentual": round(atual["risco_percentual"], 1),
         "faixa": atual["faixa"],
+        "acao_sugerida": _ACAO_POR_FAIXA.get(atual["faixa"], ""),
         "sinais_detalhados": sinais,
         "trajetoria_ultimos_meses": trajetoria,
         "nota": (
             "Probabilidade prevista por modelo de regressão logística (não heurística) — "
             "sinais_detalhados mostra a contribuição de cada variável (coeficiente × desvio) "
-            "pra essa probabilidade específica."
+            "pra essa probabilidade específica. acao_sugerida é a recomendação padrão da "
+            "faixa — use isso pra responder 'o que fazer', não invente outra ação."
         ),
     }

@@ -57,6 +57,19 @@ def inicializar():
             )
             """
         )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS historico_conversas (
+                id TEXT PRIMARY KEY,
+                pergunta TEXT NOT NULL,
+                resposta TEXT,
+                origem TEXT NOT NULL,
+                tool TEXT,
+                sucesso INTEGER NOT NULL,
+                criada_em TEXT NOT NULL
+            )
+            """
+        )
 
 
 def _agora():
@@ -176,6 +189,45 @@ def rejeitar_sugestao(sugestao_id: str) -> bool:
     with _conexao() as conn:
         cur = conn.execute("UPDATE sugestoes SET status = 'rejeitada' WHERE id = ? AND status = 'pendente'", (sugestao_id,))
     return cur.rowcount > 0
+
+
+# --- Histórico de conversas (não se perde entre sessões/refresh) -----------
+# Cada pergunta respondida no widget (catálogo determinístico ou IA) vira
+# uma linha aqui, pra ficar visível no painel de Administração — antes só
+# existia como log de texto solto (logs/fallback_ia.log), sem UI nenhuma
+# pra revisar depois.
+
+def registrar_conversa(pergunta: str, resposta: str | None, origem: str, tool: str | None, sucesso: bool) -> dict:
+    entrada = {
+        "id": _novo_id("conv"),
+        "pergunta": pergunta,
+        "resposta": resposta,
+        "origem": origem,
+        "tool": tool,
+        "sucesso": 1 if sucesso else 0,
+        "criada_em": _agora(),
+    }
+    with _conexao() as conn:
+        conn.execute(
+            "INSERT INTO historico_conversas (id, pergunta, resposta, origem, tool, sucesso, criada_em) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (entrada["id"], pergunta, resposta, origem, tool, entrada["sucesso"], entrada["criada_em"]),
+        )
+    return {**entrada, "sucesso": sucesso}
+
+
+def listar_historico(limite: int = 100) -> list[dict]:
+    with _conexao() as conn:
+        rows = conn.execute(
+            "SELECT * FROM historico_conversas ORDER BY criada_em DESC LIMIT ?", (limite,)
+        ).fetchall()
+    return [
+        {
+            "id": r["id"], "pergunta": r["pergunta"], "resposta": r["resposta"],
+            "origem": r["origem"], "tool": r["tool"], "sucesso": bool(r["sucesso"]),
+            "criadaEm": r["criada_em"],
+        }
+        for r in rows
+    ]
 
 
 inicializar()

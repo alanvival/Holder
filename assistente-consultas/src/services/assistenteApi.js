@@ -69,6 +69,17 @@ async function tentarFallbackIa(texto) {
   return resultado?.ok ? resultado.dados : null;
 }
 
+// Log fire-and-forget: nunca atrasa nem quebra a resposta ao usuário por
+// causa de falha no registro (histórico é conveniência de auditoria, não
+// parte crítica do fluxo). Cobre catálogo E IA no mesmo lugar, pra nada
+// ficar de fora do painel de Administração.
+function registrarHistorico({ pergunta, resposta, origem, tool, sucesso }) {
+  chamarBackend('/historico', {
+    method: 'POST',
+    body: JSON.stringify({ pergunta, resposta, origem, tool, sucesso }),
+  }).catch(() => {});
+}
+
 /**
  * Envia a pergunta do usuário pro motor de interpretação. Primeiro tenta o
  * catálogo determinístico local (rápido, sem custo); só se ele não
@@ -77,6 +88,7 @@ async function tentarFallbackIa(texto) {
 export async function consultarPergunta(texto) {
   const resultadoCatalogo = interpretarPergunta(texto);
   if (resultadoCatalogo.payload.kind !== 'not_found') {
+    registrarHistorico({ pergunta: texto, resposta: resultadoCatalogo.payload.text ?? null, origem: 'catalogo', tool: resultadoCatalogo.intentId ?? null, sucesso: true });
     return { ...resultadoCatalogo, origem: 'catalogo' };
   }
 
@@ -86,11 +98,13 @@ export async function consultarPergunta(texto) {
     const payload = TOOLS_COM_TABELA.has(respostaIa.tool) && tabela?.colunas?.length
       ? tableResponse(respostaIa.resposta, tabela.colunas, tabela.linhas)
       : textResponse(respostaIa.resposta);
+    registrarHistorico({ pergunta: texto, resposta: respostaIa.resposta, origem: 'ia', tool: respostaIa.tool ?? null, sucesso: true });
     return { payload, intentId: respostaIa.tool ?? null, origem: 'ia' };
   }
 
   // Fallback não achou tool, deu timeout, ou o backend nem está no ar —
   // sempre cai no mesmo "não encontrei" + sugestão que já existe no widget.
+  registrarHistorico({ pergunta: texto, resposta: null, origem: respostaIa ? 'ia' : 'catalogo', tool: null, sucesso: false });
   return { payload: notFoundResponse(), intentId: null, origem: respostaIa ? 'ia' : 'catalogo' };
 }
 
@@ -194,4 +208,15 @@ export async function rejeitarSugestaoUsuario(id) {
   if (resultado?.ok) return resultado.dados;
   rejeitarSugestao(id);
   return { id, status: 'rejeitada' };
+}
+
+/**
+ * Histórico de conversas (catálogo + IA) já respondidas — pro painel de
+ * Administração revisar o que os usuários vêm perguntando. Sem fallback
+ * local (diferente do resto deste arquivo): é só leitura de auditoria, não
+ * faz sentido reconstruir isso em memória se o backend estiver fora do ar.
+ */
+export async function listarHistorico(limite = 100) {
+  const resultado = await chamarBackend(`/historico?limite=${limite}`);
+  return resultado?.ok ? resultado.dados : [];
 }
