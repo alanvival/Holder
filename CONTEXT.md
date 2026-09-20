@@ -36,10 +36,20 @@ _Avoid_: churn, desistência, perda
 O mês a que se refere um registro mensal de atendimento.
 _Avoid_: período, competência
 
-### Risco e alerta
+### Risco, alerta e strikes
 
-São **dois conceitos distintos**, com escalas e propósitos diferentes. Não são sinônimos e não
-se substituem: o score responde "em que ordem falar?", o índice de alerta responde "por quê?".
+São **três conceitos distintos**, com mecanismos, escalas e propósitos diferentes. Não são
+sinônimos e não se substituem:
+
+| Conceito | Compara o cliente com | Responde |
+|---|---|---|
+| Score de risco | os cancelamentos reais da base, via modelo treinado | "em que ordem falar?" |
+| Índice de alerta | a **própria história** dele | "este cliente piorou?" |
+| Strikes | o **perfil de quem já cancelou** | "este cliente se parece com quem saiu?" |
+
+A diferença entre os dois últimos é observável: um cliente sempre-ruim-mas-estável dispara
+strikes e **não** dispara índice de alerta; um cliente ótimo que piorou de repente dispara o
+índice de alerta e **pode não** disparar strike nenhum.
 
 **Score de risco**:
 Probabilidade estimada, por modelo treinado nos cancelamentos já ocorridos, de que o cliente
@@ -60,15 +70,23 @@ Classificação de um índice de alerta em Alto, Médio ou Baixo.
 _Avoid_: faixa (faixa é do score de risco)
 
 **Sinal de alerta**:
-Condição observável e binária no comportamento recente de um cliente — queda de SLA, queda de
-uso, atraso de pagamento, chamados críticos, chamados reabertos, reunião perdida, reclamação
-formal, último NPS detrator.
-_Avoid_: feature, indicador, flag
+Uma das oito condições que compõem o índice de alerta, cada uma comparando o mês mais recente
+do cliente com a média dos meses anteriores **dele**: queda de SLA, queda de uso, atraso de
+pagamento crescente, chamados críticos, chamados reabertos, reunião prevista não realizada,
+reclamação formal, último NPS detrator.
+_Avoid_: strike, feature, indicador, flag
 
 **Strike**:
-Forma de **apresentar** sinais de alerta no dashboard. É apresentação do mesmo conceito, não um
-conceito próprio — um strike nunca tem regra diferente de um sinal.
-_Avoid_: tratar strike como medida independente do sinal
+Uma das quatro condições que indicam semelhança com quem já cancelou, cada uma comparando o
+cliente ativo com a linha de corte extraída do perfil de quem saiu: SLA crítico, lentidão de
+resolução, reclamação recente, último NPS detrator.
+_Avoid_: sinal de alerta (mecanismo diferente: sinal olha a própria história, strike olha o
+perfil de quem cancelou)
+
+**Linha de corte**:
+O valor de referência de um strike, tirado dos meses de clientes já cancelados — mediana, ou
+média nas contagens esparsas como reclamações formais.
+_Avoid_: threshold, limite, meta
 
 **Recência**:
 Os dois últimos meses **em que houve medição** para aquele cliente. Deliberadamente não é o

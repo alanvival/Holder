@@ -14,21 +14,16 @@ fallback de IA inteiro — a pergunta cai em "não encontrei" normalmente.
 """
 from __future__ import annotations
 
-import sys
-from pathlib import Path
+from holder.infra.persistencia import historico_score
 
-# score_risco.py/modelo_risco.py moram na raiz do repo, fora do pacote
-# fallback_ia — funciona quando o processo roda a partir da raiz (`python
-# server.py`), mas garantimos o path aqui também pra não depender de onde
-# o processo foi iniciado.
-_RAIZ = Path(__file__).resolve().parent.parent
-if str(_RAIZ) not in sys.path:
-    sys.path.insert(0, str(_RAIZ))
+# Antes havia um sys.path.insert aqui: score_risco.py morava na raiz do
+# repo, fora de qualquer pacote, e o import só resolvia se o processo
+# tivesse sido iniciado a partir da raiz. Com a persistência dentro de
+# `holder/`, o import é direto e não depende de onde o processo subiu.
 
 
 def _carregar_historico():
-    import score_risco as sr
-    return sr.carregar_historico()
+    return historico_score.carregar_historico()
 
 
 def _mes_anterior(mes_ref: str) -> str:

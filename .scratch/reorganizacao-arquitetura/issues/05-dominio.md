@@ -1,7 +1,35 @@
 # 05 — `holder/dominio/`
 
-Status: aberto
+Status: em andamento (5a resolvido, 5b aberto)
 Fase: 5 de 10 · Bloqueado por: 04
+
+## Dividida em duas, por volume
+
+- **5a (resolvido)** — o domínio que o assistente usa: `metricas/`, `churn/`, `alerta/`,
+  `strikes/`, e os acessos por cliente para `holder/infra/dados/carteira.py`.
+- **5b (aberto)** — o domínio do score e da carteira: `risco/` (de `modelo_risco.py`) e
+  `carteira/preparacao.py` (de `app.py`), mais a unificação da janela de recência no painel de
+  Strikes do dashboard.
+
+## Correção de modelo de domínio (Q33)
+
+O `CONTEXT.md` da fase 1 estava **errado**: dizia que strike era só forma de apresentar um
+sinal de alerta. São mecanismos diferentes, e a diferença é observável — medido nesta base:
+**índice de alerta Alto = 6 clientes; strikes ≥ 1 = 41 clientes**, dos mesmos 58 ativos. Um
+olha se o cliente piorou em relação a si mesmo; o outro, se ele se parece com quem já
+cancelou. Agora são três conceitos no glossário, com `dominio/alerta/` e `dominio/strikes/`
+separados, e os verbetes "Strike" e "Linha de corte" corrigidos.
+
+## Resultado de 5a
+
+`74 passed`, mesma contagem de antes — nenhum teste perdido na divisão. `fallback_ia/metricas.py`
+(690 linhas, três conceitos misturados) **deixou de existir**, sem shim: os consumidores apontam
+direto para o domínio. O `sys.path.insert` de `previsao_risco.py` também morreu, porque a
+persistência agora está dentro de `holder/`.
+
+Os nomes de função que ainda dizem "risco" (`clientes_em_risco`,
+`prever_risco_cancelamento`) ficam como estão até a fase 8, que é a fase de vocabulário —
+misturar renomeação com movimentação tornaria os dois commits ilegíveis.
 
 ## Entregas
 

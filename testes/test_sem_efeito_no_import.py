@@ -34,7 +34,7 @@ def test_importar_o_pacote_nao_le_a_planilha():
     _rodar(
         """
         import fallback_ia.tools  # noqa: F401
-        from fallback_ia import dados
+        from holder.infra.dados import carteira as dados
         from holder.infra.dados import adaptador_excel
 
         assert dados.carregar.cache_info().misses == 0, (
@@ -82,7 +82,7 @@ def test_a_planilha_e_lida_uma_unica_vez_por_processo():
     mantém a garantia antiga de uma leitura por processo."""
     _rodar(
         """
-        from fallback_ia import dados
+        from holder.infra.dados import carteira as dados
 
         primeiro = dados.clientes
         segundo = dados.aba("clientes")

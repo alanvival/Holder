@@ -17,7 +17,7 @@ JavaScript (`atraso_medio_pagamento`, `taxa_cancelamento`,
 """
 import pytest
 
-from fallback_ia.metricas import calcular_metrica
+from holder.dominio.metricas import calcular_metrica
 
 # (descrição, métrica, filtros, esperado, tolerância)
 CASOS = [

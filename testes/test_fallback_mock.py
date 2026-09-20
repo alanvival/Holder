@@ -25,8 +25,11 @@ from unittest.mock import patch
 import pytest
 
 from fallback_ia import ia_fallback
-from fallback_ia.metricas import calcular_metrica, comparar_metrica_por_categoria, analisar_fatores_churn, clientes_em_risco, prever_risco_cancelamento
 from fallback_ia.tools_genericas import listar_clientes, buscar_campo_cliente, comparar_clientes, evolucao_temporal
+from holder.dominio.alerta import clientes_em_risco
+from holder.dominio.churn import analisar_fatores_churn
+from holder.dominio.metricas import calcular_metrica, comparar_metrica_por_categoria
+from holder.dominio.strikes import prever_risco_cancelamento
 
 
 class FakeFunction:

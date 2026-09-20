@@ -20,7 +20,7 @@ cliente_id, que são derivados, seguem aqui e saem na fase 5.
 """
 from functools import lru_cache
 
-from holder.infra.dados import adaptador_excel
+from . import adaptador_excel
 
 # Mantidos para quem importava daqui; a fonte é o adaptador.
 RAIZ = adaptador_excel.RAIZ

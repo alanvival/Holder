@@ -21,7 +21,12 @@ de campo.
 """
 from __future__ import annotations
 
-from . import dados, metricas, tools_genericas, previsao_risco
+from . import tools_genericas, previsao_risco
+from holder.infra.dados import carteira as dados
+from holder.dominio.alerta import clientes_em_risco
+from holder.dominio.churn import analisar_fatores_churn
+from holder.dominio.metricas import calcular_metrica, comparar_metrica_por_categoria
+from holder.dominio.strikes import prever_risco_cancelamento
 
 TOOLS = [
     {
@@ -359,16 +364,16 @@ def executar_tool(nome: str, entrada: dict) -> dict:
     entrada = _normalizar_entrada(entrada)
     if nome == "consultar_metrica":
         if entrada.get("agrupar_por"):
-            return metricas.comparar_metrica_por_categoria(
+            return comparar_metrica_por_categoria(
                 entrada.get("metrica"), entrada.get("agrupar_por"), entrada.get("filtros") or {},
             )
-        return metricas.calcular_metrica(entrada.get("metrica"), entrada.get("filtros") or {})
+        return calcular_metrica(entrada.get("metrica"), entrada.get("filtros") or {})
     if nome == "analisar_fatores_churn":
-        return metricas.analisar_fatores_churn()
+        return analisar_fatores_churn()
     if nome == "clientes_em_risco":
-        return metricas.clientes_em_risco(entrada.get("nivel", "Alto"))
+        return clientes_em_risco(entrada.get("nivel", "Alto"))
     if nome == "prever_risco_cancelamento":
-        return metricas.prever_risco_cancelamento(entrada.get("cliente_id"), entrada.get("limite", 20))
+        return prever_risco_cancelamento(entrada.get("cliente_id"), entrada.get("limite", 20))
     if nome == "listar_previsao_risco":
         return previsao_risco.listar_previsao_risco({"faixa": entrada.get("faixa")} if entrada.get("faixa") else {}, entrada.get("limite", 20))
     if nome == "detalhar_previsao_cliente":

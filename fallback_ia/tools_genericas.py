@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import datetime as dt
 
-from . import dados
+from holder.infra.dados import carteira as dados
 from .campos import CAMPOS_PERMITIDOS, erro_campo_invalido, resolver_campo
 
 _LIMITE_PADRAO = 20
