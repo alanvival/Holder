@@ -172,11 +172,19 @@ def carregar_log_treinos() -> pd.DataFrame:
 
 # --- Predição por cliente, com explicabilidade -----------------------------
 
-def calcular_score_cliente(cliente_id: str, mes_ref: str, df_atd: pd.DataFrame, df_nps: pd.DataFrame, modelo_pack) -> dict | None:
+def calcular_score_cliente(
+    cliente_id: str, mes_ref: str, df_atd: pd.DataFrame, df_nps: pd.DataFrame, modelo_pack,
+    linha_risco: dict | None = None,
+) -> dict | None:
     """Mesmo formato de retorno da v1 heurística (score_risco.py) — o resto
     do painel (app.py) não precisa mudar nada pra consumir o modelo novo.
     score_precoce/score_confirmado viram só agrupamento de explicabilidade
-    (soma |contribuição| dos sinais de cada grupo), não outro cálculo."""
+    (soma |contribuição| dos sinais de cada grupo), não outro cálculo.
+
+    `linha_risco`: dict pré-calculado (sr.linha_risco_cancelados) com a
+    mediana/média histórica de cada indicador entre clientes já cancelados —
+    opcional pra não obrigar quem chama em lote a recalcular por cliente
+    (é a mesma base pra todos, calcula uma vez só em calcular_risco_todos_clientes)."""
     modelo, scaler, mediana_features = modelo_pack
 
     hist = df_atd[(df_atd["cliente_id"] == cliente_id) & (df_atd["mes_ref"] <= mes_ref)].sort_values("mes_ref")
@@ -223,6 +231,8 @@ def calcular_score_cliente(cliente_id: str, mes_ref: str, df_atd: pd.DataFrame, 
         entrada = {"valor_atual": sr._num(valores[feat]) if hasattr(sr, "_num") else round(float(valores[feat]), 2), "contribuicao": contribuicoes[feat]}
         if feat in baseline and baseline[feat] is not None:
             entrada["baseline_pessoal"] = round(float(baseline[feat]), 2)
+        if linha_risco and feat in linha_risco and linha_risco[feat] is not None:
+            entrada["media_cancelados"] = round(float(linha_risco[feat]), 2)
         if feat == "nps_risco":
             nps_hist = df_nps[(df_nps["cliente_id"] == cliente_id) & (df_nps["respondeu"] == 1) & (df_nps["mes_ref"] <= mes_ref)].sort_values("mes_ref")
             entrada["classificacao_recente"] = nps_hist.iloc[-1]["classificacao_nps"] if len(nps_hist) else None
@@ -249,6 +259,12 @@ def calcular_risco_todos_clientes(mes_ref: str | None = None, apenas_ativos: boo
 
     modelo_pack = carregar_modelo()
 
+    # Uma linha de risco só, calculada em cima da base inteira — não faz
+    # sentido recalcular por cliente (é o mesmo número de comparação pra
+    # todo mundo). nps_risco fica de fora: é um score derivado (não uma
+    # coluna de fAtendimento), sem "linha de risco" equivalente no dashboard.
+    linha_risco = sr.linha_risco_cancelados(df_atd, df_sit, [f for f in FEATURES if f != "nps_risco"])
+
     candidatos = df_atd["cliente_id"].unique().tolist()
     if apenas_ativos:
         ativos_ids = set(df_sit[df_sit["situacao"] == "Ativo"]["cliente_id"])
@@ -256,7 +272,7 @@ def calcular_risco_todos_clientes(mes_ref: str | None = None, apenas_ativos: boo
 
     resultados = []
     for cliente_id in candidatos:
-        r = calcular_score_cliente(cliente_id, mes_ref, df_atd, df_nps, modelo_pack)
+        r = calcular_score_cliente(cliente_id, mes_ref, df_atd, df_nps, modelo_pack, linha_risco=linha_risco)
         if r:
             resultados.append(r)
 

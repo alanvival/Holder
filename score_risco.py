@@ -72,6 +72,32 @@ def carregar_dados():
     return df_cli, df_atd, df_sit, df_nps
 
 
+# Colunas onde a "linha de risco" usa média em vez de mediana — mesma
+# convenção já usada no dashboard (app.py: reclamações é sensível a poucos
+# outliers de clientes com muitas reclamações concentradas, a mediana
+# esconderia isso; o resto usa mediana pra não deixar um único cliente
+# cancelado com valor extremo puxar a linha toda).
+_LINHA_RISCO_USA_MEDIA = {"reclamacoes_formais"}
+
+
+def linha_risco_cancelados(df_atd: pd.DataFrame, df_sit: pd.DataFrame, colunas: list[str]) -> dict:
+    """Linha de risco: valor típico de cada indicador entre TODOS os meses
+    de atendimento de clientes que já cancelaram (mesma base que alimenta a
+    linha tracejada "Linha de Risco (Média de Cancelados)" do Monitor
+    Individual em app.py) — a comparação objetiva "esse cliente está
+    pior/melhor que quem já cancelou", sem cortes arbitrários escolhidos à
+    mão. Retorna só as colunas pedidas que existem em df_atd."""
+    cancelados_ids = set(df_sit[df_sit["situacao"] == "Cancelado"]["cliente_id"])
+    df_canc = df_atd[df_atd["cliente_id"].isin(cancelados_ids)]
+    linha = {}
+    for col in colunas:
+        if col not in df_canc.columns:
+            continue
+        serie = df_canc[col]
+        linha[col] = float(serie.mean()) if col in _LINHA_RISCO_USA_MEDIA else float(serie.median())
+    return linha
+
+
 # --- Persistência do histórico mensal (SQL Server, tabela fScoreRisco) -----
 # Schema estável entre versões do motor de cálculo — troca de v1 (heurística)
 # pra v2 (modelo_risco.py, regressão logística) não exigiu mudar isso nem o

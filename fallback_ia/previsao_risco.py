@@ -147,7 +147,13 @@ def detalhar_previsao_cliente(cliente_id: str) -> dict:
         "nota": (
             "Probabilidade prevista por modelo de regressão logística (não heurística) — "
             "sinais_detalhados mostra a contribuição de cada variável (coeficiente × desvio) "
-            "pra essa probabilidade específica. acao_sugerida é a recomendação padrão da "
-            "faixa — use isso pra responder 'o que fazer', não invente outra ação."
+            "pra essa probabilidade específica. Quando um sinal tiver 'media_cancelados', é a "
+            "mediana histórica (média, no caso de reclamações) desse indicador entre TODOS os "
+            "meses de clientes que já cancelaram — a comparação mais objetiva disponível. "
+            "Cite valor_atual lado a lado com media_cancelados nesses sinais (ex: 'SLA "
+            "cumprido: 75% — mediana de quem já cancelou: 68%'), sem qualificar como "
+            "'bom'/'ruim' além do que os dois números já mostram. acao_sugerida é a "
+            "recomendação padrão da faixa — use isso pra responder 'o que fazer', não invente "
+            "outra ação."
         ),
     }

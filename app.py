@@ -600,6 +600,18 @@ with tab3:
                                     f"Atraso atual: {sinais['atraso_pagamento']['valor_atual']} dias "
                                     f"(baseline pessoal: {baseline_atraso:.1f})"
                                 )
+                            # Linha de risco: valor do sinal lado a lado com a mediana
+                            # histórica do mesmo indicador entre clientes já cancelados —
+                            # comparação objetiva, sem qualificar "bom"/"ruim" além do
+                            # que os dois números já mostram.
+                            for chave, rotulo in nomes.items():
+                                media_cancelados = sinais.get(chave, {}).get('media_cancelados')
+                                if media_cancelados is None:
+                                    continue
+                                st.caption(
+                                    f"{rotulo}: {sinais[chave]['valor_atual']} "
+                                    f"(linha de risco — mediana dos cancelados: {media_cancelados})"
+                                )
 
                     st.markdown("<div style='height:10px;border-bottom:1px solid rgba(0,10,30,0.06);margin-bottom:10px;'></div>", unsafe_allow_html=True)
 
