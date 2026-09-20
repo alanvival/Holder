@@ -99,7 +99,7 @@ cd interface-web && npm run test:metricas    # os números do catálogo
 cd interface-web && npm run test:catalogo    # as intenções montam e respondem
 ```
 
-Os dois últimos formam um **teste de contrato**: os mesmos números de referência são
+`pytest` e `test:metricas` formam um **teste de contrato**: os mesmos números de referência são
 conferidos em Python e em JavaScript. Os dois resolvedores de métrica são duplicados de
 propósito — é o que faz o catálogo responder no navegador sem backend no ar — e leem a mesma
 definição declarativa
