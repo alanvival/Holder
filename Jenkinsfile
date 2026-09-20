@@ -2,154 +2,93 @@ pipeline {
     agent any
 
     stages {
-        stage('Verificar ambiente') {
+        stage('Localizar Python') {
             steps {
                 script {
-                    if (isUnix()) {
-                        sh '''
-                            echo "===== USUARIO DO JENKINS ====="
-                            whoami
+                    def python = bat(
+                        script: '''
+                            @echo off
+                            where python >nul 2>&1
+                            if %ERRORLEVEL% EQU 0 (
+                                echo python
+                                exit /b 0
+                            )
 
-                            echo "===== VERSAO DO PYTHON ====="
-                            python3 --version || python --version
+                            if exist "%LocalAppData%\\Programs\\Python\\Python313\\python.exe" (
+                                echo %LocalAppData%\\Programs\\Python\\Python313\\python.exe
+                                exit /b 0
+                            )
 
-                            echo "===== DIRETORIO DO WORKSPACE ====="
-                            pwd
+                            if exist "%LocalAppData%\\Python\\bin\\python.exe" (
+                                echo %LocalAppData%\\Python\\bin\\python.exe
+                                exit /b 0
+                            )
 
-                            echo "===== ARQUIVOS DO PROJETO ====="
-                            ls -la
-                        '''
-                    } else {
-                        bat '''
-                            echo ===== USUARIO DO JENKINS =====
-                            whoami
+                            if exist "C:\\Python313\\python.exe" (
+                                echo C:\\Python313\\python.exe
+                                exit /b 0
+                            )
 
-                            echo ===== VERSAO DO PYTHON =====
-                            python --version
+                            echo Python nao encontrado
+                            exit /b 1
+                        ''',
+                        returnStdout: true
+                    ).trim()
 
-                            echo ===== DIRETORIO DO WORKSPACE =====
-                            cd
+                    env.PYTHON = python.split('\r\n')[-1].trim()
 
-                            echo ===== ARQUIVOS DO PROJETO =====
-                            dir
-                        '''
-                    }
+                    echo "Python encontrado em: ${env.PYTHON}"
                 }
             }
         }
 
-        stage('Instalar dependencias') {
+        stage('Verificar Python') {
             steps {
-                script {
-                    if (isUnix()) {
-                        sh '''
-                            if command -v python3 >/dev/null 2>&1; then
-                                python3 -m pip install -r requirements.txt
-                            else
-                                python -m pip install -r requirements.txt
-                            fi
-                        '''
-                    } else {
-                        bat '''
-                            python -m pip install -r requirements.txt
-                        '''
-                    }
-                }
+                bat '''
+                    "%PYTHON%" --version
+                    "%PYTHON%" -m pip --version
+                '''
             }
         }
 
-        stage('Atualizar banco Holder') {
+        stage('Instalar dependências') {
             steps {
-                script {
-                    if (isUnix()) {
-                        sh '''
-                            if command -v python3 >/dev/null 2>&1; then
-                                python3 -m holder.infra.etl.ingestao
-                            else
-                                python -m holder.infra.etl.ingestao
-                            fi
-                        '''
-                    } else {
-                        bat '''
-                            python -m holder.infra.etl.ingestao
-                        '''
-                    }
-                }
+                bat '''
+                    "%PYTHON%" -m pip install -r requirements.txt
+                '''
             }
         }
 
-        stage('Treinar modelo de risco') {
+        stage('Atualizar banco') {
             steps {
-                script {
-                    if (isUnix()) {
-                        sh '''
-                            if command -v python3 >/dev/null 2>&1; then
-                                python3 -m holder.aplicacao.treino
-                            else
-                                python -m holder.aplicacao.treino
-                            fi
-                        '''
-                    } else {
-                        bat '''
-                            python -m holder.aplicacao.treino
-                        '''
-                    }
-                }
+                bat '''
+                    "%PYTHON%" -m holder.infra.etl.ingestao
+                '''
             }
         }
 
-        stage('Gerar dados do InovaApps') {
+        stage('Treinar modelo') {
             steps {
-                script {
-                    if (isUnix()) {
-                        sh '''
-                            if command -v python3 >/dev/null 2>&1; then
-                                python3 scripts/gerar_dados_inovaapps.py
-                            else
-                                python scripts/gerar_dados_inovaapps.py
-                            fi
-                        '''
-                    } else {
-                        bat '''
-                            python scripts/gerar_dados_inovaapps.py
-                        '''
-                    }
-                }
+                bat '''
+                    "%PYTHON%" -m holder.aplicacao.treino
+                '''
             }
         }
 
-        stage('Gerar pesos dos alertas') {
+        stage('Gerar dados InovaApps') {
             steps {
-                script {
-                    if (isUnix()) {
-                        sh '''
-                            if command -v python3 >/dev/null 2>&1; then
-                                python3 scripts/gerar_pesos_alerta.py
-                            else
-                                python scripts/gerar_pesos_alerta.py
-                            fi
-                        '''
-                    } else {
-                        bat '''
-                            python scripts/gerar_pesos_alerta.py
-                        '''
-                    }
-                }
+                bat '''
+                    "%PYTHON%" scripts/gerar_dados_inovaapps.py
+                '''
             }
         }
-    }
 
-    post {
-        success {
-            echo 'Pipeline executada com sucesso.'
-        }
-
-        failure {
-            echo 'Falha em alguma etapa da pipeline.'
-        }
-
-        always {
-            echo 'Pipeline finalizada.'
+        stage('Gerar pesos de alerta') {
+            steps {
+                bat '''
+                    "%PYTHON%" scripts/gerar_pesos_alerta.py
+                '''
+            }
         }
     }
 }
