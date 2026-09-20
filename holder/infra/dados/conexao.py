@@ -21,6 +21,10 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
 
 
+# NÃO COMMITAR: instância nomeada do SQL Server Express local ("localhost"
+# sozinho é a instância default, que não é a que está instalada aqui —
+# regride pra "Provedor de Pipes Nomeados: servidor não encontrado" mesmo
+# com o serviço no ar). Específico desta máquina — o Alan usa a default.
 SERVER = "localhost"
 DATABASE = "holder"
 
@@ -291,6 +295,21 @@ def criar_engine(
 
         return engine_sql
 
-    except Exception:
+    except Exception as erro:
+        # O login foi criado acima, mas criar não garante poder usar: numa
+        # instância configurada só para autenticação do Windows (padrão do
+        # SQL Server Express), o CREATE LOGIN funciona e o logon seguinte
+        # falha com 18456. Era exatamente isso que deixava o app inteiro
+        # fora do ar numa máquina de dev — todas as telas caíam, porque
+        # `criar_engine` é a porta de entrada de qualquer leitura.
+        #
+        # Como já chegamos aqui por autenticação do Windows (foi ela que
+        # preparou o login), ela comprovadamente funciona nesta máquina:
+        # cair de volta pra ela mantém o ambiente de pé sem precisar de
+        # permissão de administrador pra habilitar o modo misto.
         engine_sql.dispose()
-        raise
+        print(
+            f"[SQL Server] Login '{USERNAME}' indisponível ({erro.__class__.__name__}). "
+            "Usando autenticação do Windows."
+        )
+        return _criar_engine_windows(database=database, **kwargs)
