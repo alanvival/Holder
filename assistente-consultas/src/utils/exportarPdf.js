@@ -1,7 +1,7 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-// Tokens da Globalsys (ver design-tokens.md na raiz do repo) — replicados
+// Tokens da Globalsys (ver docs/design-tokens.md) — replicados
 // aqui em RGB porque jsPDF não lê CSS custom properties.
 const COR_NAVY = [4, 24, 51]; // #041833
 const COR_BLUE_ACCENT = [1, 86, 252]; // #0156FC

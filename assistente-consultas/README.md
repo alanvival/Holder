@@ -57,8 +57,8 @@ pronta para virar uma tela de admin ligada a um backend real.
 
 Toda cor, fonte, raio e sombra vem de `src/styles/tokens.css` (nunca um
 valor solto direto no componente — se falta um token pro que a tela
-precisa, o token é o que falta, não uma exceção). Ver `design-tokens.md`
-na raiz do repo pra fonte da marca. Proibido em qualquer tela nova (tiques
+precisa, o token é o que falta, não uma exceção). Ver
+`docs/design-tokens.md` pra fonte da marca. Proibido em qualquer tela nova (tiques
 clássicos de interface gerada por IA sem checar a marca do cliente):
 
 - Gradiente roxo/rosa/magenta (`#8B5CF6`→`#EC4899` ou variantes) — a marca

@@ -12,8 +12,8 @@ import modelo_risco as mr  # motor de verdade: regressão logística treinada/va
 
 st.set_page_config(page_title="Dashboard Executivo CS", layout="wide")
 
-# Identidade visual da Globalsys (ver design-tokens.md na raiz do repo —
-# fonte da verdade dos tokens). As fontes (Space Grotesk nos títulos,
+# Identidade visual da Globalsys (ver docs/design-tokens.md — fonte da
+# verdade dos tokens). As fontes (Space Grotesk nos títulos,
 # Montserrat no corpo) e as cores já vêm do tema nativo do Streamlit
 # (.streamlit/config.toml, chaves font/headingFont/primaryColor) — isso é
 # necessário porque st.dataframe renderiza a grade em canvas

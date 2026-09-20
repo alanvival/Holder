@@ -1,5 +1,5 @@
 # Tema do dashboard (app.py) alinhado à identidade visual da Globalsys —
-# ver design-tokens.md na raiz do repo (fonte da verdade dos tokens).
+# ver docs/design-tokens.md (fonte da verdade dos tokens).
 #
 # `font`/`headingFont` aqui (não só CSS injetado em app.py) porque
 # st.dataframe renderiza a grade em canvas (glide-data-grid), não HTML —
@@ -16,7 +16,7 @@ codeFont = "monospace"
 
 # Tamanhos default do Streamlit (h1=2.75rem/44px) são desproporcionais pro
 # resto do produto (nenhuma tela do widget React chega perto disso — ver
-# design-tokens.md, que não define título de tela acima de ~26-28px em
+# docs/design-tokens.md, que não define título de tela acima de ~26-28px em
 # lugar nenhum) — reduzidos pra um padrão mais minimalista e consistente
 # com o restante da identidade visual Globalsys.
 headingFontSizes = ["1.75rem", "1.375rem", "1.125rem", "1rem", "0.9375rem", "0.875rem"]
