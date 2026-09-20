@@ -4,9 +4,11 @@ import plotly.graph_objects as go
 import plotly.express as px
 import textwrap
 import urllib
+import json
 from sqlalchemy import create_engine # <- NOVA IMPORTAÇÃO PARA O BANCO DE DADOS
 
-import score_risco as sr  # Score de risco de cancelamento em duas camadas (precoce + confirmada)
+import score_risco as sr  # infra compartilhada: conexão, faixas, histórico (fScoreRisco)
+import modelo_risco as mr  # motor de verdade: regressão logística treinada/validada (AUC~0.95, Brier~0.085)
 
 st.set_page_config(page_title="Dashboard Executivo CS", layout="wide")
 
@@ -355,16 +357,35 @@ with tab2:
         st.caption("Aviso: Nova métrica detectada. O gráfico plota o valor do cliente vs. a mediana da base cancelada para avaliação de desvio padrão.")
 
 # ------------------------------------------------------------------------------
-# ABA 3: SCORE DE RISCO (PREDITIVO) — duas camadas (precoce + confirmada),
-# não é ML: score de regras ponderadas, auditável, calibrado por
-# backtesting (ver testar_score_risco.py). Histórico salvo em SQL Server
-# (fScoreRisco) via score_risco.py — rodar `python score_risco.py` pra
-# atualizar/popular antes de abrir esta aba pela primeira vez.
+# ABA 3: SCORE DE RISCO (PREDITIVO) — regressão logística treinada e
+# validada contra os cancelamentos reais (AUC~0.95, Brier~0.085 — ver
+# testar_modelo_risco.py), não um score de pesos escolhidos à mão.
+# Histórico salvo em SQL Server (fScoreRisco) por modelo_risco.py —
+# rodar `python modelo_risco.py` pra treinar/atualizar antes de abrir esta
+# aba pela primeira vez (ou depois que houver cancelamentos novos).
 # ------------------------------------------------------------------------------
 with tab3:
     @st.cache_data(ttl=600)
     def _carregar_score_atual():
-        return sr.calcular_risco_todos_clientes(apenas_ativos=True)
+        # Lê do histórico já salvo (mês mais recente) em vez de recalcular
+        # na hora — mais rápido, e é exatamente o valor persistido pelo job
+        # mensal (modelo_risco.salvar_historico_mes), não um recorte à parte.
+        hist = sr.carregar_historico()
+        if hist.empty:
+            return []
+        mes_mais_recente = hist["mes_ref"].max()
+        ativos_ids = set(df_sit[df_sit["situacao"] == "Ativo"]["cliente_id"])
+        linhas = hist[(hist["mes_ref"] == mes_mais_recente) & (hist["cliente_id"].isin(ativos_ids))]
+        resultados = []
+        for _, r in linhas.iterrows():
+            resultados.append({
+                "cliente_id": r["cliente_id"], "mes_ref": r["mes_ref"],
+                "score_precoce": r["score_precoce"], "score_confirmado": r["score_confirmado"],
+                "risco_percentual": r["risco_percentual"], "faixa": r["faixa"],
+                "sinais_detalhados": json.loads(r["sinais_detalhados"]),
+            })
+        resultados.sort(key=lambda r: r["risco_percentual"], reverse=True)
+        return resultados
 
     @st.cache_data(ttl=600)
     def _carregar_historico_score():
@@ -451,9 +472,10 @@ with tab3:
                         nomes = {
                             'atraso_pagamento': 'Atraso de pagamento', 'chamados_criticos': 'Chamados críticos',
                             'sla_cumprido': 'SLA cumprido', 'uso_plataforma': 'Uso da plataforma',
+                            'tempo_resolucao': 'Tempo de resolução',
                             'reclamacoes': 'Reclamações', 'nps': 'NPS',
                         }
-                        contrib = {nomes[k]: v.get('contribuicao', 0) or 0 for k, v in sinais.items()}
+                        contrib = {nomes.get(k, k): v.get('contribuicao', 0) or 0 for k, v in sinais.items()}
                         fig_expl = go.Figure(go.Bar(
                             x=list(contrib.values()), y=list(contrib.keys()), orientation='h',
                             marker_color=['#0156FC' if k in ('atraso_pagamento', 'chamados_criticos') else '#1D1DDB' for k in sinais.keys()],
@@ -464,12 +486,13 @@ with tab3:
                             template='plotly_white',
                         )
                         st.plotly_chart(fig_expl, use_container_width=True)
-                        if sinais['nps']['classificacao_recente']:
+                        if sinais.get('nps', {}).get('classificacao_recente'):
                             st.caption(f"Último NPS: {sinais['nps']['classificacao_recente']}")
-                        if sinais['atraso_pagamento']['baseline_pessoal'] is not None:
+                        baseline_atraso = sinais.get('atraso_pagamento', {}).get('baseline_pessoal')
+                        if baseline_atraso is not None:
                             st.caption(
                                 f"Atraso atual: {sinais['atraso_pagamento']['valor_atual']} dias "
-                                f"(baseline pessoal: {sinais['atraso_pagamento']['baseline_pessoal']:.1f})"
+                                f"(baseline pessoal: {baseline_atraso:.1f})"
                             )
 
         # --- Modo 2: Cards por faixa ---------------------------------------
@@ -512,13 +535,26 @@ with tab3:
 
         st.markdown("---")
         with st.expander("Sobre este score (metodologia)"):
+            log_treinos = mr.carregar_log_treinos()
+            if not log_treinos.empty:
+                ultimo = log_treinos.iloc[0]
+                linha_validacao = f"**AUC = {ultimo['auc']:.3f}** · **Brier = {ultimo['brier']:.3f}** (validação cruzada 5-fold, treinado em {pd.to_datetime(ultimo['treinado_em']).strftime('%d/%m/%Y')}, {int(ultimo['n_amostras'])} amostras)."
+            else:
+                linha_validacao = "Sem log de treino ainda — rode `python modelo_risco.py`."
             st.markdown(f"""
-            **Score em duas camadas**, não machine learning — regras ponderadas e auditáveis:
-            - **Camada precoce** (peso {sr.PESO_PRECOCE:.0%}): desvio de atraso de pagamento e chamados críticos
-              contra a própria baseline do cliente (média móvel de 6 meses).
-            - **Camada confirmada** (peso {sr.PESO_CONFIRMADO:.0%}): SLA cumprido, uso da plataforma, reclamações
-              e NPS mais recente, normalizados contra a base geral de clientes ativos.
+            **Regressão logística treinada e validada** contra os cancelamentos reais da base —
+            não é um score de pesos escolhidos à mão. {linha_validacao}
+
+            - **Alvo do treino:** cada mês de cada cliente cancelado vira `y=1` só se estiver dentro
+              dos 3 meses imediatamente antes do cancelamento (meses mais antigos são excluídos do
+              treino, não viram `y=0`) — o modelo aprende "esse mês parece pré-cancelamento", não
+              "esse cliente é do tipo que cancela".
+            - **Variáveis:** SLA cumprido, tempo de resolução, reclamações, uso da plataforma,
+              atraso de pagamento, chamados críticos e NPS mais recente conhecido.
+            - **Explicabilidade:** cada sinal no detalhe do cliente mostra coeficiente × desvio —
+              "precoce"/"confirmado" agora é só rótulo de apresentação (atraso/críticos vs. os
+              demais), não um segundo cálculo paralelo.
 
             Faixas: Saudável (0–29%) · Atenção (30–54%) · Em risco (55–74%) · Crítico (75–100%).
-            Calibração e validação retroativa contra os 22 clientes já cancelados: ver `testar_score_risco.py`.
+            Backtest retroativo nos 22 clientes já cancelados: ver `testar_modelo_risco.py`.
             """)

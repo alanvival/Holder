@@ -14,3 +14,8 @@ logs/
 
 # Banco local (estado de runtime, não código-fonte)
 *.sqlite3
+
+# Modelo treinado (artefato gerado — rode `python modelo_risco.py` pra
+# recriar; o histórico de AUC/Brier de cada treino fica em fModeloRiscoLog
+# no SQL Server, não aqui)
+modelo_risco.pkl
