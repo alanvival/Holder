@@ -16,6 +16,10 @@ Fase: 6 de 10 · Bloqueado por: 05
   arquivo de 667 linhas, só noutro endereço.
 - Deduplicar `CORES_FAIXA` (`app.py:67`) e `cores_faixa` (`app.py:524`) — mesmos 4 hex, duas
   definições.
+- **Herdado da fase 3**: tirar `carregar_dados()` do nível do módulo, envolvendo o script num
+  `main()`. Só faz sentido aqui, junto da quebra por aba — executar no nível do módulo é o
+  contrato do Streamlit, e mexer nisso antes significaria reestruturar o arquivo duas vezes.
+  `st.set_page_config()` permanece como primeira chamada, por exigência do Streamlit.
 
 ## Comandos novos (decisão Q5=b — sem stubs de compatibilidade)
 

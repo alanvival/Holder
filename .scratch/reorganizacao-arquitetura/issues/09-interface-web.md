@@ -18,6 +18,19 @@ componente dentro dela. Numa apresentação para banca, o nome atual gera pergun
 - **Porta do CORS alinhada em 5173** (decisão Q30.1): o Vite sobe na 5173 por padrão e o
   README do front já diz 5173; hoje o Flask libera 5183 (`server.py:33`, `.env.example:7`) e
   rejeita o front. Mexer no backend, não no Vite.
+
+  **Atenção — achado da fase 3:** o `.env` real desta máquina fixa
+  `FRONTEND_ORIGIN=http://localhost:5183`. Como o `chamarBackend` devolve `null` em qualquer
+  falha e cai no comportamento local, um CORS bloqueado **não aparece como erro** — só como
+  assistente respondendo menos. Mas o fallback de IA comprovadamente funciona nesta máquina,
+  o que significa que o front **não** está rodando na 5173 aqui. Antes de mexer, confirmar com
+  o usuário como ele sobe o front; alinhar o backend em 5173 às cegas pode quebrar justamente
+  o que hoje funciona.
+
+  Correção proposta (mais forte que a original): fixar `server.port: 5173` **e**
+  `strictPort: true` no `vite.config.js`, além do backend em 5173. Com `strictPort`, o Vite
+  falha alto em vez de escolher outra porta em silêncio — que é o que provavelmente originou
+  essa divergência.
 - Garantir que nada do `tokens.css` regrediu — ele está hoje 100% conforme ao
   `design-tokens.md` (11 cores, 2 gradientes, 2 fontes, 2 raios) e assim deve continuar.
 

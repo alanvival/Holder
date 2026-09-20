@@ -228,6 +228,3 @@ def listar_historico(limite: int = 100) -> list[dict]:
         }
         for r in rows
     ]
-
-
-inicializar()

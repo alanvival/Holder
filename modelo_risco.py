@@ -151,10 +151,15 @@ def salvar_modelo(modelo, scaler, mediana_features, metricas, mes_ref_treino: st
 
 
 def carregar_modelo():
+    """Carregar é só carregar. Antes, se o .pkl não existisse, esta função
+    treinava o modelo, gravava o pickle e inseria uma linha em
+    fModeloRiscoLog — minutos de CPU e escrita no banco escondidos atrás de
+    um nome que promete leitura. Agora falha com o comando a rodar."""
     if not _ARQUIVO_MODELO.exists():
-        modelo, scaler, mediana, metricas = treinar_modelo()
-        salvar_modelo(modelo, scaler, mediana, metricas)
-        return modelo, scaler, mediana
+        raise FileNotFoundError(
+            f"Modelo não treinado: {_ARQUIVO_MODELO.name} não existe. "
+            "Rode `python modelo_risco.py` pra treinar, salvar e popular o histórico."
+        )
     with open(_ARQUIVO_MODELO, "rb") as f:
         d = pickle.load(f)
     return d["modelo"], d["scaler"], d["mediana_features"]

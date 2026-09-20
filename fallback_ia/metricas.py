@@ -180,20 +180,12 @@ METRICAS = {
     },
 }
 
-_ABAS = {
-    "clientes": dados.clientes,
-    "atendimento_mensal": dados.atendimento_mensal,
-    "pesquisas_nps": dados.pesquisas_nps,
-    "situacao_clientes": dados.situacao_clientes,
-}
-
-
 def _aba_tem_periodo(aba):
     return aba in ("atendimento_mensal", "pesquisas_nps")
 
 
 def _filtrar(aba, filtros):
-    df = _ABAS[aba]
+    df = dados.aba(aba)
 
     cliente_id = filtros.get("cliente_id")
     plano = filtros.get("plano")
@@ -293,7 +285,10 @@ def calcular_metrica(metrica_id: str, filtros: dict | None = None) -> dict:
 
 # Categorias que dá pra comparar de uma vez (mesmo shape de plano/porte/
 # segmento — os únicos valores de categoria fixos e enumeráveis da base).
-_CATEGORIAS_VALIDAS = {"plano": dados.PLANOS, "porte": dados.PORTES, "segmento": dados.SEGMENTOS}
+# É função, e não constante de módulo, porque `segmento` é derivado da
+# planilha: como constante, forçava a leitura do arquivo já no import.
+def _categorias_validas():
+    return {"plano": dados.PLANOS, "porte": dados.PORTES, "segmento": dados.SEGMENTOS}
 
 
 def comparar_metrica_por_categoria(metrica_id: str, categoria: str, filtros: dict | None = None) -> dict:
@@ -306,7 +301,8 @@ def comparar_metrica_por_categoria(metrica_id: str, categoria: str, filtros: dic
     tool faz o encadeamento internamente, sem gastar turno de conversa por
     valor de categoria.
     """
-    if categoria not in _CATEGORIAS_VALIDAS:
+    categorias = _categorias_validas()
+    if categoria not in categorias:
         return {"erro": f"Categoria inválida: '{categoria}'. Use plano, porte ou segmento."}
 
     filtros = dict(filtros or {})
@@ -317,7 +313,7 @@ def comparar_metrica_por_categoria(metrica_id: str, categoria: str, filtros: dic
         return {"erro": f"Métrica desconhecida: {metrica_id}"}
 
     comparacao = []
-    for valor_categoria in _CATEGORIAS_VALIDAS[categoria]:
+    for valor_categoria in categorias[categoria]:
         resultado = calcular_metrica(metrica_id, {**filtros, categoria: valor_categoria})
         valor = resultado.get("valor", resultado.get("nota_media"))
         if valor is None:

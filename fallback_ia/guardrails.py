@@ -29,11 +29,19 @@ RATE_LIMIT_JANELA_SEGUNDOS = 60
 # --- Log estruturado -------------------------------------------------
 
 LOG_DIR = Path(__file__).resolve().parent.parent / "logs"
-LOG_DIR.mkdir(exist_ok=True)
 
 logger = logging.getLogger("fallback_ia")
-logger.setLevel(logging.INFO)
-if not logger.handlers:
+
+
+def configurar_log():
+    """Cria o diretório de log e liga os handlers. Chamada na primeira
+    gravação, não no import: antes, só importar este módulo já criava a
+    pasta `logs/` e abria um arquivo — efeito colateral em disco pago por
+    qualquer um que importasse o pacote, inclusive a suíte de testes."""
+    if logger.handlers:
+        return
+    LOG_DIR.mkdir(exist_ok=True)
+    logger.setLevel(logging.INFO)
     handler = logging.FileHandler(LOG_DIR / "fallback_ia.log", encoding="utf-8")
     handler.setFormatter(logging.Formatter("%(asctime)s %(message)s"))
     logger.addHandler(handler)
@@ -43,6 +51,7 @@ if not logger.handlers:
 
 
 def registrar_chamada(*, pergunta: str, tool_escolhida: str | None, sucesso: bool, tempo_ms: int, origem_erro: str | None = None):
+    configurar_log()
     logger.info(
         "pergunta=%r tool=%r sucesso=%s tempo_ms=%d erro=%r",
         pergunta, tool_escolhida, sucesso, tempo_ms, origem_erro,
@@ -51,6 +60,8 @@ def registrar_chamada(*, pergunta: str, tool_escolhida: str | None, sucesso: boo
 
 # --- Timeout -----------------------------------------------------------
 
+# Criar o executor no import é barato e não é efeito colateral observável:
+# o ThreadPoolExecutor só cria thread no primeiro submit.
 _executor = ThreadPoolExecutor(max_workers=8)
 
 

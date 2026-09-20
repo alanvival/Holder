@@ -32,6 +32,12 @@ from fallback_ia import armazenamento  # noqa: E402
 app = Flask(__name__)
 CORS(app, origins=[os.environ.get("FRONTEND_ORIGIN", "http://localhost:5183")])
 
+# Cria as tabelas do SQLite se ainda não existirem. Isso era feito no import
+# de fallback_ia/armazenamento.py, o que fazia qualquer importador do pacote
+# — inclusive a suíte de testes — abrir conexão e rodar DDL sem pedir. Agora
+# quem precisa do banco é quem o inicializa: o servidor.
+armazenamento.inicializar()
+
 
 @app.post("/api/fallback-ia")
 def fallback_ia():

@@ -1,7 +1,19 @@
 # 03 — Efeitos colaterais de import explícitos
 
-Status: aberto
+Status: resolvido
 Fase: 3 de 10 · Bloqueado por: 02
+
+## Resultado
+
+`63 passed` (59 + 4 novos). API sobe e responde `/api/health`, `/api/perguntas` e
+`/api/historico` com 200 — o SQLite passa a ser inicializado pelo servidor. Dashboard sobe com
+200 e sem erro no log.
+
+A carga preguiçosa do `dados.py` usa `lru_cache` + `__getattr__` de módulo (PEP 562), o que
+preservou os ~20 pontos de uso de `dados.clientes`, `dados.SEGMENTOS` etc. sem tocá-los. Só os
+três que liam no **nível do módulo** precisaram mudar: os dois `_ABAS` (metricas e
+tools_genericas) viraram `dados.aba(nome)`, e `_CATEGORIAS_VALIDAS` virou função, porque
+`segmento` é derivado da planilha.
 
 ## Problema
 
@@ -27,9 +39,20 @@ Além disso: `modelo_risco.carregar_modelo():153-160` **treina e grava** (pickle
 - `armazenamento.inicializar()` passa a ser chamado pelo servidor, não pelo import.
 - `guardrails` cria diretório e handler numa função de inicialização.
 - `ingestao` sem conexão no nível do módulo.
-- `app.py` sem `carregar_dados()` no nível do módulo.
 - `carregar_modelo()` deixa de treinar implicitamente: erro claro se o `.pkl` não existir, com
   a instrução do comando de treino.
+- `testes/test_sem_efeito_no_import.py` (novo): prende o invariante em subprocessos limpos —
+  importar não lê a planilha, não configura log em disco, não cria motor de conexão, e a
+  planilha continua sendo lida uma única vez por processo.
+
+## Movido para a fase 6
+
+O item "`app.py` sem `carregar_dados()` no nível do módulo" **saiu desta fase**. Executar no
+nível do módulo *é* o contrato do Streamlit: ele reexecuta o script inteiro a cada interação.
+Tirar a chamada de lá exige envolver as 667 linhas num `main()`, que é exatamente o trabalho da
+fase 6 (quebrar o dashboard por aba). Fazer agora significaria reestruturar o arquivo duas
+vezes. `st.set_page_config()` na linha 13 continua onde está pelo mesmo motivo: o Streamlit
+exige que seja a primeira chamada.
 
 ## Verificação
 

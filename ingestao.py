@@ -36,14 +36,17 @@ def _garantir_banco_existe():
     engine_master.dispose()
 
 
-# Inicializa o motor de conexão (com o banco 'holder' já garantido)
-_garantir_banco_existe()
-engine = create_engine(_string_conexao(DATABASE))
-
 # ==============================================================================
 # INGESTÃO DAS TABELAS
 # ==============================================================================
 def main():
+    # O banco é garantido e o motor criado AQUI, não no nível do módulo:
+    # antes, só importar este arquivo já conectava no `master` e podia
+    # executar CREATE DATABASE — efeito colateral pesado e silencioso, que
+    # tornava qualquer varredura de imports perigosa.
+    _garantir_banco_existe()
+    engine = create_engine(_string_conexao(DATABASE))
+
     excel_file = "INOVAAPPS_base_de_dados.xlsx"
     
     # Mapeamento estrito solicitado: aba de origem -> tabela de destino
@@ -72,6 +75,7 @@ def main():
         except Exception as e:
             print(f"   ❌ Erro ao gravar a tabela '{table_name}': {e}")
             
+    engine.dispose()
     print("\nPipeline finalizado com sucesso.")
 
 if __name__ == "__main__":

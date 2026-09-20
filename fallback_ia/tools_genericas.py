@@ -20,13 +20,6 @@ import datetime as dt
 from . import dados
 from .campos import CAMPOS_PERMITIDOS, erro_campo_invalido, resolver_campo
 
-_ABAS = {
-    "clientes": dados.clientes,
-    "atendimento_mensal": dados.atendimento_mensal,
-    "pesquisas_nps": dados.pesquisas_nps,
-    "situacao_clientes": dados.situacao_clientes,
-}
-
 _LIMITE_PADRAO = 20
 _LIMITE_MAXIMO = 100
 
@@ -48,7 +41,7 @@ def _linha_temporal_mais_recente(cliente_id: str, aba: str, periodo_inicio: str 
     período foi dado, a mais recente disponível no histórico inteiro (regra
     3 do prompt: campo de série temporal sem período usa o mês mais recente
     disponível). Em pesquisas_nps, só conta pesquisa respondida."""
-    df = _ABAS[aba]
+    df = dados.aba(aba)
     sub = df[df["cliente_id"] == cliente_id]
     if periodo_inicio:
         sub = sub[sub["mes_ref"] >= periodo_inicio]
@@ -322,7 +315,7 @@ def evolucao_temporal(
     if tipo != "numero" and campo != "classificacao_nps":
         return {"erro": f"Campo '{campo}' não é numérico — não dá pra ver evolução como série de valores."}
 
-    df = _ABAS[aba]
+    df = dados.aba(aba)
 
     if cliente_id:
         cliente_id = dados.normalizar_cliente_id(cliente_id)
