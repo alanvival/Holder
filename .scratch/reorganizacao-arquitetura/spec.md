@@ -19,7 +19,7 @@ futura, e sim:
 
 - Não pode quebrar nada nem retirar função. "Não quebrar" = gráficos e funcionalidades
   operando normalmente.
-- SQL Server local (`localhost\SQLEXPRESS`, banco `holder`) estará no ar durante o trabalho.
+- SQL Server local (`localhost`, banco `holder`) estará no ar durante o trabalho.
 - Chamadas à Groq ficam mockadas nos testes.
 - Tudo em PT-BR (código, pastas, docs).
 - O front deve seguir o `design-tokens.md`.

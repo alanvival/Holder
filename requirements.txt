@@ -1,6 +1,6 @@
 # Dashboard (streamlit run holder/interfaces/dashboard/app.py) — lê do SQL
 # Server local (banco "holder", populado por `python -m holder.infra.etl.ingestao`),
-# não do .xlsx direto. Instância esperada: localhost\SQLEXPRESS
+# não do .xlsx direto. Instância esperada: localhost
 # (SQL Server Express + "ODBC Driver 17 for SQL Server", autenticação Windows).
 streamlit
 pandas

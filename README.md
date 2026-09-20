@@ -47,7 +47,7 @@ testes/            pytest
 
 - **Python 3.11+** e `pip install -r requirements.txt`
 - **Node 18+** (para o `interface-web/`)
-- **SQL Server Express** local, instância `localhost\SQLEXPRESS`, com o
+- **SQL Server Express** local, instância `localhost`, com o
   **ODBC Driver 17 for SQL Server** e autenticação Windows. O banco `holder` é criado pela
   ingestão se não existir.
 - Uma chave da [Groq](https://console.groq.com) para o fallback de IA do assistente. Sem ela o
