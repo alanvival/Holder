@@ -14,6 +14,8 @@ fallback de IA inteiro — a pergunta cai em "não encontrei" normalmente.
 """
 from __future__ import annotations
 
+import time
+
 from holder.dominio.risco import ACAO_POR_FAIXA
 from holder.infra.persistencia import historico_score
 
@@ -22,9 +24,29 @@ from holder.infra.persistencia import historico_score
 # tivesse sido iniciado a partir da raiz. Com a persistência dentro de
 # `holder/`, o import é direto e não depende de onde o processo subiu.
 
+# Cache em memória do histórico completo, com TTL curto — fScoreRisco só
+# muda quando o job mensal de treino roda (nunca no meio de uma conversa),
+# então reler do SQL Server em toda pergunta é custo puro, sem ganho de
+# atualidade. Sob pressão de memória da máquina (ambiente documentado:
+# RAM livre caindo a ~600MB com Vite+Flask+Streamlit+Chrome juntos), essa
+# leitura sozinha já foi observada ao vivo levando mais de 120s — cachear
+# faz só a PRIMEIRA pergunta depois de o processo subir pagar esse custo;
+# todas as outras (inclusive as sugestões de "continuar a conversa" do
+# próprio widget, que senão caíam em "não encontrei" por timeout) respondem
+# na hora. TTL de 5min é só uma rede de segurança pra não ficar servindo
+# dado stale indefinidamente se alguém rodar o treino com o servidor no ar.
+_CACHE_TTL_SEGUNDOS = 300
+_cache_historico = {"df": None, "carregado_em": 0.0}
+
 
 def _carregar_historico():
-    return historico_score.carregar_historico()
+    agora = time.monotonic()
+    if _cache_historico["df"] is not None and (agora - _cache_historico["carregado_em"]) < _CACHE_TTL_SEGUNDOS:
+        return _cache_historico["df"]
+    df = historico_score.carregar_historico()
+    _cache_historico["df"] = df
+    _cache_historico["carregado_em"] = agora
+    return df
 
 
 def _mes_anterior(mes_ref: str) -> str:

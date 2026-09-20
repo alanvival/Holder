@@ -38,7 +38,7 @@ const PADRAO_CLIENTE_UNICO = /\bc\s?0?\d{2,4}\b/i;
 export function detectarPerguntaDeRisco(texto) {
   if (!texto) return null;
   if (PADRAO_CLIENTE_UNICO.test(texto)) return null;
-  if (!PALAVRAS_RISCO.test(texto) || !PALAVRAS_CLIENTES.test(texto)) return null;
+  if (!PALAVRAS_RISCO.test(texto)) return null;
 
   const filtros = {};
   if (PADRAO_SUBINDO.test(texto)) filtros.tendencia = 'subindo';
@@ -49,6 +49,13 @@ export function detectarPerguntaDeRisco(texto) {
   else if (PADRAO_EM_RISCO.test(texto)) filtros.faixa = 'Em risco';
   else if (PADRAO_ATENCAO.test(texto)) filtros.faixa = 'Atenção';
   else if (PADRAO_SAUDAVEL.test(texto)) filtros.faixa = 'Saudável';
+
+  // Sem "cliente(s)"/"empresa(s)" na frase, só reconhece quando tem uma
+  // faixa ou tendência explícita ("Quais estão na faixa 'Em risco'?", um
+  // follow-up sugerido pelo próprio widget — ver followUpQuestions.js).
+  // "risco" sozinho, sem mais nada, é vago demais (podia ser sobre outra
+  // coisa) e continua caindo no fallback de IA.
+  if (!PALAVRAS_CLIENTES.test(texto) && !filtros.faixa && !filtros.tendencia) return null;
 
   return filtros;
 }

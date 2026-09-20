@@ -10,6 +10,14 @@ const FOLLOW_UPS_POR_TOOL = {
     'Quais estão na faixa "Em risco"?',
     'O que mais influencia o risco desses clientes?',
   ],
+  // Atalho determinístico (ver riscoDireto.js) — mesma família de dado de
+  // listar_previsao_risco, só que resolvido sem Groq; os follow-ups fazem
+  // sentido idênticos.
+  risco_direto: [
+    'Detalhe o risco do primeiro cliente dessa lista',
+    'Quais estão na faixa "Em risco"?',
+    'O que mais influencia o risco desses clientes?',
+  ],
   detalhar_previsao_cliente: [
     'Como esse risco evoluiu nos últimos meses?',
     'Quais outras empresas estão em risco parecido?',
