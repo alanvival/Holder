@@ -1,0 +1,9 @@
+# Dependências de SISTEMA do host do deploy (Streamlit Cloud roda `apt-get
+# install` nesta lista). Nada aqui é usado em desenvolvimento.
+#
+# unixodbc-dev existe só para o `pip install pyodbc` do requirements.txt
+# conseguir compilar caso o PyPI não ofereça wheel para a versão de Python
+# do host. O pyodbc em si nunca é importado no deploy: com
+# HOLDER_BANCO=sqlite o `criar_engine` nem monta a URL mssql+pyodbc
+# (ver testes/test_banco_sqlite.py::test_o_caminho_sqlite_nao_importa_pyodbc).
+unixodbc-dev

@@ -16,11 +16,51 @@ from ..dados import conexao
 TABELA = "fScoreRisco"
 
 
+# O catálogo de tabelas tem nome diferente em cada banco. O dialeto vem do
+# próprio engine (`engine.dialect.name`), e não da variável de ambiente, pra
+# não existir duas fontes de verdade sobre onde estamos gravando.
+CONSULTA_TABELA_EXISTE = {
+    "mssql": "SELECT 1 FROM sys.tables WHERE name = :nome",
+    "sqlite": "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = :nome",
+}
+
+DDL = {
+    "mssql": f"""
+        IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = '{TABELA}')
+        CREATE TABLE {TABELA} (
+            cliente_id NVARCHAR(10) NOT NULL,
+            mes_ref NVARCHAR(7) NOT NULL,
+            score_precoce FLOAT NOT NULL,
+            score_confirmado FLOAT NOT NULL,
+            risco_percentual FLOAT NOT NULL,
+            faixa NVARCHAR(20) NOT NULL,
+            sinais_detalhados NVARCHAR(MAX) NOT NULL,
+            CONSTRAINT pk_{TABELA} PRIMARY KEY (cliente_id, mes_ref)
+        )
+    """,
+    # TEXT/REAL em vez de NVARCHAR/FLOAT: o SQLite tem afinidade de tipo, não
+    # tipo declarado, então o que importa aqui é o que o pandas devolve na
+    # leitura — str e float, iguais aos do SQL Server.
+    "sqlite": f"""
+        CREATE TABLE IF NOT EXISTS {TABELA} (
+            cliente_id TEXT NOT NULL,
+            mes_ref TEXT NOT NULL,
+            score_precoce REAL NOT NULL,
+            score_confirmado REAL NOT NULL,
+            risco_percentual REAL NOT NULL,
+            faixa TEXT NOT NULL,
+            sinais_detalhados TEXT NOT NULL,
+            PRIMARY KEY (cliente_id, mes_ref)
+        )
+    """,
+}
+
+
 def tabela_existe(engine, nome: str) -> bool:
     with engine.connect() as conn:
         return (
             conn.execute(
-                text("SELECT 1 FROM sys.tables WHERE name = :nome"), {"nome": nome}
+                text(CONSULTA_TABELA_EXISTE[engine.dialect.name]), {"nome": nome}
             ).fetchone()
             is not None
         )
@@ -38,19 +78,7 @@ def garantir_tabela(engine) -> None:
     if tabela_existe(engine, TABELA):
         return
     with engine.begin() as conn:
-        conn.execute(text(f"""
-            IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = '{TABELA}')
-            CREATE TABLE {TABELA} (
-                cliente_id NVARCHAR(10) NOT NULL,
-                mes_ref NVARCHAR(7) NOT NULL,
-                score_precoce FLOAT NOT NULL,
-                score_confirmado FLOAT NOT NULL,
-                risco_percentual FLOAT NOT NULL,
-                faixa NVARCHAR(20) NOT NULL,
-                sinais_detalhados NVARCHAR(MAX) NOT NULL,
-                CONSTRAINT pk_{TABELA} PRIMARY KEY (cliente_id, mes_ref)
-            )
-        """))
+        conn.execute(text(DDL[engine.dialect.name]))
 
 
 def salvar_mes(df_linhas: pd.DataFrame, mes_ref: str) -> int:

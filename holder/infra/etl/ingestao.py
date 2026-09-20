@@ -22,7 +22,13 @@ from ..dados.adaptador_sqlserver import TABELAS
 def _garantir_banco_existe() -> None:
     """Cria o banco `holder` se ele ainda não existir — evita que rodar a
     ingestão numa instância recém-instalada falhe logo na primeira
-    conexão."""
+    conexão.
+
+    Não se aplica ao SQLite: lá não há instância com vários bancos, e o
+    arquivo é criado pelo próprio driver na primeira conexão."""
+    if conexao.dialeto() == "sqlite":
+        return
+
     engine_master = conexao.criar_engine("master", isolation_level="AUTOCOMMIT")
     try:
         with engine_master.connect() as conn:

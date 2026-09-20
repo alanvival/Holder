@@ -16,23 +16,42 @@ TABELA = "fModeloRiscoLog"
 
 COLUNAS = ["treinado_em", "mes_ref_treino", "auc", "brier", "n_amostras", "n_positivos"]
 
+# Mesma tabela nos dois bancos. O SQL Server autoincrementa com IDENTITY e
+# carimba a data com SYSDATETIME(); o SQLite faz as duas coisas com
+# AUTOINCREMENT e CURRENT_TIMESTAMP. O `treinado_em` do SQLite é texto ISO,
+# que ordena igual ao DATETIME2 no `ORDER BY ... DESC` de `carregar()`.
+DDL = {
+    "mssql": f"""
+        IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = '{TABELA}')
+        CREATE TABLE {TABELA} (
+            id INT IDENTITY(1,1) PRIMARY KEY,
+            treinado_em DATETIME2 DEFAULT SYSDATETIME(),
+            mes_ref_treino NVARCHAR(7) NULL,
+            auc FLOAT NOT NULL,
+            brier FLOAT NOT NULL,
+            n_amostras INT NOT NULL,
+            n_positivos INT NOT NULL
+        )
+    """,
+    "sqlite": f"""
+        CREATE TABLE IF NOT EXISTS {TABELA} (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            treinado_em TEXT DEFAULT CURRENT_TIMESTAMP,
+            mes_ref_treino TEXT NULL,
+            auc REAL NOT NULL,
+            brier REAL NOT NULL,
+            n_amostras INTEGER NOT NULL,
+            n_positivos INTEGER NOT NULL
+        )
+    """,
+}
+
 
 def registrar(metricas: dict, mes_ref_treino: str | None = None) -> None:
     engine = conexao.criar_engine()
     try:
         with engine.begin() as conn:
-            conn.execute(text(f"""
-                IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = '{TABELA}')
-                CREATE TABLE {TABELA} (
-                    id INT IDENTITY(1,1) PRIMARY KEY,
-                    treinado_em DATETIME2 DEFAULT SYSDATETIME(),
-                    mes_ref_treino NVARCHAR(7) NULL,
-                    auc FLOAT NOT NULL,
-                    brier FLOAT NOT NULL,
-                    n_amostras INT NOT NULL,
-                    n_positivos INT NOT NULL
-                )
-            """))
+            conn.execute(text(DDL[engine.dialect.name]))
             conn.execute(text(f"""
                 INSERT INTO {TABELA} (mes_ref_treino, auc, brier, n_amostras, n_positivos)
                 VALUES (:mes, :auc, :brier, :n, :npos)
