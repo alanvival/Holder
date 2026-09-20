@@ -19,7 +19,7 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
-DB_PATH = Path(__file__).resolve().parents[3] / "dados" / "gerado" / "dados_admin.sqlite3"
+DB_PATH = Path(__file__).resolve().parents[3] / "dados_admin.sqlite3"
 
 
 @contextmanager

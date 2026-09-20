@@ -18,7 +18,7 @@ import urllib.parse
 
 from sqlalchemy import create_engine
 
-SERVER = r"localhost"
+SERVER = "localhost"
 DATABASE = "holder"
 
 DRIVER = "ODBC Driver 17 for SQL Server"
