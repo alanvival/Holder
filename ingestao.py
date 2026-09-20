@@ -1,24 +1,44 @@
 import pandas as pd
-from sqlalchemy import create_engine
-import urllib
+from sqlalchemy import create_engine, text
+import urllib.parse
 
 # ==============================================================================
 # CONFIGURAÇÕES DE CONEXÃO - SQL SERVER
 # ==============================================================================
-# Geralmente o SQL Express local é acessado desta forma:
-SERVER = r'localhost' 
+# Instância nomeada padrão do SQL Server Express (instalador cria
+# "SQLEXPRESS", não a instância default "localhost" pura).
+SERVER = r'localhost\SQLEXPRESS'
 DATABASE = 'holder'
 
-# Cria a string ODBC utilizando a Autenticação Nativa do Windows (Trusted_Connection)
-params = urllib.parse.quote_plus(
-    f"DRIVER={{ODBC Driver 17 for SQL Server}};"
-    f"SERVER={SERVER};"
-    f"DATABASE={DATABASE};"
-    f"Trusted_Connection=yes;"
-)
 
-# Inicializa o motor de conexão
-engine = create_engine(f"mssql+pyodbc:///?odbc_connect={params}")
+def _string_conexao(database: str) -> str:
+    params = urllib.parse.quote_plus(
+        f"DRIVER={{ODBC Driver 17 for SQL Server}};"
+        f"SERVER={SERVER};"
+        f"DATABASE={database};"
+        f"Trusted_Connection=yes;"
+    )
+    return f"mssql+pyodbc:///?odbc_connect={params}"
+
+
+def _garantir_banco_existe():
+    """Cria o banco DATABASE se ele ainda não existir — evita que rodar
+    ingestao.py numa instância recém-instalada (sem o banco 'holder' criado
+    manualmente ainda) falhe logo na primeira conexão."""
+    engine_master = create_engine(_string_conexao("master"), isolation_level="AUTOCOMMIT")
+    with engine_master.connect() as conn:
+        existe = conn.execute(
+            text("SELECT 1 FROM sys.databases WHERE name = :nome"), {"nome": DATABASE}
+        ).fetchone()
+        if not existe:
+            conn.execute(text(f"CREATE DATABASE [{DATABASE}]"))
+            print(f"Banco '{DATABASE}' não existia — criado agora.")
+    engine_master.dispose()
+
+
+# Inicializa o motor de conexão (com o banco 'holder' já garantido)
+_garantir_banco_existe()
+engine = create_engine(_string_conexao(DATABASE))
 
 # ==============================================================================
 # INGESTÃO DAS TABELAS

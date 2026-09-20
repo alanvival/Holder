@@ -1,8 +1,12 @@
-# Dashboard (app.py, analise_sla.py)
+# Dashboard (app.py) — lê do SQL Server local (banco "holder", populado por
+# ingestao.py), não mais do .xlsx direto. Instância esperada: localhost\SQLEXPRESS
+# (SQL Server Express + "ODBC Driver 17 for SQL Server", autenticação Windows).
 streamlit
 pandas
 plotly
 openpyxl
+sqlalchemy
+pyodbc
 
 # Backend do fallback de IA do Assistente de Consultas (server.py)
 Flask>=3.1

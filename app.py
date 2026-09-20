@@ -3,6 +3,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 import textwrap
+import urllib
 from sqlalchemy import create_engine # <- NOVA IMPORTAÇÃO PARA O BANCO DE DADOS
 
 st.set_page_config(page_title="Dashboard Executivo CS", layout="wide")
@@ -24,10 +25,21 @@ st.markdown("""
 @st.cache_data
 def carregar_dados():
     # --- CONEXÃO COM O SQL SERVER LOCALHOST ---
-    # Utilizando autenticação do Windows (Trusted_Connection=yes). 
+    # Utilizando autenticação do Windows (Trusted_Connection=yes).
     # O driver 'ODBC Driver 17 for SQL Server' é o padrão mais comum.
-    string_conexao = 'mssql+pyodbc://localhost/holder?driver=ODBC+Driver+17+for+SQL+Server&Trusted_Connection=yes'
-    engine = create_engine(string_conexao)
+    # Instância nomeada padrão do SQL Server Express: "SQLEXPRESS" (não a
+    # instância default "localhost" pura). Connection string ODBC crua via
+    # odbc_connect= (mesmo padrão de ingestao.py) — a barra invertida do nome
+    # da instância não é confiável dentro da URL "mssql+pyodbc://host/db"
+    # do SQLAlchemy (%5C falha com "Provedor de Pipes Nomeados: servidor não
+    # encontrado" mesmo com o SQL Server rodando e acessível).
+    params = urllib.parse.quote_plus(
+        "DRIVER={ODBC Driver 17 for SQL Server};"
+        r"SERVER=localhost\SQLEXPRESS;"
+        "DATABASE=holder;"
+        "Trusted_Connection=yes;"
+    )
+    engine = create_engine(f"mssql+pyodbc:///?odbc_connect={params}")
     
     # Lendo as tabelas do banco de dados no lugar das abas do Excel
     df_cli = pd.read_sql("SELECT * FROM dClientes", engine)
