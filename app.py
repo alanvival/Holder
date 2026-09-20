@@ -3,6 +3,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 import textwrap
+from sqlalchemy import create_engine # <- NOVA IMPORTAÇÃO PARA O BANCO DE DADOS
 
 st.set_page_config(page_title="Dashboard Executivo CS", layout="wide")
 
@@ -22,13 +23,25 @@ st.markdown("""
 # ==============================================================================
 @st.cache_data
 def carregar_dados():
-    df_cli = pd.read_excel('INOVAAPPS_base_de_dados.xlsx', sheet_name='clientes')
-    df_atd = pd.read_excel('INOVAAPPS_base_de_dados.xlsx', sheet_name='atendimento_mensal')
-    df_sit = pd.read_excel('INOVAAPPS_base_de_dados.xlsx', sheet_name='situacao_clientes')
-    df_nps = pd.read_excel('INOVAAPPS_base_de_dados.xlsx', sheet_name='pesquisas_nps')
+    # --- CONEXÃO COM O SQL SERVER LOCALHOST ---
+    # Utilizando autenticação do Windows (Trusted_Connection=yes). 
+    # O driver 'ODBC Driver 17 for SQL Server' é o padrão mais comum.
+    string_conexao = 'mssql+pyodbc://localhost/holder?driver=ODBC+Driver+17+for+SQL+Server&Trusted_Connection=yes'
+    engine = create_engine(string_conexao)
     
+    # Lendo as tabelas do banco de dados no lugar das abas do Excel
+    df_cli = pd.read_sql("SELECT * FROM dClientes", engine)
+    df_atd = pd.read_sql("SELECT * FROM fAtendimento", engine)
+    df_sit = pd.read_sql("SELECT * FROM dSituacao", engine)
+    df_nps = pd.read_sql("SELECT * FROM fPesquisa", engine)
+    
+    # --- O RESTANTE DO CÓDIGO CONTINUA INTACTO A PARTIR DAQUI ---
     df_atd['mes_ref_dt'] = pd.to_datetime(df_atd['mes_ref'], format='%Y-%m')
     df_nps['mes_ref_dt'] = pd.to_datetime(df_nps['mes_ref'], format='%Y-%m')
+    
+    # Criação da métrica de abandono e limpeza
+    df_atd['reunioes_ausentes'] = df_atd['reunioes_previstas'] - df_atd['reunioes_realizadas']
+    df_atd = df_atd.drop(columns=['reunioes_previstas', 'reunioes_realizadas'])
     
     df_atd = df_atd.merge(df_sit[['cliente_id', 'situacao', 'mes_cancelamento']], on='cliente_id', how='left')
     
@@ -52,24 +65,27 @@ def carregar_dados():
     df_rfv['R_Score'] = pd.qcut(df_rfv['R_Rank'], 5, labels=[1, 2, 3, 4, 5]).astype(int)
 
     def categorizar(row):
-        if row['V_Score'] >= 4 and row['R_Score'] <= 2: return '🚨 Ação Imediata'
-        elif row['V_Score'] >= 4 and row['R_Score'] >= 3: return '⭐ Proteger e Expandir'
-        elif row['V_Score'] <= 3 and row['R_Score'] <= 2: return '⚠️ Avaliar Fit'
-        else: return '🔄 Fluxo Normal'
+        if row['V_Score'] >= 4 and row['R_Score'] <= 2: return 'Ação Imediata'
+        elif row['V_Score'] >= 4 and row['R_Score'] >= 3: return 'Proteger e Expandir'
+        elif row['V_Score'] <= 3 and row['R_Score'] <= 2: return 'Avaliar Fit'
+        else: return 'Fluxo Normal'
     df_rfv['Categoria_Saude'] = df_rfv.apply(categorizar, axis=1)
 
     # --------------------------------------------------------------------------
-    # PADRÃO DOS CANCELADOS
+    # PADRÃO DOS CANCELADOS (AGORA DINÂMICO)
     # --------------------------------------------------------------------------
     df_atd_canc = df_atd[df_atd['situacao'] == 'Cancelado'].copy()
     
-    # CORREÇÃO: Inclusão de todas as métricas do seletor para evitar o KeyError
-    linhas_risco = {
-        'pct_sla_cumprido': df_atd_canc['pct_sla_cumprido'].median(),
-        'tempo_medio_resolucao_h': df_atd_canc['tempo_medio_resolucao_h'].median(),
-        'chamados_abertos': df_atd_canc['chamados_abertos'].median(),
-        'reclamacoes_formais': df_atd_canc['reclamacoes_formais'].mean()
-    }
+    # Varre todas as colunas numéricas da aba de atendimento, excluindo IDs/Datas se houver
+    colunas_excluidas = ['cliente_id', 'mes_ref', 'mes_ref_dt', 'mes_cancelamento']
+    colunas_numericas = [col for col in df_atd.select_dtypes(include='number').columns if col not in colunas_excluidas]
+    
+    linhas_risco = {}
+    for col in colunas_numericas:
+        if col in ['reclamacoes_formais', 'reunioes_ausentes']:
+            linhas_risco[col] = df_atd_canc[col].mean()
+        else:
+            linhas_risco[col] = df_atd_canc[col].median()
     
     # Assinatura de Churn (Últimos meses antes da saída)
     df_atd_canc['mes_canc_dt'] = pd.to_datetime(df_atd_canc['mes_cancelamento'], format='%Y-%m')
@@ -77,15 +93,15 @@ def carregar_dados():
     ultimos_meses_canc = df_atd_canc[(df_atd_canc['meses_para_canc'] > 0) & (df_atd_canc['meses_para_canc'] <= 4)]
     
     total_canc = len(df_cancelados)
-    pct_canc_sla = len(ultimos_meses_canc[ultimos_meses_canc['pct_sla_cumprido'] <= linhas_risco['pct_sla_cumprido']]['cliente_id'].unique()) / total_canc
-    pct_canc_rec = len(ultimos_meses_canc[ultimos_meses_canc['reclamacoes_formais'] > 0]['cliente_id'].unique()) / total_canc
+    pct_canc_sla = len(ultimos_meses_canc[ultimos_meses_canc['pct_sla_cumprido'] <= linhas_risco.get('pct_sla_cumprido', 80.0)]['cliente_id'].unique()) / total_canc if total_canc > 0 else 0
+    pct_canc_rec = len(ultimos_meses_canc[ultimos_meses_canc['reclamacoes_formais'] > 0]['cliente_id'].unique()) / total_canc if total_canc > 0 else 0
     
     df_nps_canc = df_nps.merge(df_sit[['cliente_id', 'situacao', 'mes_cancelamento']], on='cliente_id', how='inner')
     df_nps_canc = df_nps_canc[df_nps_canc['situacao'] == 'Cancelado']
     df_nps_canc['mes_canc_dt'] = pd.to_datetime(df_nps_canc['mes_cancelamento'], format='%Y-%m')
     df_nps_canc['meses_para_canc'] = (df_nps_canc['mes_canc_dt'].dt.year - df_nps_canc['mes_ref_dt'].dt.year) * 12 + (df_nps_canc['mes_canc_dt'].dt.month - df_nps_canc['mes_ref_dt'].dt.month)
     ultimos_meses_nps = df_nps_canc[(df_nps_canc['meses_para_canc'] > 0) & (df_nps_canc['meses_para_canc'] <= 6)]
-    pct_canc_detrator = len(ultimos_meses_nps[ultimos_meses_nps['classificacao_nps'] == 'Detrator']['cliente_id'].unique()) / total_canc
+    pct_canc_detrator = len(ultimos_meses_nps[ultimos_meses_nps['classificacao_nps'] == 'Detrator']['cliente_id'].unique()) / total_canc if total_canc > 0 else 0
 
     padroes_churn = {'SLA': pct_canc_sla, 'Reclamacao': pct_canc_rec, 'NPS': pct_canc_detrator}
 
@@ -95,26 +111,22 @@ def carregar_dados():
     df_atd_ativos = df_atd_ativos.sort_values(by=['cliente_id', 'mes_ref_dt'])
     df_nps_ativos = df_nps[df_nps['cliente_id'].isin(df_ativos['cliente_id'])].sort_values(by=['cliente_id', 'mes_ref_dt'])
     
-    # Pega estritamente a ÚLTIMA foto de atendimento e do NPS de cada cliente
     ultimo_atd = df_atd_ativos.groupby('cliente_id').tail(1).set_index('cliente_id')
     ultimo_nps = df_nps_ativos.groupby('cliente_id').tail(1).set_index('cliente_id')
     
-    # Reclamações podem ser em meses sem chamado, então olhamos apenas uma janela curta (últimos 2 meses)
     max_mes_ativos = df_atd_ativos['mes_ref_dt'].max()
     reclamacoes_recentes = df_atd_ativos[df_atd_ativos['mes_ref_dt'] >= (max_mes_ativos - pd.DateOffset(months=1))].groupby('cliente_id')['reclamacoes_formais'].sum()
 
     strikes = pd.DataFrame(index=df_ativos['cliente_id'])
     
-    # A REGRA É CLARA: Se recuperou no último mês, o strike sai.
-    strikes['Strike 1 (SLA Crítico Atual)'] = (ultimo_atd['pct_sla_cumprido'] <= linhas_risco['pct_sla_cumprido']).astype(int)
-    strikes['Strike 2 (Lentidão Atual)'] = (ultimo_atd['tempo_medio_resolucao_h'] >= linhas_risco['tempo_medio_resolucao_h']).astype(int)
+    strikes['Strike 1 (SLA Crítico Atual)'] = (ultimo_atd['pct_sla_cumprido'] <= linhas_risco.get('pct_sla_cumprido', 80.0)).astype(int)
+    strikes['Strike 2 (Lentidão Atual)'] = (ultimo_atd['tempo_medio_resolucao_h'] >= linhas_risco.get('tempo_medio_resolucao_h', 24.0)).astype(int)
     strikes['Strike 3 (Reclamação Recente)'] = (reclamacoes_recentes > 0).astype(int).reindex(strikes.index).fillna(0)
     strikes['Strike 4 (Último NPS Detrator)'] = (ultimo_nps['classificacao_nps'] == 'Detrator').astype(int).reindex(strikes.index).fillna(0)
 
     colunas_strikes = ['Strike 1 (SLA Crítico Atual)', 'Strike 2 (Lentidão Atual)', 'Strike 3 (Reclamação Recente)', 'Strike 4 (Último NPS Detrator)']
     strikes['Total_Strikes'] = strikes[colunas_strikes].sum(axis=1)
     
-    # Cálculo da Taxa de Falso Positivo (Quantos ativos estão tocando o alarme à toa?)
     taxa_falso_alarme = {
         'SLA': strikes['Strike 1 (SLA Crítico Atual)'].mean(),
         'Reclamacao': strikes['Strike 3 (Reclamação Recente)'].mean(),
@@ -126,14 +138,17 @@ def carregar_dados():
 df_cli, df_atd, df_sit, df_nps, df_rfv, linhas_risco, padroes_churn, strikes, taxa_falso_alarme = carregar_dados()
 
 # ==============================================================================
+# O CÓDIGO ABAIXO PERMANECE EXATAMENTE IGUAL (A PARTIR DE st.title)
+# ==============================================================================
+
+# ==============================================================================
 # ESTRUTURA DE ABAS (TABS)
 # ==============================================================================
-st.title("🎯 Dashboard Integrado de Customer Success")
+st.title("Dashboard Integrado de Customer Success")
 
-tab1, tab2, tab3 = st.tabs([
-    "📊 Matriz Estratégica (Visão Geral)", 
-    "🔍 Monitor Individual (Análise de Risco)",
-    "📉 Radar de Strikes (Filtro Vigente)"
+tab1, tab2 = st.tabs([
+    "Matriz Estratégica (Visão Geral)", 
+    "Monitor Individual (Análise de Risco)"
 ])
 
 # ------------------------------------------------------------------------------
@@ -171,21 +186,87 @@ with tab1:
     st.plotly_chart(fig1, use_container_width=True)
 
     st.markdown("---")
-    st.subheader("📋 Ranking de Priorização de Contato")
+    st.subheader("Ranking de Priorização de Contato")
     df_ranking = df_rfv.sort_values(by=['R_Score', 'V_Score'], ascending=[True, False]).copy()
     df_ranking_display = df_ranking[['cliente_id', 'segmento', 'valor_mensal', 'Fator_Risco', 'Categoria_Saude']].copy()
     df_ranking_display.columns = ['ID Cliente', 'Setor', 'Ticket Mensal (R$)', 'Total Falhas (SLA + Reclamações)', 'Status Estratégico']
     
     st.dataframe(df_ranking_display.style.background_gradient(cmap='Reds', subset=['Total Falhas (SLA + Reclamações)']).format({'Ticket Mensal (R$)': 'R$ {:.2f}'}), use_container_width=True, hide_index=True)
 
+        # Filtra clientes com pelo menos 1 strike e ordena do pior (mais strikes) para o melhor
+    strikes_grafico = strikes[strikes['Total_Strikes'] > 0].sort_values('Total_Strikes', ascending=False).reset_index()
+    
+    if not strikes_grafico.empty:
+        st.subheader("Painel de Strikes (Exclusivo para Problemas Ativos Hoje)")
+        
+        # Prepara o dataframe para a tabela visual
+        df_tabela = strikes_grafico[[
+            'cliente_id', 
+            'Total_Strikes', 
+            'Strike 1 (SLA Crítico Atual)', 
+            'Strike 2 (Lentidão Atual)', 
+            'Strike 3 (Reclamação Recente)', 
+            'Strike 4 (Último NPS Detrator)'
+        ]].copy()
+        
+        # Renomeia colunas para a interface
+        df_tabela.columns = [
+            'ID Cliente', 
+            'Total de Infrações', 
+            'SLA Crítico', 
+            'Lentidão na Resolução', 
+            'Reclamação Recente', 
+            'NPS Detrator'
+        ]
+        
+        # Mapeia 1 para círculo vermelho e 0 para vazio
+        colunas_alerta = ['SLA Crítico', 'Lentidão na Resolução', 'Reclamação Recente', 'NPS Detrator']
+        for col in colunas_alerta:
+            df_tabela[col] = df_tabela[col].map({1: '🔴', 0: ''})
+            
+        # Exibe o dataframe com formatação no total de infrações
+        st.dataframe(
+            df_tabela.style.background_gradient(cmap='Reds', subset=['Total de Infrações']),
+            use_container_width=True,
+            hide_index=True
+        )
+    else:
+        st.success("🎉 Excelente notícia! Após limpar os falsos positivos, nenhum cliente ativo possui múltiplos problemas simultâneos não resolvidos hoje.")
+
 # ------------------------------------------------------------------------------
 # ABA 2: MONITOR INDIVIDUAL
 # ------------------------------------------------------------------------------
 with tab2:
     col_filtro1, col_filtro2 = st.columns(2)
-    with col_filtro1: cliente_selecionado = st.selectbox("1. Selecione o Cliente:", sorted(df_atd['cliente_id'].unique()), key="cli_aba2")
-    opcoes_metricas = {'pct_sla_cumprido': 'SLA Cumprido (%)', 'tempo_medio_resolucao_h': 'Tempo Médio de Resolução (h)', 'chamados_abertos': 'Chamados Abertos (Qtd)', 'reclamacoes_formais': 'Reclamações Formais (Qtd)'}
-    with col_filtro2: metrica_selecionada = st.selectbox("2. Métrica a Observar:", list(opcoes_metricas.keys()), format_func=lambda x: opcoes_metricas[x])
+    with col_filtro1: 
+        cliente_selecionado = st.selectbox("1. Selecione o Cliente:", sorted(df_atd['cliente_id'].unique()), key="cli_aba2")
+    
+    # Dicionário de nomes atualizado (sem as antigas, adicionando a nova)
+    nomes_conhecidos = {
+        'uso_plataforma_pct': 'Uso da Plataforma (%)',
+        'pct_sla_cumprido': 'SLA Cumprido (%)',
+        'tempo_medio_resolucao_h': 'Tempo Médio de Resolução (h)',
+        'dias_atraso_pagamento': 'Dias de Atraso no Pagamento',
+        'reclamacoes_formais': 'Reclamações Formais (Qtd)',
+        'chamados_abertos': 'Chamados Abertos (Qtd)',
+        'chamados_criticos': 'Chamados Críticos (Qtd)',
+        'chamados_reabertos': 'Chamados Reabertos (Qtd)',
+        'chamados_dentro_sla': 'Chamados Dentro do SLA (Qtd)',
+        'reunioes_ausentes': 'Faltas em Reuniões (Qtd)'
+    }
+    
+    colunas_excluidas = ['cliente_id', 'mes_ref', 'mes_ref_dt', 'mes_cancelamento']
+    colunas_disponiveis = [col for col in df_atd.select_dtypes(include='number').columns if col not in colunas_excluidas]
+    
+    opcoes_metricas = {}
+    for col in colunas_disponiveis:
+        if col in nomes_conhecidos:
+            opcoes_metricas[col] = nomes_conhecidos[col]
+        else:
+            opcoes_metricas[col] = col.replace('_', ' ').title()
+    
+    with col_filtro2: 
+        metrica_selecionada = st.selectbox("2. Métrica a Observar:", list(opcoes_metricas.keys()), format_func=lambda x: opcoes_metricas[x])
 
     st.markdown("---")
     
@@ -193,7 +274,11 @@ with tab2:
     df_cli_nps = df_nps[df_nps['cliente_id'] == cliente_selecionado].sort_values('mes_ref_dt')
     status_cliente = df_sit[df_sit['cliente_id'] == cliente_selecionado]['situacao'].values[0]
     cor_status = "red" if status_cliente == "Cancelado" else "green"
-    qtd_detrator = len(df_cli_nps[df_cli_nps['classificacao_nps'] == 'Detrator'])
+    
+    if not df_cli_nps.empty:
+        ultimo_nps = df_cli_nps.iloc[-1]['classificacao_nps']
+    else:
+        ultimo_nps = "Sem pesquisa"
     
     mrr_cliente = df_cli[df_cli['cliente_id'] == cliente_selecionado]['valor_mensal'].values[0]
     mrr_formatado = f"R$ {mrr_cliente:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
@@ -205,12 +290,11 @@ with tab2:
     else:
         saude_display = "Contrato Cancelado"
 
-    # CORREÇÃO: Reinserção dos cards de MRR, Saúde e Detratores
     st.subheader(f"Perfil: Cliente {cliente_selecionado} - Status: :{cor_status}[{status_cliente}]")
     col_perfil1, col_perfil2, col_perfil3 = st.columns([1, 1.5, 1])
     with col_perfil1: st.metric("Receita Mensal (MRR)", mrr_formatado)
     with col_perfil2: st.metric("Saúde Estratégica", saude_display)
-    with col_perfil3: st.metric("NPS: Vezes Detrator", f"{qtd_detrator} vezes")
+    with col_perfil3: st.metric("Último NPS", ultimo_nps)
     
     st.write("")
     st.subheader("Análise do Indicador de Atendimento")
@@ -225,67 +309,11 @@ with tab2:
     fig2.update_layout(xaxis_title='Mês', yaxis_title=opcoes_metricas[metrica_selecionada], template='plotly_white', hovermode="x unified")
     st.plotly_chart(fig2, use_container_width=True)
 
-# ------------------------------------------------------------------------------
-# ABA 3: RADAR DE STRIKES
-# ------------------------------------------------------------------------------
-with tab3:
-    st.markdown("Nesta aba, usamos a lógica de **Sinal Vigente**. Se o cliente teve problemas graves no passado, mas a última pesquisa NPS é Promotor e o SLA do último mês foi recuperado, os strikes dele foram **perdoados**. Só exibimos a foto do risco atual.")
+    metricas_inversas = ['uso_plataforma_pct', 'pct_sla_cumprido', 'chamados_dentro_sla']
     
-    st.subheader("🎯 Quão bem este sinal separa o joio do trigo?")
-    st.markdown("Um bom sinal precisa ter forte aderência em quem cancela e **baixo alarme falso** na base ativa atual.")
-    
-    col_pat1, col_pat2, col_pat3 = st.columns(3)
-    
-    with col_pat1:
-        st.metric("Sinal de SLA Crítico", f"{padroes_churn['SLA']*100:.0f}% dos cancelados", f"Alarme Falso (Ativos com este sinal): {taxa_falso_alarme['SLA']*100:.1f}%", delta_color="inverse")
-    with col_pat2:
-        st.metric("Sinal de Reclamações", f"{padroes_churn['Reclamacao']*100:.0f}% dos cancelados", f"Alarme Falso (Ativos com este sinal): {taxa_falso_alarme['Reclamacao']*100:.1f}%", delta_color="inverse")
-    with col_pat3:
-        st.metric("Sinal Último NPS Detrator", f"{padroes_churn['NPS']*100:.0f}% dos cancelados", f"Alarme Falso (Ativos com este sinal): {taxa_falso_alarme['NPS']*100:.1f}%", delta_color="inverse")
-
-    st.markdown("---")
-    
-    strikes_grafico = strikes[strikes['Total_Strikes'] > 0].sort_values('Total_Strikes', ascending=True).reset_index()
-    
-    if not strikes_grafico.empty:
-        st.subheader("🚨 Painel de Strikes (Exclusivo para Problemas Ativos Hoje)")
-        st.markdown(f"O gráfico agora é preciso: clientes como o **C061** (que deram NPS promotor recentemente) tiveram suas falhas antigas desconsideradas.")
-        
-        df_melt = strikes_grafico.melt(
-            id_vars=['cliente_id', 'Total_Strikes'], 
-            value_vars=['Strike 1 (SLA Crítico Atual)', 'Strike 2 (Lentidão Atual)', 'Strike 3 (Reclamação Recente)', 'Strike 4 (Último NPS Detrator)'], 
-            var_name='Motivo da Falta', 
-            value_name='Ocorreu'
-        )
-        df_melt = df_melt[df_melt['Ocorreu'] == 1]
-        
-        cor_strikes = {
-            'Strike 1 (SLA Crítico Atual)': '#F1C40F',    
-            'Strike 2 (Lentidão Atual)': '#E67E22',       
-            'Strike 3 (Reclamação Recente)': '#E74C3C',    
-            'Strike 4 (Último NPS Detrator)': '#8E44AD'    
-        }
-
-        fig_strikes = px.bar(
-            df_melt, 
-            y='cliente_id', 
-            x='Ocorreu', 
-            color='Motivo da Falta', 
-            orientation='h',
-            color_discrete_map=cor_strikes,
-            title="Clientes Ativos com Múltiplos Problemas Não Resolvidos"
-        )
-        
-        fig_strikes.update_layout(
-            barmode='stack',
-            xaxis_title="Quantidade de Problemas Simultâneos HOJE",
-            yaxis_title="ID do Cliente",
-            xaxis=dict(tickmode='linear', tick0=1, dtick=1),
-            template="plotly_white",
-            height=max(400, len(strikes_grafico) * 40),
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
-        )
-        
-        st.plotly_chart(fig_strikes, use_container_width=True)
+    if metrica_selecionada in metricas_inversas:
+        st.caption("Aviso: Quanto menor este indicador, maior o risco de cancelamento.")
+    elif metrica_selecionada in nomes_conhecidos:
+        st.caption("Aviso: Quanto maior este indicador, maior o risco de cancelamento.")
     else:
-        st.success("🎉 Excelente notícia! Após limpar os falsos positivos, nenhum cliente ativo possui múltiplos problemas simultâneos não resolvidos hoje.")
+        st.caption("Aviso: Nova métrica detectada. O gráfico plota o valor do cliente vs. a mediana da base cancelada para avaliação de desvio padrão.")
