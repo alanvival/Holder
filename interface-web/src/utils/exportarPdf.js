@@ -149,8 +149,36 @@ function renderizarMarkdown(doc, texto, { x, y, larguraUtil, alturaPagina, marge
  * considerado (nunca gera número novo: só formata o que a mensagem já
  * mostrou na tela). Pagina de verdade quando o conteúdo é longo.
  */
+// A corrupção de texto (bytes UTF-16BE intercalados com \x00, ou um "/"
+// espúrio antes de certos caracteres) só reproduz ao vivo no navegador,
+// nunca em teste isolado — e é INTERMITENTE: o mesmo conteúdo exato saiu
+// limpo em duas rodadas e corrompido numa terceira, sempre que a máquina
+// estava sob mais pressão de memória (ver dados/gerado/logs — RAM livre
+// caindo a ~600MB com Vite+Flask+Streamlit+Chrome rodando juntos).
+// Hipótese: jsPDF mede a largura de cada combinação fonte/tamanho na
+// PRIMEIRA vez que ela é usada (via canvas), e essa medição pode não ter
+// resolvido ainda quando `doc.text()`/autoTable já tentam desenhar,
+// especialmente sob CPU ocupada — daí o texto sair com a codificação
+// errada só ÀS VEZES. "Aquecer" cada combinação fonte/tamanho ANTES do
+// conteúdo real (fora da página visível) força essa medição a acontecer
+// cedo, enquanto ainda não há nada sendo desenhado de verdade.
+function aquecerFontes(doc) {
+  const combinacoes = [
+    ['bold', 16], ['normal', 10], ['normal', 9], ['bold', 13],
+    ['bold', 11.5], ['italic', 10], ['normal', 10.5], ['italic', 9],
+    ['bold', 9], ['normal', 8],
+  ];
+  doc.setTextColor(255, 255, 255);
+  for (const [estilo, tamanho] of combinacoes) {
+    doc.setFont('helvetica', estilo);
+    doc.setFontSize(tamanho);
+    doc.text('Aquecimento de fonte 0-9 %~/', -1000, -1000);
+  }
+}
+
 export function exportarRespostaComoPdf(mensagem) {
   const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+  aquecerFontes(doc);
   const largura = doc.internal.pageSize.getWidth();
   const alturaPagina = doc.internal.pageSize.getHeight();
   const margem = 40;
