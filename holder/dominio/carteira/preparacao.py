@@ -16,12 +16,23 @@ import pandas as pd
 
 from holder.infra.dados.porta import fonte
 
+from ..risco.dataset import NPS_PARA_RISCO
 from ..strikes.nps_recente import ultima_classificacao_por_cliente
 from ..strikes.recencia import meses_recentes
 
 # Abaixo disso, o mês conta como quebra de SLA para a contagem de meses
 # ruins do cliente.
 LIMITE_QUEBRA_SLA = 80.0
+
+# Quanto a média de NPS do período pode empurrar o Fator_Risco pra cima ou
+# pra baixo — mesma régua Promotor=0/Neutro=50/Detrator=100 do score de
+# risco (holder/dominio/risco/dataset.NPS_PARA_RISCO), reescalada pro
+# intervalo [-PESO_NPS_MAXIMO, +PESO_NPS_MAXIMO]. Um cliente 100% Promotor
+# no período puxa o fator pra baixo em até 3 pontos (o suficiente pra tirar
+# alguém com 2-3 falhas reais do quadrante de risco); um cliente sem
+# nenhuma pesquisa respondida no período não sofre ajuste (fica neutro, não
+# penaliza nem favorece quem simplesmente não foi pesquisado).
+PESO_NPS_MAXIMO = 3.0
 
 # Linhas de corte que são contagens esparsas: média, não mediana (a mediana
 # de uma coluna quase toda zero seria zero, e não separaria nada).
@@ -45,13 +56,38 @@ def _categorizar_saude(row) -> str:
     return "Fluxo Normal"
 
 
-def calcular_rfv(df_cli, df_atd, df_sit, meses: int | None = None):
+def _nps_risco_medio_por_cliente(df_nps, clientes_ids, meses_ref_validos=None):
+    """Média de NPS_PARA_RISCO das pesquisas RESPONDIDAS de cada cliente,
+    restrita a `meses_ref_validos` quando informado (mesmos meses do
+    período escolhido pra atendimento — período de NPS e de atendimento
+    sempre andam juntos, senão "média do NPS no período" não quer dizer
+    nada). Cliente sem nenhuma pesquisa respondida no período fica de fora
+    do resultado (o chamador decide o neutro — não decidir aqui evita
+    esconder "sem dado" atrás de um 50 que parece resposta real)."""
+    df_nps_ativos = df_nps[df_nps["cliente_id"].isin(clientes_ids) & (df_nps["respondeu"] == 1)]
+    if meses_ref_validos is not None:
+        df_nps_ativos = df_nps_ativos[df_nps_ativos["mes_ref"].isin(meses_ref_validos)]
+    if df_nps_ativos.empty:
+        return {}
+    risco = df_nps_ativos["classificacao_nps"].map(NPS_PARA_RISCO)
+    return risco.groupby(df_nps_ativos["cliente_id"]).mean().to_dict()
+
+
+def calcular_rfv(df_cli, df_atd, df_sit, df_nps, meses: int | None = None):
     """Matriz de valor × risco (RFV) dos clientes ativos — usada pela Matriz
-    Estratégica. `meses` restringe o histórico de atendimento considerado
-    aos N meses mais recentes (campo de período da aba); None usa a base
-    inteira (comportamento de sempre). Só filtra a base de ATIVOS — nunca
-    aplicar isso ao cálculo das linhas de corte tiradas de quem já
-    cancelou, que fica em `preparar` e ignora esse período de propósito."""
+    Estratégica. `meses` restringe o histórico de atendimento (e de NPS)
+    considerado aos N meses mais recentes (campo de período da aba); None
+    usa a base inteira (comportamento de sempre). Só filtra a base de
+    ATIVOS — nunca aplicar isso ao cálculo das linhas de corte tiradas de
+    quem já cancelou, que fica em `preparar` e ignora esse período de
+    propósito.
+
+    O Fator_Risco de SLA/reclamações é ajustado pela média de NPS do mesmo
+    período (mesma régua Promotor/Neutro/Detrator do score de risco — ver
+    NPS_PARA_RISCO): um cliente com falhas reais mas NPS bom no período tem
+    o fator reduzido, pra não aparecer "em risco" na matriz enquanto está
+    satisfeito de verdade (caso relatado ao vivo — cliente com strikes de
+    SLA mostrando Promotor recente)."""
     df_atd = df_atd.copy()
     if "mes_ref_dt" not in df_atd.columns:
         df_atd["mes_ref_dt"] = pd.to_datetime(df_atd["mes_ref"], format="%Y-%m")
@@ -62,9 +98,11 @@ def calcular_rfv(df_cli, df_atd, df_sit, meses: int | None = None):
     df_atd_ativos = df_atd[df_atd["cliente_id"].isin(df_ativos["cliente_id"])].copy()
     df_atd_ativos["quebra_sla"] = df_atd_ativos["pct_sla_cumprido"] < LIMITE_QUEBRA_SLA
 
+    meses_ref_validos = None
     if meses is not None:
         limite = df_atd_ativos["mes_ref_dt"].max() - pd.DateOffset(months=meses)
         df_atd_ativos = df_atd_ativos[df_atd_ativos["mes_ref_dt"] > limite]
+        meses_ref_validos = set(df_atd_ativos["mes_ref"].unique())
 
     agrupamento = df_atd_ativos.groupby("cliente_id").agg(
         meses_abaixo_sla=("quebra_sla", "sum"),
@@ -76,7 +114,19 @@ def calcular_rfv(df_cli, df_atd, df_sit, meses: int | None = None):
         agrupamento, on="cliente_id", how="left"
     )
     df_rfv["V_Score"] = pd.qcut(df_rfv["valor_mensal"], 5, labels=[1, 2, 3, 4, 5]).astype(int)
-    df_rfv["Fator_Risco"] = df_rfv["meses_abaixo_sla"] + df_rfv["total_reclamacoes"]
+
+    nps_medio_por_cliente = _nps_risco_medio_por_cliente(
+        df_nps, df_ativos["cliente_id"], meses_ref_validos
+    )
+    df_rfv["NPS_Risco_Medio"] = df_rfv["cliente_id"].map(nps_medio_por_cliente)
+    # (nps - 50) / 50 vai de -1 (100% Promotor) a +1 (100% Detrator); sem
+    # pesquisa respondida no período, ajuste neutro (0), não favorece nem
+    # penaliza quem não foi pesquisado.
+    ajuste_nps = df_rfv["NPS_Risco_Medio"].apply(
+        lambda v: PESO_NPS_MAXIMO * ((v - 50) / 50) if pd.notna(v) else 0.0
+    )
+    df_rfv["Fator_Risco_Bruto"] = df_rfv["meses_abaixo_sla"] + df_rfv["total_reclamacoes"]
+    df_rfv["Fator_Risco"] = (df_rfv["Fator_Risco_Bruto"] + ajuste_nps).clip(lower=0).round(1)
     df_rfv["R_Rank"] = df_rfv["Fator_Risco"].rank(method="first", ascending=False)
     df_rfv["R_Score"] = pd.qcut(df_rfv["R_Rank"], 5, labels=[1, 2, 3, 4, 5]).astype(int)
     df_rfv["Categoria_Saude"] = df_rfv.apply(_categorizar_saude, axis=1)
@@ -109,7 +159,7 @@ def preparar(df_cli, df_atd, df_sit, df_nps):
     # RFV da base inteira (sem filtro de período) — é o que as abas Monitor
     # Individual e Score de Risco usam. A Matriz Estratégica recalcula a
     # dela com o período escolhido via `calcular_rfv`, direto no dashboard.
-    df_rfv = calcular_rfv(df_cli, df_atd, df_sit, meses=None)
+    df_rfv = calcular_rfv(df_cli, df_atd, df_sit, df_nps, meses=None)
 
     # --- Linhas de corte, tiradas de quem já cancelou ---------------------
     df_atd_canc = df_atd[df_atd["situacao"] == "Cancelado"].copy()
