@@ -1,13 +1,25 @@
 # 09 — `interface-web/`
 
-Status: aberto
+Status: resolvido
+
+## Resultado
+
+`88 passed`, `18/18` no JS, `npm run build` passa. O `.env.example` próprio do front existe
+agora — o Vite **não** lê o `.env` da raiz do repositório, e essa era uma das causas da
+configuração divergente que virou o bug de CORS.
+
+Nota sobre o rename em massa: a troca de `assistente-consultas` por `interface-web` foi feita
+com `sed` em todos os arquivos, e isso trocou o nome também em texto corrido onde ele se
+referia ao **passado** (docstrings e estes próprios issues). Corrigido nos pontos onde o nome
+antigo era o correto, incluindo um caminho que ficou errado
+(`interface-web/scripts/gerar_dados_inovaapps.py` — o script mora em `scripts/`).
 Fase: 9 de 10 · Bloqueado por: 08
 
 ## Por que renomear
 
-`assistente-consultas/` não é mais o widget: é o **shell da aplicação inteira** — header,
+`assistente-consultas/` não era mais o widget: é o **shell da aplicação inteira** — header,
 navegação, `<iframe>` do dashboard (`App.jsx:50-54`) e tela de admin. O assistente é **um**
-componente dentro dela. Numa apresentação para banca, o nome atual gera pergunta ruim.
+componente dentro dela. Numa apresentação para banca, o nome antigo geraria pergunta ruim.
 
 ## Entregas
 

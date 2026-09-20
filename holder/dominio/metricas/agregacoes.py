@@ -3,7 +3,7 @@ As cinco agregações nomeadas que toda métrica do catálogo usa: média, médi
 ponderada, razão de somas, proporção de linhas e soma.
 
 São as mesmas cinco do resolvedor em JavaScript
-(`assistente-consultas/src/engine/metricas.js`, função `agregar`). É isso que
+(`interface-web/src/engine/metricas.js`, função `agregar`). É isso que
 torna a duplicação do resolvedor sustentável: a fórmula de cada métrica não
 está espalhada pelo código, está na combinação de uma definição declarativa
 com uma destas agregações. Ver

@@ -2,7 +2,7 @@
 Backend do Assistente de Consultas.
 
 Duas responsabilidades:
-1. Fallback de IA — o catálogo determinístico (assistente-consultas/src/
+1. Fallback de IA — o catálogo determinístico (interface-web/src/
    engine/*.js) continua rodando 100% no navegador; só quando ele não
    reconhece uma pergunta o widget chama POST /api/fallback-ia, que roda o
    fluxo de tool use (holder/aplicacao/assistente/ia_fallback.py, via

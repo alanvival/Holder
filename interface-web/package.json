@@ -1,5 +1,5 @@
 {
-  "name": "assistente-consultas",
+  "name": "interface-web",
   "private": true,
   "version": "0.1.0",
   "description": "Widget de consultas em linguagem natural (sem IA generativa) para o app Globalsys — motor de intenções determinístico sobre dados estruturados.",

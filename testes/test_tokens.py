@@ -3,14 +3,13 @@ Prende a identidade visual: `docs/design-tokens.md` é a fonte da verdade dos
 tokens, e cada cópia deles no projeto tem de concordar com ela.
 
 Existem quatro cópias, por motivos diferentes e legítimos:
-1. `assistente-consultas/src/styles/tokens.css` — o que as telas consomem;
+1. `interface-web/src/styles/tokens.css` — o que as telas consomem;
 2. o bloco `[theme]` de `.streamlit/config.toml` — porque `st.dataframe`
    renderiza a grade em canvas, onde CSS de página não alcança;
-3. `assistente-consultas/src/utils/exportarPdf.js` — em RGB, porque o jsPDF
+3. `interface-web/src/utils/exportarPdf.js` — em RGB, porque o jsPDF
    não lê CSS custom properties;
-4. as cores de faixa em `app.py` — que hoje **não existem** no
-   `design-tokens.md`; entram na fase 8 (cores semânticas) e passam a ser
-   conferidas aqui.
+4. as cores semânticas em `holder/interfaces/dashboard/estilo.py` — as 4
+   faixas do score de risco e os 3 níveis do índice de alerta.
 
 A decisão de manter cópias conferidas por teste, em vez de gerar os arquivos
 por script, está registrada: os tokens nunca divergiram de fato, então
@@ -23,9 +22,9 @@ import pytest
 
 RAIZ = Path(__file__).resolve().parent.parent
 FONTE = RAIZ / "docs" / "design-tokens.md"
-TOKENS_CSS = RAIZ / "assistente-consultas" / "src" / "styles" / "tokens.css"
+TOKENS_CSS = RAIZ / "interface-web" / "src" / "styles" / "tokens.css"
 CONFIG_STREAMLIT = RAIZ / ".streamlit" / "config.toml"
-EXPORTAR_PDF = RAIZ / "assistente-consultas" / "src" / "utils" / "exportarPdf.js"
+EXPORTAR_PDF = RAIZ / "interface-web" / "src" / "utils" / "exportarPdf.js"
 
 _DECLARACAO = re.compile(r"--(gs-[\w-]+)\s*:\s*([^;]+);")
 

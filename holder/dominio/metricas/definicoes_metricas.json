@@ -2,7 +2,7 @@
   "_sobre": [
     "FONTE ÚNICA das definições de métrica. Lido pelos DOIS resolvedores: o",
     "Python (holder/dominio/metricas/definicoes.py) e o JavaScript",
-    "(assistente-consultas/src/engine/metricas.js).",
+    "(interface-web/src/engine/metricas.js).",
     "",
     "Cada entrada diz de qual tabela ler, qual agregação aplicar, quais linhas",
     "excluir e como escalar — nunca COMO somar ou dividir, que é papel das",

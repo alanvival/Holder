@@ -8,7 +8,7 @@ disso é que os dois podem divergir em silêncio, e é este arquivo que
 transforma a divergência em falha.
 
 O lado JavaScript dos mesmos números está em
-`assistente-consultas/scripts/testar-metricas.mjs` (`npm run test:metricas`).
+`interface-web/scripts/testar-metricas.mjs` (`npm run test:metricas`).
 Os dois leem a MESMA definição declarativa; o que cada um implementa é só
 as cinco agregações nomeadas.
 """
@@ -20,8 +20,8 @@ import pytest
 from holder.dominio.metricas.definicoes import ARQUIVO, METRICAS
 
 RAIZ = Path(__file__).resolve().parent.parent
-RESOLVEDOR_JS = RAIZ / "assistente-consultas" / "src" / "engine" / "metricas.js"
-PESOS_GERADOS = RAIZ / "assistente-consultas" / "src" / "data" / "pesosAlerta.json"
+RESOLVEDOR_JS = RAIZ / "interface-web" / "src" / "engine" / "metricas.js"
+PESOS_GERADOS = RAIZ / "interface-web" / "src" / "data" / "pesosAlerta.json"
 
 AGREGACOES_VALIDAS = {
     "media", "media_ponderada", "razao_soma", "proporcao_linhas", "soma",
@@ -84,7 +84,7 @@ def test_os_pesos_do_alerta_sao_gerados_e_estao_em_sincronia():
 
 
 def test_o_js_nao_tem_mais_pesos_escritos_a_mao():
-    banco_js = (RAIZ / "assistente-consultas" / "src" / "data" / "inovaappsDatabase.js").read_text(encoding="utf-8")
+    banco_js = (RAIZ / "interface-web" / "src" / "data" / "inovaappsDatabase.js").read_text(encoding="utf-8")
     assert "pesosAlerta.pesos" in banco_js, "inovaappsDatabase.js não lê mais os pesos gerados"
     assert "'Mais chamados críticos': 83" not in banco_js, (
         "voltaram pesos hardcoded ao JavaScript"

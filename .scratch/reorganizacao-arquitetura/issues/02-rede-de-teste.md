@@ -29,7 +29,7 @@ Sem isto, "não quebrou" é chute. Nenhuma fase que move código pode começar a
 | `testar_modelo_risco.py` | `python testar_modelo_risco.py` | **exigido** | `assert` real |
 | `fallback_ia/testar_fallback_mock.py` | `python -m fallback_ia.testar_fallback_mock` | opcional (4 casos dão SKIP) | `assert` real |
 | `fallback_ia/testar_metricas.py` | `python -m fallback_ia.testar_metricas` | não | `print` + `SystemExit(1)` |
-| `assistente-consultas/scripts/testar-metricas.mjs` | `npm run test:metricas` | não | `print` + `process.exit(1)` |
+| `interface-web/scripts/testar-metricas.mjs` | `npm run test:metricas` | não | `print` + `process.exit(1)` |
 
 Não existe `pytest.ini`, `pyproject.toml`, `conftest.py` nem CI. Os nomes são `testar_*`, que o
 pytest não coletaria. `fallback_ia/testar_metricas.py` **não tem `__main__`** — as 17 asserções

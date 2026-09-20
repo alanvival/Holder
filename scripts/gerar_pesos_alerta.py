@@ -28,7 +28,7 @@ if str(RAIZ) not in sys.path:
     sys.path.insert(0, str(RAIZ))
 
 from holder.dominio.alerta import pesos_dos_sinais  # noqa: E402
-DESTINO = RAIZ / "assistente-consultas" / "src" / "data" / "pesosAlerta.json"
+DESTINO = RAIZ / "interface-web" / "src" / "data" / "pesosAlerta.json"
 
 AVISO = (
     "GERADO por scripts/gerar_pesos_alerta.py a partir de "

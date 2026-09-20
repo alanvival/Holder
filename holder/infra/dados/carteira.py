@@ -1,7 +1,7 @@
 """
 Carrega a base real do Desafio INOVAAPPS (INOVAAPPS_base_de_dados.xlsx) uma
 vez, em memória, pro backend do fallback de IA. É a mesma planilha que
-assistente-consultas/scripts/gerar_dados_inovaapps.py converte pro JSON que
+scripts/gerar_dados_inovaapps.py converte pro JSON que
 o motor de métricas em JavaScript usa — aqui é a versão Python das mesmas
 tabelas, pro backend poder executar as tools sem depender do bundle do
 front nem duplicar a leitura da planilha em dois lugares incompatíveis.
@@ -16,7 +16,7 @@ as tabelas devolvidas são sempre os mesmos objetos.
 Quem lê o arquivo agora é o adaptador de Excel da porta de dados
 (`holder/infra/dados/adaptador_excel.py`) — este módulo virou o que sempre
 foi de fato: os acessos por cliente que o assistente usa. Os índices por
-cliente_id, que são derivados, seguem aqui e saem na fase 5.
+cliente_id, que são derivados, seguem aqui.
 """
 from functools import lru_cache
 
