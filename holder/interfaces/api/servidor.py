@@ -26,6 +26,7 @@ from flask_cors import CORS
 load_dotenv()
 
 from holder.aplicacao.assistente.ia_fallback import responder_com_fallback_ia  # noqa: E402
+from holder.aplicacao.assistente import previsao_risco  # noqa: E402
 from holder.infra.ia.guardrails import limite_excedido  # noqa: E402
 from holder.infra.persistencia import admin_sqlite as armazenamento  # noqa: E402
 
@@ -85,6 +86,35 @@ def registrar_historico():
         sucesso=bool(corpo.get("sucesso", True)),
     )
     return jsonify(entrada), 201
+
+
+@app.get("/api/risco/previsao")
+def previsao_risco_rapida():
+    """
+    Atalho DETERMINÍSTICO (sem Groq) pra família de perguntas sobre
+    previsão de risco — faixa, tendência (subindo/caindo/estável). Mesmo
+    dado que listar_previsao_risco expõe pra IA, mas direto: o Score de
+    Risco já é uma consulta simples ao histórico persistido (fScoreRisco),
+    nunca precisou de um modelo de linguagem pra ser respondida.
+    Existia só via fallback de IA antes — perguntas como "quais clientes
+    estão com risco subindo" dependiam do Groq escolher a tool certa E
+    responder dentro do timeout (observado ao vivo levando 30-105s,
+    estourando o timeout do front e caindo em "não encontrei" mesmo com o
+    dado pronto e rápido de buscar). Ver riscoDireto.js no front, que casa
+    o padrão da pergunta com esta rota antes de cair no fallback de IA.
+    """
+    filtros = {}
+    faixa = request.args.get("faixa")
+    if faixa:
+        filtros["faixa"] = faixa
+    tendencia = request.args.get("tendencia")
+    if tendencia:
+        filtros["tendencia"] = tendencia
+    limite = request.args.get("limite", default=20, type=int)
+    resultado = previsao_risco.listar_previsao_risco(filtros, limite)
+    if "erro" in resultado:
+        return jsonify(resultado), 503
+    return jsonify(resultado)
 
 
 @app.get("/api/health")
@@ -181,7 +211,15 @@ def rejeitar_sugestao(sugestao_id):
 
 
 def main() -> None:
-    app.run(port=8000, debug=True)
+    # threaded=True é o ponto principal deste fix, não um detalhe de
+    # performance: o servidor de dev do Flask é single-thread por padrão —
+    # UMA chamada lenta ao Groq (observado ao vivo levando 30-150s) travava
+    # o processo inteiro, inclusive rotas rápidas e determinísticas sem
+    # nenhuma relação com IA (ex: /api/risco/previsao, /api/perguntas).
+    # Confirmado ao vivo: sem isso, um fetch direto no navegador pra uma
+    # rota que responde em <1s via curl ficava pendurado por dezenas de
+    # segundos sempre que havia uma pergunta de IA em voo ao mesmo tempo.
+    app.run(port=8000, debug=True, threaded=True)
 
 
 if __name__ == "__main__":

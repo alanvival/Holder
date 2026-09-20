@@ -38,7 +38,10 @@ def listar_previsao_risco(filtros: dict | None = None, limite: int = 20) -> dict
     Lista clientes ordenados por probabilidade PREVISTA de cancelamento
     (modelo de regressão logística treinado e validado — AUC~0.95, ver
     testes/test_modelo_risco.py), não um diagnóstico do histórico passado.
-    filtros aceita: faixa ('Crítico'/'Em risco'/'Atenção'/'Saudável').
+    filtros aceita: faixa ('Crítico'/'Em risco'/'Atenção'/'Saudável') e
+    tendencia ('subindo'/'caindo'/'estavel') — a tendência só pode ser
+    filtrada DEPOIS de calculada (compara com o mês anterior), por isso o
+    filtro é aplicado depois do merge, não antes como faixa.
     """
     import json
     try:
@@ -60,29 +63,39 @@ def listar_previsao_risco(filtros: dict | None = None, limite: int = 20) -> dict
     if faixa:
         linhas_atual = linhas_atual[linhas_atual["faixa"] == faixa]
 
+    def _tendencia(r):
+        if r["risco_anterior"] != r["risco_anterior"]:  # NaN
+            return "sem_dado_anterior"
+        delta = r["risco_percentual"] - r["risco_anterior"]
+        return "subindo" if delta > 3 else ("caindo" if delta < -3 else "estavel")
+
+    linhas_atual = linhas_atual.assign(tendencia=linhas_atual.apply(_tendencia, axis=1))
+
+    tendencia_filtro = filtros.get("tendencia")
+    if tendencia_filtro:
+        linhas_atual = linhas_atual[linhas_atual["tendencia"] == tendencia_filtro]
+
+    total_no_filtro = len(linhas_atual)
     linhas_atual = linhas_atual.sort_values("risco_percentual", ascending=False)
     limite = max(1, min(limite or 20, 100))
     pagina = linhas_atual.head(limite)
 
-    clientes = []
-    for _, r in pagina.iterrows():
-        tendencia = "sem_dado_anterior"
-        if r["risco_anterior"] == r["risco_anterior"]:  # not NaN
-            delta = r["risco_percentual"] - r["risco_anterior"]
-            tendencia = "subindo" if delta > 3 else ("caindo" if delta < -3 else "estavel")
-        clientes.append({
+    clientes = [
+        {
             "cliente_id": r["cliente_id"],
             "risco_percentual": round(r["risco_percentual"], 1),
             "faixa": r["faixa"],
-            "tendencia": tendencia,
+            "tendencia": r["tendencia"],
             "acao_sugerida": ACAO_POR_FAIXA.get(r["faixa"], ""),
-        })
+        }
+        for _, r in pagina.iterrows()
+    ]
 
     return {
         "mes_referencia": mes_atual,
-        "total_clientes": len(linhas_atual),
+        "total_clientes": total_no_filtro,
         "clientes": clientes,
-        "truncado": len(linhas_atual) > limite,
+        "truncado": total_no_filtro > limite,
         "nota": (
             "risco_percentual é a probabilidade real prevista por um modelo de regressão "
             "logística treinado e validado (AUC~0.95, Brier~0.085) contra os cancelamentos "

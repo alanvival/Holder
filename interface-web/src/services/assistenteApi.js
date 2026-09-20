@@ -11,6 +11,7 @@
 // causa disso, só perde a persistência entre sessões até o backend voltar.
 
 import { interpretarPergunta } from '../engine/matchIntent.js';
+import { tentarRiscoDireto } from '../engine/riscoDireto.js';
 import { listarIntents, registrarIntentPersonalizada, desativarIntent } from '../engine/intentRegistry.js';
 import {
   registrarSugestao,
@@ -81,15 +82,23 @@ function registrarHistorico({ pergunta, resposta, origem, tool, sucesso }) {
 }
 
 /**
- * Envia a pergunta do usuário pro motor de interpretação. Primeiro tenta o
- * catálogo determinístico local (rápido, sem custo); só se ele não
- * reconhecer é que chama o fallback de IA no backend — nunca ao contrário.
+ * Envia a pergunta do usuário pro motor de interpretação, em 3 níveis, do
+ * mais rápido/barato pro mais lento: catálogo determinístico local (sem
+ * rede) -> atalho de risco (rota fixa no backend, sem Groq) -> fallback de
+ * IA (Groq, com tool use — só quando os dois primeiros não reconhecem).
  */
 export async function consultarPergunta(texto, { historico } = {}) {
   const resultadoCatalogo = interpretarPergunta(texto);
   if (resultadoCatalogo.payload.kind !== 'not_found') {
     registrarHistorico({ pergunta: texto, resposta: resultadoCatalogo.payload.text ?? null, origem: 'catalogo', tool: resultadoCatalogo.intentId ?? null, sucesso: true });
     return { ...resultadoCatalogo, origem: 'catalogo' };
+  }
+
+  const risco = await tentarRiscoDireto(texto);
+  if (risco) {
+    const payload = tableResponse(risco.texto, risco.colunas, risco.linhas, risco.contexto);
+    registrarHistorico({ pergunta: texto, resposta: risco.texto, origem: 'catalogo', tool: 'risco_direto', sucesso: true });
+    return { payload, intentId: 'risco_direto', origem: 'catalogo' };
   }
 
   const respostaIa = await tentarFallbackIa(texto, historico);
