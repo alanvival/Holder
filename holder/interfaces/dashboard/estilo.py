@@ -49,6 +49,35 @@ CSS = """
     }
     .stApp { margin-top: -3.5rem; }
 
+    /* O dashboard é embutido num iframe dentro do app React (cabeçalho com
+       o gradiente de marca) — sem isso, a transição do cabeçalho pro
+       conteúdo era uma quebra seca de branco puro pra branco puro, dando
+       impressão de dois produtos diferentes colados um no outro em vez de
+       uma continuação da mesma tela. */
+    .stApp::before {
+        content: "";
+        display: block;
+        height: 4px;
+        background: var(--gs-gradient-brand, linear-gradient(112.61deg, #041833 0%, #0000AA 24%, #1D1DDB 62%, #0F0FC3 81%, #00083D 100%));
+    }
+
+    /* Título e respiro do topo — o padrão do Streamlit deixa uma folga
+       grande demais antes do título (~6rem), maior que qualquer coisa no
+       resto do produto. */
+    div[data-testid="stMainBlockContainer"] {
+        padding-top: 2rem;
+    }
+    h1 { font-size: 1.625rem !important; margin-bottom: 0.25rem !important; }
+
+    /* Abas: peso e cor de marca no rótulo — o padrão do Streamlit usa o
+       corpo (Montserrat), mas título de navegação é o caso de uso do
+       Space Grotesk (ver docs/design-tokens.md). */
+    button[data-testid="stTab"] p {
+        font-family: 'Space Grotesk', sans-serif !important;
+        font-weight: 600 !important;
+        font-size: 0.9rem !important;
+    }
+
     div[data-testid="stMetricValue"] {
         white-space: normal !important;
         word-wrap: break-word !important;
