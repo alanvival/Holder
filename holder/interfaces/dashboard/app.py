@@ -17,7 +17,13 @@ import streamlit as st
 
 from holder.dominio.carteira import carregar_e_preparar
 
-from . import estilo, matriz, monitor, score
+# Imports ABSOLUTOS, não relativos: o `streamlit run` executa este arquivo
+# como script (`__name__ == "__main__"`, sem pacote), e `from . import ...`
+# levanta "attempted relative import with no known parent package". Os
+# outros módulos do dashboard podem usar import relativo à vontade — eles
+# são importados como parte do pacote. Só este, que é o ponto de entrada,
+# não pode.
+from holder.interfaces.dashboard import estilo, matriz, monitor, score
 
 ABAS = [
     "Matriz Estratégica (Visão Geral)",
