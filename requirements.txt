@@ -7,6 +7,7 @@ plotly
 openpyxl
 sqlalchemy
 pyodbc
+matplotlib
 
 # Backend do fallback de IA do Assistente de Consultas (server.py)
 Flask>=3.1
