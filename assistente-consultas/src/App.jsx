@@ -3,6 +3,13 @@ import { AssistenteConsultas } from './components/AssistenteConsultas/Assistente
 import { AdminPerguntas } from './components/Admin/AdminPerguntas.jsx';
 import { TenantProvider } from './context/TenantContext.jsx';
 
+// URL do dashboard Streamlit (app.py, lendo do SQL Server) — embutido via
+// iframe na aba "Dashboard" em vez de portado pra componentes React: mais
+// rápido de entregar, e o Streamlit continua sendo a única fonte do
+// dashboard (sem duas implementações pra manter sincronizadas). Rodar com
+// `python -m streamlit run app.py` antes de abrir esta tela.
+const DASHBOARD_URL = import.meta.env.VITE_DASHBOARD_URL ?? 'http://localhost:8501';
+
 // "App já existente da Globalsys" simulado, só pra demonstrar o widget
 // embutido — em produção o <AssistenteConsultas /> é importado dentro do
 // app real, sem esse shell. O projeto não tem React Router configurado
@@ -40,14 +47,12 @@ export function App() {
         </header>
 
         {tela === 'dashboard' ? (
-          <main style={{ padding: 40 }}>
-            <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", color: '#000A1E' }}>
-              Dashboard (placeholder)
-            </h1>
-            <p style={{ color: 'rgba(0,10,30,0.65)', maxWidth: 480 }}>
-              Conteúdo do app principal. O Assistente de Consultas fica ancorado
-              no canto inferior direito, independente desta tela.
-            </p>
+          <main style={{ height: 'calc(100vh - 64px)' }}>
+            <iframe
+              src={DASHBOARD_URL}
+              title="Dashboard Executivo CS"
+              style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
+            />
           </main>
         ) : (
           <AdminPerguntas />
